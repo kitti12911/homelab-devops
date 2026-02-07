@@ -1,0 +1,9 @@
+- name: Power off hosts
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Shut down the host
+      community.general.shutdown:
+        delay: 0
+        msg: "Power off triggered by Ansible"
