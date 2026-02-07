@@ -1,0 +1,14 @@
+- name: Add Ansible SSH public key to all devices
+  hosts: all
+  become: false
+
+  vars:
+    key_file_path: "~/.ssh/id_ed25519_ansible.pub"
+    key_user: "{{ ansible_user | default('kitti') }}"
+
+  tasks:
+    - name: Add id_ed25519_ansible.pub to authorized_keys
+      ansible.posix.authorized_key:
+        user: "{{ key_user }}"
+        key: "{{ lookup('file', key_file_path) }}"
+        state: present

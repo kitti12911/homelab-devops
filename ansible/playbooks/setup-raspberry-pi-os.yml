@@ -1,0 +1,314 @@
+- name: Raspberry Pi OS Setup
+  hosts: worker
+  become: true
+  serial: 1
+
+  vars:
+    # Image source
+    os_image_base_url: "https://downloads.raspberrypi.com/raspios_lite_arm64/images/raspios_lite_arm64-2025-12-04"
+    os_image_filename: "2025-12-04-raspios-trixie-arm64-lite.img"
+    os_image_xz_sha256: "681a775e20b53a9e4c7341d748a5a8cdc822039d8c67c1fd6ca35927abbe6290"  # checksum for .img.xz
+    
+    # Local paths
+    os_image_dir: "/home/{{ ansible_user }}/rpi-os-images"
+    os_image_path: "{{ os_image_dir }}/{{ os_image_filename }}"
+    os_image_compressed_path: "{{ os_image_path }}.xz"
+    
+    # Target device
+    nvme_device: "/dev/nvme0n1"
+    nvme_boot_partition: "{{ nvme_device }}p1"
+    nvme_root_partition: "{{ nvme_device }}p2"
+    
+    # Mount points
+    mount_base: "/mnt/nvme"
+    mount_boot: "{{ mount_base }}/boot"
+    mount_root: "{{ mount_base }}/root"
+    
+    # User configuration
+    pi_username: "kitti"
+    pi_password: "{{ vault_pi_password }}"
+    ssh_public_keys:
+      - "~/.ssh/id_ed25519.pub"
+      - "~/.ssh/id_ed25519_ansible.pub"
+
+  tasks:
+    - name: Remove old SSH host key (before connecting)
+      ansible.builtin.command:
+        cmd: ssh-keygen -R {{ ansible_host }}
+      delegate_to: localhost
+      become: false
+      changed_when: true
+      failed_when: false
+
+    - name: Get root filesystem device
+      ansible.builtin.command: findmnt -n -o SOURCE /
+      register: root_filesystem_device
+      changed_when: false
+
+    - name: Display root filesystem device
+      ansible.builtin.debug:
+        var: root_filesystem_device.stdout
+      when: root_filesystem_device.stdout is defined
+
+    - name: Wait if not booted from SD Card
+      when: root_filesystem_device.stdout is not search('mmcblk')
+      block:
+        - name: Prompt to insert SD card and reboot
+          ansible.builtin.pause:
+            prompt: |
+              
+              Host {{ inventory_hostname }} is not booted from SD card.
+              Current boot device: {{ root_filesystem_device.stdout }}
+              
+              1. Insert SD card into {{ inventory_hostname }}
+              2. Reboot the node from SD card
+              3. Press ENTER to retry
+          
+        - name: Re-check root filesystem after SD card inserted
+          ansible.builtin.command: findmnt -n -o SOURCE /
+          register: root_filesystem_device_recheck
+          changed_when: false
+        
+        - name: Fail if still not on SD card
+          ansible.builtin.fail:
+            msg: "{{ inventory_hostname }} is still not booted from SD card"
+          when: root_filesystem_device_recheck.stdout is not search('mmcblk')
+
+    - name: Create image directory
+      ansible.builtin.file:
+        path: "{{ os_image_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0755"
+
+    - name: Check if OS image already exists
+      ansible.builtin.stat:
+        path: "{{ os_image_path }}"
+      register: os_image_stat
+
+    - name: Download and extract OS image
+      when: not os_image_stat.stat.exists
+      block:
+        - name: Check if compressed image exists
+          ansible.builtin.stat:
+            path: "{{ os_image_compressed_path }}"
+            checksum_algorithm: sha256
+          register: os_image_compressed_stat
+
+        - name: Download compressed OS image
+          ansible.builtin.get_url:
+            url: "{{ os_image_base_url }}/{{ os_image_filename }}.xz"
+            dest: "{{ os_image_compressed_path }}"
+            owner: "{{ ansible_user }}"
+            group: "{{ ansible_user }}"
+            mode: "0644"
+          when: not os_image_compressed_stat.stat.exists
+
+        - name: Get compressed image checksum
+          ansible.builtin.stat:
+            path: "{{ os_image_compressed_path }}"
+            checksum_algorithm: sha256
+          register: os_image_compressed_checksum
+
+        - name: Display compressed image checksum
+          ansible.builtin.debug:
+            msg: "Compressed image SHA256: {{ os_image_compressed_checksum.stat.checksum }}"
+
+        - name: Validate compressed image checksum
+          ansible.builtin.fail:
+            msg: "Checksum mismatch! Expected: {{ os_image_xz_sha256 }}, Got: {{ os_image_compressed_checksum.stat.checksum }}"
+          when:
+            - os_image_xz_sha256 | length > 0
+            - os_image_compressed_checksum.stat.checksum != os_image_xz_sha256
+
+        - name: Uncompress OS image
+          ansible.builtin.command:
+            cmd: xz -dk {{ os_image_compressed_path }}
+            creates: "{{ os_image_path }}"
+
+    - name: Check if NVMe device exists
+      ansible.builtin.stat:
+        path: "{{ nvme_device }}"
+      register: nvme_device_stat
+
+    - name: Fail if NVMe device not found
+      ansible.builtin.fail:
+        msg: "NVMe device {{ nvme_device }} not found on {{ inventory_hostname }}"
+      when: not nvme_device_stat.stat.exists
+
+    - name: Confirm before flashing NVMe
+      ansible.builtin.pause:
+        prompt: |
+          
+          WARNING: About to flash {{ nvme_device }} on {{ inventory_hostname }}
+          This will ERASE all data on the NVMe drive!
+          
+          Press ENTER to continue, or Ctrl+C to abort
+
+    - name: Flash OS image to NVMe
+      ansible.builtin.command:
+        cmd: dd if={{ os_image_path }} of={{ nvme_device }} bs=4M status=progress conv=fsync
+      register: dd_result
+
+    - name: Display flash result
+      ansible.builtin.debug:
+        msg: "Flash complete: {{ dd_result.stderr_lines | default(['done']) | last }}"
+
+    - name: Wait for partition table to settle
+      ansible.builtin.pause:
+        seconds: 2
+
+    - name: Extend root partition to 100%
+      community.general.parted:
+        device: "{{ nvme_device }}"
+        number: 2
+        part_end: "100%"
+        resize: true
+        state: present
+
+    - name: Resize filesystem
+      ansible.builtin.command:
+        cmd: resize2fs {{ nvme_root_partition }}
+      register: resize_result
+      changed_when: "'Nothing to do' not in resize_result.stdout"
+
+    - name: Create mount directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ mount_boot }}"
+        - "{{ mount_root }}"
+
+    - name: Mount boot partition
+      ansible.posix.mount:
+        path: "{{ mount_boot }}"
+        src: "{{ nvme_boot_partition }}"
+        fstype: vfat
+        state: mounted
+
+    - name: Enable SSH
+      ansible.builtin.file:
+        path: "{{ mount_boot }}/ssh"
+        state: touch
+        mode: "0644"
+
+    - name: Enable NVMe support in config.txt
+      ansible.builtin.lineinfile:
+        path: "{{ mount_boot }}/config.txt"
+        line: "dtparam=nvme"
+        create: false
+
+    - name: Enable PCIe Gen 3 speed in config.txt
+      ansible.builtin.lineinfile:
+        path: "{{ mount_boot }}/config.txt"
+        line: "dtparam=pciex1_gen=3"
+        insertafter: "\\[all\\]"
+        create: false
+
+    - name: Check if cgroups already enabled
+      ansible.builtin.command:
+        cmd: grep -q 'cgroup_memory=1' {{ mount_boot }}/cmdline.txt
+      register: cgroups_check
+      failed_when: false
+      changed_when: false
+
+    - name: Enable cgroups in cmdline.txt
+      ansible.builtin.replace:
+        path: "{{ mount_boot }}/cmdline.txt"
+        regexp: '^(.+)$'
+        replace: '\1 cgroup_memory=1 cgroup_enable=memory'
+      when: cgroups_check.rc != 0
+
+    - name: Create user configuration
+      ansible.builtin.copy:
+        content: "{{ pi_username }}:{{ pi_password | password_hash('sha512') }}"
+        dest: "{{ mount_boot }}/userconf.txt"
+        mode: "0600"
+      no_log: true
+
+    - name: Unmount boot partition
+      ansible.posix.mount:
+        path: "{{ mount_boot }}"
+        state: unmounted
+
+    - name: Mount root partition
+      ansible.posix.mount:
+        path: "{{ mount_root }}"
+        src: "{{ nvme_root_partition }}"
+        fstype: ext4
+        state: mounted
+
+    - name: Set hostname
+      ansible.builtin.copy:
+        content: "{{ inventory_hostname }}\n"
+        dest: "{{ mount_root }}/etc/hostname"
+        mode: "0644"
+
+    - name: Update /etc/hosts with hostname
+      ansible.builtin.lineinfile:
+        path: "{{ mount_root }}/etc/hosts"
+        regexp: '^127\.0\.1\.1'
+        line: "127.0.1.1\t{{ inventory_hostname }}"
+
+    - name: Create .ssh directory for user
+      ansible.builtin.file:
+        path: "{{ mount_root }}/home/{{ pi_username }}/.ssh"
+        state: directory
+        owner: "1000"
+        group: "1000"
+        mode: "0700"
+
+    - name: Add SSH authorized keys
+      ansible.builtin.copy:
+        content: |
+          {% for key_path in ssh_public_keys %}
+          {{ lookup('file', key_path) }}
+          {% endfor %}
+        dest: "{{ mount_root }}/home/{{ pi_username }}/.ssh/authorized_keys"
+        owner: "1000"
+        group: "1000"
+        mode: "0600"
+
+    - name: Disable SSH password authentication
+      ansible.builtin.lineinfile:
+        path: "{{ mount_root }}/etc/ssh/sshd_config"
+        regexp: '^#?PasswordAuthentication'
+        line: "PasswordAuthentication no"
+
+    - name: Disable SSH challenge-response authentication
+      ansible.builtin.lineinfile:
+        path: "{{ mount_root }}/etc/ssh/sshd_config"
+        regexp: '^#?KbdInteractiveAuthentication'
+        line: "KbdInteractiveAuthentication no"
+
+    - name: Unmount root partition
+      ansible.posix.mount:
+        path: "{{ mount_root }}"
+        state: unmounted
+
+    - name: Setup complete - prompt for next action
+      ansible.builtin.pause:
+        prompt: |
+          
+          {{ inventory_hostname }} setup complete!
+          
+          1. Remove SD card
+          2. Reboot to boot from NVMe
+          
+          Press ENTER to power off this node and continue to next host
+
+    - name: Power off node
+      community.general.shutdown:
+        delay: 0
+
+    - name: Remove SSH host key (after shutdown, for NVMe boot)
+      ansible.builtin.command:
+        cmd: ssh-keygen -R {{ ansible_host }}
+      delegate_to: localhost
+      become: false
+      changed_when: true
+      failed_when: false
+

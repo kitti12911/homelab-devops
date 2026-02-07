@@ -1,0 +1,6 @@
+# Ansible vault password file
+.vault_password
+*.vault_password
+
+# Retry files
+*.retry
