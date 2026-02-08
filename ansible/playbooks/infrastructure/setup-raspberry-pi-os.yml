@@ -208,20 +208,6 @@
         insertafter: "\\[all\\]"
         create: false
 
-    - name: Check if cgroups already enabled
-      ansible.builtin.command:
-        cmd: grep -q 'cgroup_memory=1' {{ mount_boot }}/cmdline.txt
-      register: cgroups_check
-      failed_when: false
-      changed_when: false
-
-    - name: Enable cgroups in cmdline.txt
-      ansible.builtin.replace:
-        path: "{{ mount_boot }}/cmdline.txt"
-        regexp: '^(.+)$'
-        replace: '\1 cgroup_memory=1 cgroup_enable=memory'
-      when: cgroups_check.rc != 0
-
     - name: Create user configuration
       ansible.builtin.copy:
         content: "{{ pi_username }}:{{ pi_password | password_hash('sha512') }}"
@@ -241,18 +227,6 @@
         fstype: ext4
         state: mounted
 
-    - name: Set hostname
-      ansible.builtin.copy:
-        content: "{{ inventory_hostname }}\n"
-        dest: "{{ mount_root }}/etc/hostname"
-        mode: "0644"
-
-    - name: Update /etc/hosts with hostname
-      ansible.builtin.lineinfile:
-        path: "{{ mount_root }}/etc/hosts"
-        regexp: '^127\.0\.1\.1'
-        line: "127.0.1.1\t{{ inventory_hostname }}"
-
     - name: Create .ssh directory for user
       ansible.builtin.file:
         path: "{{ mount_root }}/home/{{ pi_username }}/.ssh"
@@ -271,18 +245,6 @@
         owner: "1000"
         group: "1000"
         mode: "0600"
-
-    - name: Disable SSH password authentication
-      ansible.builtin.lineinfile:
-        path: "{{ mount_root }}/etc/ssh/sshd_config"
-        regexp: '^#?PasswordAuthentication'
-        line: "PasswordAuthentication no"
-
-    - name: Disable SSH challenge-response authentication
-      ansible.builtin.lineinfile:
-        path: "{{ mount_root }}/etc/ssh/sshd_config"
-        regexp: '^#?KbdInteractiveAuthentication'
-        line: "KbdInteractiveAuthentication no"
 
     - name: Unmount root partition
       ansible.posix.mount:

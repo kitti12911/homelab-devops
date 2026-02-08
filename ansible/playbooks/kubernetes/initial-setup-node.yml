@@ -1,0 +1,98 @@
+- name: Initial node setup
+  hosts: cluster
+  become: true
+
+  vars:
+    cmdline_path: "/boot/firmware/cmdline.txt"
+
+  tasks:
+    - name: Check if cgroups already enabled
+      ansible.builtin.command:
+        cmd: grep -q 'cgroup_memory=1' {{ cmdline_path }}
+      register: cgroups_check
+      failed_when: false
+      changed_when: false
+
+    - name: Enable cgroups in cmdline.txt
+      ansible.builtin.replace:
+        path: "{{ cmdline_path }}"
+        regexp: '^(.+)$'
+        replace: '\1 cgroup_memory=1 cgroup_enable=memory'
+      when: cgroups_check.rc != 0
+
+    - name: Set hostname
+      ansible.builtin.copy:
+        content: "{{ inventory_hostname }}\n"
+        dest: "/etc/hostname"
+        mode: "0644"
+
+    - name: Update /etc/hosts with hostname
+      ansible.builtin.lineinfile:
+        path: "/etc/hosts"
+        regexp: '^127\.0\.1\.1'
+        line: "127.0.1.1\t{{ inventory_hostname }}"
+
+    - name: Disable SSH password authentication
+      ansible.builtin.lineinfile:
+        path: "/etc/ssh/sshd_config"
+        regexp: '^#?PasswordAuthentication'
+        line: "PasswordAuthentication no"
+
+    - name: Disable SSH challenge-response authentication
+      ansible.builtin.lineinfile:
+        path: "/etc/ssh/sshd_config"
+        regexp: '^#?KbdInteractiveAuthentication'
+        line: "KbdInteractiveAuthentication no"
+
+- name: Longhorn prerequisites (worker computer nodes)
+  hosts: computer
+  become: true
+
+  tasks:
+    - name: Install iSCSI and NFS utilities
+      ansible.builtin.apt:
+        name:
+          - open-iscsi
+          - nfs-common
+        state: present
+        update_cache: true
+
+    - name: Enable and start iSCSI daemon
+      ansible.builtin.systemd:
+        name: iscsid
+        enabled: true
+        state: started
+
+    - name: Load iSCSI and configfs kernel modules
+      ansible.builtin.modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - iscsi_tcp
+        - configfs
+
+    - name: Ensure iSCSI modules load at boot
+      ansible.builtin.lineinfile:
+        path: /etc/modules
+        line: "{{ item }}"
+        create: true
+      loop:
+        - iscsi_tcp
+        - configfs
+
+    - name: Install cryptographic utilities
+      ansible.builtin.apt:
+        name: cryptsetup
+        state: present
+        update_cache: true
+
+    - name: Load dm_crypt kernel module
+      ansible.builtin.modprobe:
+        name: dm_crypt
+        state: present
+
+    - name: Ensure dm_crypt loads at boot
+      ansible.builtin.lineinfile:
+        path: /etc/modules
+        line: dm_crypt
+        create: true
