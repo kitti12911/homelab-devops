@@ -95,23 +95,23 @@ ansible playbooks and roles for homelab infra
 - see `playbooks/setup-raspberry-pi-os.yml` for an example
 
     ```bash
-    ansible-playbook -i inventory/hosts.yml playbooks/setup-raspberry-pi-os.yml
+    ansible-playbook -i inventory/hosts.yml playbooks/infrastructure/setup-raspberry-pi-os.yml
     ```
 
 - run with specific host(s)
 
     ```bash
-    ansible-playbook -i inventory/hosts.yml playbooks/setup-raspberry-pi-os.yml -l november
+    ansible-playbook -i inventory/hosts.yml playbooks/infrastructure/setup-raspberry-pi-os.yml -l november
     ```
 
 - run with specific host(s) and specific task
 
     ```bash
-    ansible-playbook -i inventory/hosts.yml playbooks/setup-raspberry-pi-os.yml -l november -t "Get root filesystem device"
+    ansible-playbook -i inventory/hosts.yml playbooks/infrastructure/setup-raspberry-pi-os.yml -l november -t "Get root filesystem device"
     ```
 
 - run with limit
 
     ```bash
-    ansible-playbook playbooks/setup-raspberry-pi-os.yml --limit "november"
+    ansible-playbook playbooks/infrastructure/setup-raspberry-pi-os.yml --limit "november"
     ```
