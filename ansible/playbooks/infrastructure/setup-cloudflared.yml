@@ -1,0 +1,43 @@
+- name: Setup Cloudflare tunnel (cloudflared)
+  hosts: proxy
+  become: true
+
+  tasks:
+    - name: Create keyrings directory
+      ansible.builtin.file:
+        path: /usr/share/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Add Cloudflare GPG key
+      ansible.builtin.get_url:
+        url: https://pkg.cloudflare.com/cloudflare-public-v2.gpg
+        dest: /usr/share/keyrings/cloudflare-public-v2.gpg
+        mode: "0644"
+
+    - name: Add Cloudflared APT repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/cloudflare-public-v2.gpg] https://pkg.cloudflare.com/cloudflared any main"
+        filename: cloudflared
+        state: present
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install cloudflared
+      ansible.builtin.apt:
+        name: cloudflared
+        state: present
+
+    - name: Check if cloudflared service is already installed
+      ansible.builtin.stat:
+        path: /etc/systemd/system/cloudflared.service
+      register: cloudflared_installed
+
+    - name: Install cloudflared service (one-time, uses token from vault)
+      ansible.builtin.command:
+        cmd: cloudflared service install {{ vault_cloudflare_token }}
+      when: not cloudflared_installed.stat.exists
+      no_log: true
