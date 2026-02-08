@@ -1,0 +1,17 @@
+[Unit]
+Description=Envoy Proxy
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/envoy -c {{ envoy_config_path }} -l {{ envoy_log_level }} --disable-hot-restart
+Restart=always
+RestartSec=2
+# Minimal logging for SD card: no log files, only journal
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=envoy
+
+[Install]
+WantedBy=multi-user.target

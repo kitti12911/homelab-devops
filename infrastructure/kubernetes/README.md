@@ -19,7 +19,13 @@ run helm charts or manifests for kubernetes infrastructure.
     kubectl apply -f kubernetes/gateway.yml
     ```
 
-3. install longhorn
+3. enable traefik gateway provider
+
+    ```bash
+    kubectl apply -f kubernetes/traefik-helmchartconfig.yml
+    ```
+
+4. install longhorn
 
     ```bash
     helm upgrade --install longhorn longhorn/longhorn \
@@ -27,4 +33,10 @@ run helm charts or manifests for kubernetes infrastructure.
     --create-namespace \
     --values kubernetes/longhorn-values.yml \
     --wait
+    ```
+
+5. install reference grant
+
+    ```bash
+    kubectl apply -f kubernetes/reference-grant.yml
     ```

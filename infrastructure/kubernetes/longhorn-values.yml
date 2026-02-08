@@ -19,7 +19,7 @@ httproute:
     - name: traefik
       namespace: default
   hostnames:
-    - longhorn.local
+    - longhorn.lan
   path: /
   pathType: PathPrefix
 
