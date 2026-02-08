@@ -66,3 +66,23 @@
     - name: Show node status
       ansible.builtin.command: /usr/local/bin/k3s kubectl get nodes
       changed_when: false
+
+- name: Taint and label database / object_storage nodes
+  hosts: master
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Label and taint database nodes
+      ansible.builtin.shell: |
+        /usr/local/bin/k3s kubectl label node {{ item }} node-role.kubernetes.io/database=true --overwrite
+        /usr/local/bin/k3s kubectl taint node {{ item }} dedicated=database:NoSchedule --overwrite
+      loop: "{{ groups['database'] }}"
+      when: groups['database'] | length > 0
+
+    - name: Label and taint object_storage nodes
+      ansible.builtin.shell: |
+        /usr/local/bin/k3s kubectl label node {{ item }} node-role.kubernetes.io/object_storage=true --overwrite
+        /usr/local/bin/k3s kubectl taint node {{ item }} dedicated=object_storage:NoSchedule --overwrite
+      loop: "{{ groups['object_storage'] }}"
+      when: groups['object_storage'] | length > 0
