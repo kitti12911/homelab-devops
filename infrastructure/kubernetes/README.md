@@ -43,7 +43,7 @@ run helm charts or manifests for kubernetes infrastructure.
 
 ### s3 compatible storage (seaweedfs)
 
-1. add seaweedfs and prometheus crds helm repo
+1. add seaweedfs and prometheus crds helm repos
 
     ```bash
     helm repo add seaweedfs https://seaweedfs.github.io/seaweedfs/helm
