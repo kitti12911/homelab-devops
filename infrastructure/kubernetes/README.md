@@ -118,8 +118,6 @@ run helm charts or manifests for kubernetes infrastructure.
     sops -e -i kubernetes/app/postgresql-manifests/superuser-secret.enc.yml
     ```
 
-### redis compatible database (dragonfly)
-
 ### nats
 
 ### keycloak

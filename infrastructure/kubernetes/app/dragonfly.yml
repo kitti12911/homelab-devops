@@ -1,0 +1,49 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dragonfly
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: ghcr.io/dragonflydb/dragonfly/helm
+    chart: dragonfly
+    targetRevision: "v1.36.0"
+    helm:
+      valuesObject:
+        replicaCount: 1
+
+        storage:
+          enabled: true
+          storageClassName: local-path
+          requests: 10Gi
+
+        service:
+          type: NodePort
+          port: 6379
+
+        extraArgs:
+          - --maxmemory=2gb
+
+        nodeSelector:
+          node-role.kubernetes.io/database: "true"
+
+        tolerations:
+          - key: dedicated
+            operator: Equal
+            value: database
+            effect: NoSchedule
+
+        resources:
+          requests:
+            cpu: 250m
+            memory: 1536Mi
+          limits:
+            cpu: "1500m"
+            memory: 2560Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: database
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
