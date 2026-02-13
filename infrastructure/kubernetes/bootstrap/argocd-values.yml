@@ -16,6 +16,7 @@ dex:
 configs:
   cm:
     url: http://argocd.lan
+    kustomize.buildOptions: "--enable-alpha-plugins --enable-exec"
   params:
     server.insecure: "true"
 
@@ -52,6 +53,8 @@ repoServer:
       value: /custom-tools/sops
     - name: HELM_SECRETS_BACKEND
       value: sops
+    - name: XDG_CONFIG_HOME
+      value: /custom-tools/.config
   volumes:
     - name: sops-age
       secret:
@@ -74,6 +77,9 @@ repoServer:
           wget -qO sops https://github.com/getsops/sops/releases/download/v3.11.0/sops-v3.11.0.linux.arm64
           chmod +x sops
           wget -qO- https://github.com/jkroepke/helm-secrets/releases/download/v4.7.5/helm-secrets.tar.gz | tar -C /custom-tools/helm-plugins -xzf-
+          wget -qO- https://github.com/viaduct-ai/kustomize-sops/releases/download/v4.4.0/ksops_4.4.0_Linux_arm64.tar.gz | tar xz
+          mkdir -p /custom-tools/.config/kustomize/plugin/viaduct.ai/v1/ksops
+          mv ksops /custom-tools/.config/kustomize/plugin/viaduct.ai/v1/ksops/ksops
       volumeMounts:
         - name: custom-tools
           mountPath: /custom-tools
