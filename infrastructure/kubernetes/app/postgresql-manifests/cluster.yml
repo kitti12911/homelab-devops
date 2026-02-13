@@ -40,6 +40,14 @@ spec:
         effect: NoSchedule
 
   managed:
+    roles:
+      - name: admin
+        login: true
+        superuser: false
+        createdb: true
+        createrole: true
+        passwordSecret:
+          name: postgresql-admin-secret
     services:
       additional:
         - selectorType: rw
