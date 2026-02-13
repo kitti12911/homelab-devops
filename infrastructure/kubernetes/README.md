@@ -35,8 +35,6 @@ run helm charts or manifests for kubernetes infrastructure.
 
 ### sops/age
 
-#### install
-
 1. install age tool
 
     ```bash
@@ -63,15 +61,13 @@ run helm charts or manifests for kubernetes infrastructure.
     source ~/.zshrc
     ```
 
-#### usage
-
-1. encrypt secret
+4. encrypt secret
 
     ```bash
     sops -e -i <path>
     ```
 
-2. decrypt secret
+5. decrypt secret
 
     ```bash
     sops -d -i <path>
@@ -113,8 +109,6 @@ run helm charts or manifests for kubernetes infrastructure.
       annotations:
         reloader.stakater.com/auto: "true"
     ```
-
-### cert-manager
 
 ### postgresql
 
