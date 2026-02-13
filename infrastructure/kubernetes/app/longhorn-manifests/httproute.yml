@@ -5,6 +5,8 @@ metadata:
   namespace: longhorn-system
 spec:
   parentRefs:
+    - group: gateway.networking.k8s.io	
+      kind: Gateway
     - name: traefik
       namespace: default
   hostnames:
@@ -15,5 +17,8 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
+        - group: ''	
+          kind: Service
         - name: longhorn-frontend
           port: 80
+          weight: 1
