@@ -48,6 +48,13 @@ spec:
         createrole: true
         passwordSecret:
           name: postgresql-admin-secret
+      - name: keycloak
+        login: true
+        superuser: false
+        createdb: false
+        createrole: false
+        passwordSecret:
+          name: postgresql-keycloak-secret
     services:
       additional:
         - selectorType: rw
