@@ -7,7 +7,7 @@ spec:
   parentRefs:
     - group: gateway.networking.k8s.io	
       kind: Gateway
-    - name: traefik
+      name: traefik
       namespace: default
   hostnames:
     - longhorn.lan
@@ -19,6 +19,6 @@ spec:
       backendRefs:
         - group: ''	
           kind: Service
-        - name: longhorn-frontend
+          name: longhorn-frontend
           port: 80
           weight: 1
