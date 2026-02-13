@@ -7,6 +7,8 @@ spec:
   parentRefs:
     - name: traefik
       namespace: default
+      group: gateway.networking.k8s.io	
+      kind: Gateway
   hostnames:
     - seaweedfs-admin.lan
   rules:
@@ -17,6 +19,9 @@ spec:
       backendRefs:
         - name: seaweedfs-admin
           port: 23646
+          group: ''	
+          kind: Service
+          weight: 1
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -27,6 +32,8 @@ spec:
   parentRefs:
     - name: traefik
       namespace: default
+      group: gateway.networking.k8s.io	
+      kind: Gateway
   hostnames:
     - seaweedfs.lan
   rules:
@@ -37,6 +44,9 @@ spec:
       backendRefs:
         - name: seaweedfs-filer
           port: 8888
+          group: ''	
+          kind: Service
+          weight: 1
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -47,6 +57,8 @@ spec:
   parentRefs:
     - name: traefik
       namespace: default
+      group: gateway.networking.k8s.io	
+      kind: Gateway
   hostnames:
     - s3.lan
   rules:
@@ -57,3 +69,6 @@ spec:
       backendRefs:
         - name: seaweedfs-filer
           port: 8333
+          group: ''	
+          kind: Service
+          weight: 1
