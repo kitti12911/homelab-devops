@@ -5,38 +5,34 @@ metadata:
   namespace: argocd
 spec:
   project: default
-  source:
-    repoURL: https://charts.longhorn.io
-    chart: longhorn
-    targetRevision: "1.11.0"
-    helm:
-      valuesObject:
-        preUpgradeChecker:
-          jobEnabled: false
-        defaultSettings:
-          defaultDataPath: "/var/lib/longhorn/"
-          storageMinimalAvailablePercentage: "5"
-          defaultReplicaCount: "2"
-          allowRecurringJobWhileVolumeDetached: false
-          storageReservedPercentageForDefaultDisk: 10
-        ingress:
-          enabled: false
-        httproute:
-          enabled: true
-          parentRefs:
-            - name: traefik
-              namespace: default
-          hostnames:
-            - longhorn.lan
-          path: /
-          pathType: PathPrefix
-        persistence:
-          defaultClass: true
-          defaultClassReplicaCount: 2
-          defaultFsType: ext4
-          reclaimPolicy: Retain
-          volumeBindingMode: WaitForFirstConsumer
-          migratable: false
+  sources:
+    - repoURL: https://charts.longhorn.io
+      chart: longhorn
+      targetRevision: "1.11.0"
+      helm:
+        valuesObject:
+          preUpgradeChecker:
+            jobEnabled: false
+          defaultSettings:
+            defaultDataPath: "/var/lib/longhorn/"
+            storageMinimalAvailablePercentage: "5"
+            defaultReplicaCount: "2"
+            allowRecurringJobWhileVolumeDetached: false
+            storageReservedPercentageForDefaultDisk: 10
+          ingress:
+            enabled: false
+          httproute:
+            enabled: false
+          persistence:
+            defaultClass: true
+            defaultClassReplicaCount: 2
+            defaultFsType: ext4
+            reclaimPolicy: Retain
+            volumeBindingMode: WaitForFirstConsumer
+            migratable: false
+    - repoURL: git@github.com:kitti12911/homelab-devops.git
+      targetRevision: main
+      path: infrastructure/kubernetes/app/longhorn-manifests
   destination:
     server: https://kubernetes.default.svc
     namespace: longhorn-system
