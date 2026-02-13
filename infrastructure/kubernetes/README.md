@@ -112,9 +112,19 @@ run helm charts or manifests for kubernetes infrastructure.
 
 ### postgresql
 
+1. set superuser password and encrypt before deploying
+
+    ```bash
+    sops -e -i kubernetes/app/postgresql-manifests/superuser-secret.enc.yml
+    ```
+
 ### redis compatible database (dragonfly)
 
+### nats
+
 ### keycloak
+
+### zot
 
 ### hashicorp vault
 

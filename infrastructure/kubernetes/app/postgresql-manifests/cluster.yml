@@ -1,0 +1,48 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgresql
+  namespace: database
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:17
+
+  postgresql:
+    parameters:
+      shared_buffers: "1GB"
+      effective_cache_size: "2GB"
+      work_mem: "64MB"
+      maintenance_work_mem: "256MB"
+      max_connections: "100"
+
+  bootstrap:
+    initdb:
+      database: app
+      owner: app
+      encoding: UTF8
+      localeCType: C
+      localeCollate: C
+
+  superuserSecret:
+    name: postgresql-superuser-secret
+
+  storage:
+    size: 100Gi
+    storageClass: local-path
+
+  affinity:
+    nodeSelector:
+      node-role.kubernetes.io/database: "true"
+    tolerations:
+      - key: dedicated
+        operator: Equal
+        value: database
+        effect: NoSchedule
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      cpu: 2000m
+      memory: 3Gi
