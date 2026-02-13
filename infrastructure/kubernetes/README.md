@@ -106,6 +106,14 @@ run helm charts or manifests for kubernetes infrastructure.
 
 ### reloader
 
+- annotate workloads to enable auto-reload on secret/configmap changes
+
+    ```yaml
+    metadata:
+      annotations:
+        reloader.stakater.com/auto: "true"
+    ```
+
 ### cert-manager
 
 ### postgresql

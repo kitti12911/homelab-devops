@@ -143,6 +143,9 @@ spec:
             enabled: true
             replicas: 1
 
+            podAnnotations:
+              reloader.stakater.com/auto: "true"
+
             secret:
               existingSecret: "seaweedfs-admin-secret"
               userKey: "username"
