@@ -4,49 +4,25 @@ run helm charts or manifests for kubernetes infrastructure.
 
 ## setup script
 
-### longhorn
+### gateway api
 
-1. add longhorn helm repo
+1. install gateway api
 
     ```bash
-    helm repo add longhorn https://charts.longhorn.io
-    helm repo update
+    kubectl apply -f kubernetes/bootstrap/gateway.yml
     ```
 
-2. install gateway api
+2. enable traefik gateway provider
 
     ```bash
-    kubectl apply -f kubernetes/gateway.yml
+    kubectl apply -f kubernetes/bootstrap/traefik-helmchartconfig.yml
     ```
 
-3. enable traefik gateway provider
+### prometheus crds
+
+1. add prometheus crds helm repo
 
     ```bash
-    kubectl apply -f kubernetes/traefik-helmchartconfig.yml
-    ```
-
-4. install longhorn
-
-    ```bash
-    helm upgrade --install longhorn longhorn/longhorn \
-    --namespace longhorn-system \
-    --create-namespace \
-    --values kubernetes/longhorn-values.yml \
-    --wait
-    ```
-
-5. install reference grant
-
-    ```bash
-    kubectl apply -f kubernetes/reference-grant.yml
-    ```
-
-### s3 compatible storage (seaweedfs)
-
-1. add seaweedfs and prometheus crds helm repos
-
-    ```bash
-    helm repo add seaweedfs https://seaweedfs.github.io/seaweedfs/helm
     helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
     helm repo update
     ```
@@ -57,24 +33,41 @@ run helm charts or manifests for kubernetes infrastructure.
     helm install prometheus-operator-crds prometheus-community/prometheus-operator-crds
     ```
 
-3. install seaweedfs
+### argocd
+
+1. add argocd helm repo
 
     ```bash
-    helm upgrade --install seaweedfs seaweedfs/seaweedfs \
-    --namespace seaweedfs \
+    helm repo add argo https://argoproj.github.io/argo-helm
+    helm repo update
+    ```
+
+2. install argocd
+
+    ```bash
+    helm upgrade --install argocd argo/argo-cd \
+    --namespace argocd \
     --create-namespace \
-    --values kubernetes/seaweedfs-values.yml \
+    --values kubernetes/bootstrap/argocd-values.yml \
     --wait
     ```
 
-4. install httproute
+### sops/ages
 
-    ```bash
-    kubectl apply -f kubernetes/seaweedfs-httproute.yml
-    ```
+### cert-manager
 
-5. install fallback nodeport
+### reloader
 
-    ```bash
-    kubectl apply -f kubernetes/seaweedfs-nodeport.yml
-    ```
+### postgresql
+
+### redis compatible database (dragonfly)
+
+### keycloak
+
+### hashicorp vault
+
+### grafana prometheus stack
+
+### grafana loki
+
+### grafana tempo
