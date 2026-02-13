@@ -33,6 +33,50 @@ run helm charts or manifests for kubernetes infrastructure.
     helm install prometheus-operator-crds prometheus-community/prometheus-operator-crds
     ```
 
+### sops/age
+
+#### install
+
+1. install age tool
+
+    ```bash
+    go install filippo.io/age/cmd/...@latest
+    ```
+
+2. install sops tool
+
+    ```bash
+    curl -LO https://github.com/getsops/sops/releases/download/v3.11.0/sops-v3.11.0.darwin.arm64
+    sudo mv sops-v3.11.0.darwin.arm64 /usr/local/bin/sops
+    sudo chmod +x /usr/local/bin/sops
+    ```
+
+3. generate age key (don't push to git!)
+
+    ```bash
+    age-keygen -o age.key
+    mkdir -p ~/.config/sops/age
+    cat age.key >> ~/.config/sops/age/keys.txt
+    rm age.key
+    chmod 600 ~/.config/sops/age/keys.txt
+    echo 'export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt' >> ~/.zshrc
+    source ~/.zshrc
+    ```
+
+#### usage
+
+1. encrypt secret
+
+    ```bash
+    sops -e -i <path>
+    ```
+
+2. decrypt secret
+
+    ```bash
+    sops -d -i <path>
+    ```
+
 ### argocd
 
 1. add argocd helm repo
@@ -42,7 +86,15 @@ run helm charts or manifests for kubernetes infrastructure.
     helm repo update
     ```
 
-2. install argocd
+2. add age key to argocd secret
+
+    ```bash
+    kubectl create secret generic sops-age \
+    --namespace argocd \
+    --from-file=keys.txt=$HOME/.config/sops/age/keys.txt
+    ```
+
+3. install argocd
 
     ```bash
     helm upgrade --install argocd argo/argo-cd \
@@ -52,11 +104,9 @@ run helm charts or manifests for kubernetes infrastructure.
     --wait
     ```
 
-### sops/ages
+### reloader
 
 ### cert-manager
-
-### reloader
 
 ### postgresql
 

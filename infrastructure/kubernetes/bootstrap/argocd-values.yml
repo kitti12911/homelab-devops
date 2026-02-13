@@ -43,6 +43,40 @@ server:
       - argocd.lan
 
 repoServer:
+  env:
+    - name: SOPS_AGE_KEY_FILE
+      value: /sops/age/keys.txt
+    - name: HELM_PLUGINS
+      value: /custom-tools/helm-plugins/
+    - name: HELM_SECRETS_SOPS_PATH
+      value: /custom-tools/sops
+    - name: HELM_SECRETS_BACKEND
+      value: sops
+  volumes:
+    - name: sops-age
+      secret:
+        secretName: sops-age
+    - name: custom-tools
+      emptyDir: {}
+  volumeMounts:
+    - name: sops-age
+      mountPath: /sops/age
+    - name: custom-tools
+      mountPath: /custom-tools
+  initContainers:
+    - name: install-sops
+      image: alpine:3.23
+      command: [sh, -ec]
+      args:
+        - |
+          cd /custom-tools
+          mkdir -p /custom-tools/helm-plugins
+          wget -qO sops https://github.com/getsops/sops/releases/download/v3.11.0/sops-v3.11.0.linux.arm64
+          chmod +x sops
+          wget -qO- https://github.com/jkroepke/helm-secrets/releases/download/v4.7.5/helm-secrets.tar.gz | tar -C /custom-tools/helm-plugins -xzf-
+      volumeMounts:
+        - name: custom-tools
+          mountPath: /custom-tools
   resources:
     requests:
       cpu: 50m

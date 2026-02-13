@@ -4,3 +4,6 @@
 
 # Retry files
 *.retry
+
+# Age password file
+*.key
