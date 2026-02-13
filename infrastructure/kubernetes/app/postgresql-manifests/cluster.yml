@@ -39,6 +39,20 @@ spec:
         value: database
         effect: NoSchedule
 
+  managed:
+    services:
+      additional:
+        - selectorType: rw
+          serviceTemplate:
+            metadata:
+              name: postgresql-nodeport
+            spec:
+              type: NodePort
+              ports:
+                - port: 5432
+                  targetPort: 5432
+                  nodePort: 30432
+
   resources:
     requests:
       cpu: 500m
