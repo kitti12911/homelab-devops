@@ -145,6 +145,12 @@ run helm charts or manifests for kubernetes infrastructure.
     rm homelab-ca.crt
     ```
 
+### zot
+
+- zot do not support logout url so please use following url for logout after zot logout
+
+    [https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fzot.lan&client_id=zot](https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fzot.lan&client_id=zot)
+
 ### hashicorp vault
 
 ### grafana prometheus stack
