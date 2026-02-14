@@ -165,6 +165,35 @@ run helm charts or manifests for kubernetes infrastructure.
     kubectl exec -n vault vault-0 -- vault operator unseal <unseal-key>
     ```
 
+3. install vault cli (macos)
+
+    ```bash
+    brew tap hashicorp/tap
+    brew install hashicorp/tap/vault
+    ```
+
+4. login to vault
+
+    ```bash
+    export VAULT_ADDR="https://vault.lan"
+    vault login <root-token>
+    ```
+
+5. create role with
+
+    ```bash
+    vault write auth/oidc/role/default \
+    bound_audiences="vault" \
+    allowed_redirect_uris="https://vault.lan/ui/vault/auth/oidc/oidc/callback" \
+    user_claim="preferred_username" \
+    groups_claim="groups" \
+    token_policies="default"
+    ```
+
+6. like zot, vault don't support logout url so please use following url for logout after vault logout
+
+    [https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fvault.lan&client_id=vault](https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fvault.lan&client_id=vault)
+
 ### grafana prometheus stack
 
 ### grafana loki
