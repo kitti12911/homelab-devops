@@ -22,3 +22,4 @@ spec:
     - seaweedfs-admin.lan
     - s3.lan
     - argocd.lan
+    - vault.lan

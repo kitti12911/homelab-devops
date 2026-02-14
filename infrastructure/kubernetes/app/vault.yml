@@ -1,0 +1,90 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://helm.releases.hashicorp.com
+      chart: vault
+      targetRevision: "0.32.0"
+      helm:
+        valuesObject:
+          server:
+            enabled: true
+
+            image:
+              tag: "1.21.3"
+
+            dataStorage:
+              enabled: true
+              size: 10Gi
+              storageClass: local-path
+
+            standalone:
+              enabled: true
+              config: |
+                ui = true
+
+                listener "tcp" {
+                  tls_disable = 1
+                  address = "[::]:8200"
+                  cluster_address = "[::]:8201"
+                }
+
+                storage "file" {
+                  path = "/vault/data"
+                }
+
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi
+
+            nodeSelector:
+              node-role.kubernetes.io/control-plane: "true"
+
+            tolerations:
+              - key: "node-role.kubernetes.io/control-plane"
+                operator: "Exists"
+                effect: "NoSchedule"
+
+          ui:
+            enabled: true
+            serviceType: ClusterIP
+
+          injector:
+            enabled: true
+
+            resources:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              limits:
+                cpu: 250m
+                memory: 256Mi
+
+            nodeSelector:
+              node-role.kubernetes.io/control-plane: "true"
+
+            tolerations:
+              - key: "node-role.kubernetes.io/control-plane"
+                operator: "Exists"
+                effect: "NoSchedule"
+
+          csi:
+            enabled: false
+
+    - repoURL: git@github.com:kitti12911/homelab-devops.git
+      targetRevision: main
+      path: infrastructure/kubernetes/app/vault-manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vault
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
