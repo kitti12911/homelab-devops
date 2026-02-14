@@ -7,3 +7,6 @@
 
 # Age password file
 *.key
+
+# Helm decrypted file
+*.dec

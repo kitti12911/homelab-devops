@@ -90,13 +90,22 @@ run helm charts or manifests for kubernetes infrastructure.
     --from-file=keys.txt=$HOME/.config/sops/age/keys.txt
     ```
 
-3. install argocd
+3. install helm secrets plugin
 
     ```bash
-    helm upgrade --install argocd argo/argo-cd \
+    helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v4.7.4/secrets-4.7.4.tgz --verify=false
+    helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v4.7.4/secrets-getter-4.7.4.tgz --verify=false
+    helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v4.7.4/secrets-post-renderer-4.7.4.tgz --verify=false
+    ```
+
+4. install argocd
+
+    ```bash
+    helm secrets upgrade --install argocd argo/argo-cd \
     --namespace argocd \
     --create-namespace \
     --values kubernetes/bootstrap/argocd-values.yml \
+    --values kubernetes/bootstrap/argocd-secrets.enc.yml \
     --wait
     ```
 

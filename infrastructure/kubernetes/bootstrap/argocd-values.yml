@@ -17,6 +17,18 @@ configs:
   cm:
     url: http://argocd.lan
     kustomize.buildOptions: "--enable-alpha-plugins --enable-exec"
+    oidc.config: |
+      name: Keycloak
+      issuer: http://keycloak.lan/realms/homelab
+      clientID: argocd
+      clientSecret: $oidc.keycloak.clientSecret
+      requestedScopes: ["openid", "profile", "email"]
+      logoutURL: http://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=http%3A%2F%2Fargocd.lan&client_id=argocd
+  rbac:
+    policy.csv: |
+      g, /argocd-admins, role:admin
+      g, /argocd-viewers, role:readonly
+    scopes: "[groups]"
   params:
     server.insecure: "true"
 
