@@ -127,8 +127,6 @@ run helm charts or manifests for kubernetes infrastructure.
     sops -e -i kubernetes/app/postgresql-manifests/superuser-secret.enc.yml
     ```
 
-### zot
-
 ### hashicorp vault
 
 ### grafana prometheus stack

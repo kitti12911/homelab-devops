@@ -1,0 +1,124 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: zot
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://project-zot.github.io/helm-charts
+      chart: zot
+      targetRevision: "0.1.98"
+      helm:
+        valuesObject:
+          replicaCount: 1
+
+          image:
+            repository: ghcr.io/project-zot/zot
+            pullPolicy: IfNotPresent
+            tag: "v2.1.14"
+
+          service:
+            type: ClusterIP
+            port: 5000
+
+          httpGet:
+            scheme: HTTP
+            port: 5000
+
+          mountConfig: true
+          configFiles:
+            config.json: |-
+              {
+                "distSpecVersion": "1.1.0",
+                "storage": {
+                  "rootDirectory": "/var/lib/registry"
+                },
+                "http": {
+                  "address": "0.0.0.0",
+                  "port": "5000",
+                  "externalUrl": "http://zot.lan",
+                  "auth": {
+                    "openid": {
+                      "providers": {
+                        "oidc": {
+                          "name": "Keycloak",
+                          "credentialsFile": "/etc/zot/oidc/oidc-credentials.json",
+                          "issuer": "http://keycloak.lan/realms/homelab",
+                          "scopes": ["openid", "profile", "email"]
+                        }
+                      }
+                    }
+                  },
+                  "accessControl": {
+                    "repositories": {
+                      "**": {
+                        "defaultPolicy": ["read", "create", "update"]
+                      }
+                    },
+                    "adminPolicy": {
+                      "users": ["admin"],
+                      "actions": ["read", "create", "update", "delete"]
+                    }
+                  }
+                },
+                "log": {
+                  "level": "debug"
+                },
+                "extensions": {
+                  "search": {
+                    "enable": true,
+                    "cve": {
+                      "updateInterval": "2h"
+                    }
+                  },
+                  "ui": {
+                    "enable": true
+                  },
+                  "scrub": {
+                    "enable": true,
+                    "interval": "24h"
+                  }
+                }
+              }
+
+          externalSecrets:
+            - secretName: "zot-oidc-credentials"
+              mountPath: "/etc/zot/oidc"
+
+          persistence: true
+          pvc:
+            create: true
+            accessModes:
+              - ReadWriteOnce
+            storage: 200Gi
+            storageClassName: local-path
+
+          nodeSelector:
+            node-role.kubernetes.io/control-plane: ""
+
+          tolerations:
+            - key: "node-role.kubernetes.io/control-plane"
+              operator: "Exists"
+              effect: "NoSchedule"
+
+          strategy:
+            type: Recreate
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+    - repoURL: git@github.com:kitti12911/homelab-devops.git
+      targetRevision: main
+      path: infrastructure/kubernetes/app/zot-manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: zot
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
