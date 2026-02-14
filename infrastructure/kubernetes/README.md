@@ -194,6 +194,55 @@ run helm charts or manifests for kubernetes infrastructure.
 
     [https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fvault.lan&client_id=vault](https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fvault.lan&client_id=vault)
 
+7. (optional) map vault role with keycloak group
+
+    - create policies
+
+        ```bash
+        # admin policy (full access)
+        vault policy write vault-admin - <<EOF
+        path "*" {
+          capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+        }
+        EOF
+
+        # dev policy (read only under secret/data/dev/*)
+        vault policy write vault-dev - <<EOF
+        path "secret/data/dev/*" {
+          capabilities = ["read", "list"]
+        }
+        path "secret/metadata/dev/*" {
+          capabilities = ["list"]
+        }
+        EOF
+        ```
+
+    - create keycloak groups `vault-admins` and `vault-devs`
+
+    - map keycloak groups to vault policies
+
+        ```bash
+        ACCESSOR=$(vault auth list -format=json | jq -r '.["oidc/"].accessor')
+
+        ADMIN_GROUP_ID=$(vault write -format=json identity/group \
+          name="vault-admins" type="external" policies="vault-admin" \
+          | jq -r '.data.id')
+
+        vault write identity/group-alias \
+          name="vault-admins" \
+          mount_accessor="$ACCESSOR" \
+          canonical_id="$ADMIN_GROUP_ID"
+
+        DEV_GROUP_ID=$(vault write -format=json identity/group \
+          name="vault-devs" type="external" policies="vault-dev" \
+          | jq -r '.data.id')
+
+        vault write identity/group-alias \
+          name="vault-devs" \
+          mount_accessor="$ACCESSOR" \
+          canonical_id="$DEV_GROUP_ID"
+        ```
+
 ### grafana prometheus stack
 
 ### grafana loki
