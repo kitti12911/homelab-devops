@@ -44,7 +44,7 @@ spec:
                         "oidc": {
                           "name": "Keycloak",
                           "credentialsFile": "/etc/zot/oidc/oidc-credentials.json",
-                          "issuer": "http://keycloak.lan/realms/homelab",
+                          "issuer": "https://keycloak.lan/realms/homelab",
                           "scopes": ["openid", "profile", "email"]
                         }
                       }
