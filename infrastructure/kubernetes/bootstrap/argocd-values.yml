@@ -16,7 +16,6 @@ dex:
 configs:
   cm:
     url: https://argocd.lan
-    oidc.tls.insecure.skip.verify: "true"
     kustomize.buildOptions: "--enable-alpha-plugins --enable-exec"
     oidc.config: |
       name: Keycloak
@@ -42,6 +41,17 @@ controller:
       memory: 512Mi
 
 server:
+  volumes:
+    - name: homelab-ca
+      configMap:
+        name: homelab-ca
+  volumeMounts:
+    - name: homelab-ca
+      mountPath: /etc/ssl/certs/homelab
+      readOnly: true
+  env:
+    - name: SSL_CERT_DIR
+      value: /etc/ssl/certs/homelab
   resources:
     requests:
       cpu: 50m
