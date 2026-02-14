@@ -5,10 +5,11 @@ metadata:
   namespace: longhorn-system
 spec:
   parentRefs:
-    - group: gateway.networking.k8s.io	
+    - group: gateway.networking.k8s.io
       kind: Gateway
       name: traefik
       namespace: default
+      sectionName: https
   hostnames:
     - longhorn.lan
   rules:

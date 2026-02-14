@@ -127,6 +127,14 @@ run helm charts or manifests for kubernetes infrastructure.
     sops -e -i kubernetes/app/postgresql-manifests/superuser-secret.enc.yml
     ```
 
+### cert-manager
+
+1. apply wildcard certificate
+
+    ```bash
+    kubectl apply -f kubernetes/bootstrap/wildcard-lan-certificate.yml
+    ```
+
 ### hashicorp vault
 
 ### grafana prometheus stack

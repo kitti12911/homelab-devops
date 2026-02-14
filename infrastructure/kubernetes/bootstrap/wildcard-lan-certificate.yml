@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-lan-tls
+  namespace: default
+spec:
+  secretName: wildcard-lan-tls
+  privateKey:
+    rotationPolicy: Always
+  issuerRef:
+    name: homelab-ca-issuer
+    kind: ClusterIssuer
+  dnsNames:
+    - "*.lan"
