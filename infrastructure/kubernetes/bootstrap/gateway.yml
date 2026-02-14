@@ -19,7 +19,7 @@ spec:
         mode: Terminate
         certificateRefs:
           - kind: Secret
-            name: wildcard-lan-tls
+            name: lan-tls
       allowedRoutes:
         namespaces:
           from: All

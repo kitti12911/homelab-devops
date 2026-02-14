@@ -132,7 +132,7 @@ run helm charts or manifests for kubernetes infrastructure.
 1. apply wildcard certificate
 
     ```bash
-    kubectl apply -f kubernetes/bootstrap/wildcard-lan-certificate.yml
+    kubectl apply -f kubernetes/bootstrap/lan-certificate.yml
     ```
 
 2. extract CA certificate and add to system truststore
