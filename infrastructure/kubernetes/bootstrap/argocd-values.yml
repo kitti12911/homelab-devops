@@ -16,6 +16,7 @@ dex:
 configs:
   cm:
     url: https://argocd.lan
+    oidc.tls.insecure.skip.verify: "true"
     kustomize.buildOptions: "--enable-alpha-plugins --enable-exec"
     oidc.config: |
       name: Keycloak
@@ -31,7 +32,6 @@ configs:
     scopes: "[groups]"
   params:
     server.insecure: "true"
-    oidc.tls.insecure.skip.verify: "true"
 
 controller:
   resources:
