@@ -9,6 +9,7 @@ spec:
       namespace: default
       group: gateway.networking.k8s.io
       kind: Gateway
+      sectionName: https
   hostnames:
     - keycloak.lan
   rules:

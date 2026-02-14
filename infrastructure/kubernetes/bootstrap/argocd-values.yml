@@ -15,15 +15,15 @@ dex:
 
 configs:
   cm:
-    url: http://argocd.lan
+    url: https://argocd.lan
     kustomize.buildOptions: "--enable-alpha-plugins --enable-exec"
     oidc.config: |
       name: Keycloak
-      issuer: http://keycloak.lan/realms/homelab
+      issuer: https://keycloak.lan/realms/homelab
       clientID: argocd
       clientSecret: $oidc.keycloak.clientSecret
       requestedScopes: ["openid", "profile", "email"]
-      logoutURL: http://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=http%3A%2F%2Fargocd.lan&client_id=argocd
+      logoutURL: https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fargocd.lan&client_id=argocd
   rbac:
     policy.csv: |
       g, /argocd-admins, role:admin
@@ -31,6 +31,7 @@ configs:
     scopes: "[groups]"
   params:
     server.insecure: "true"
+    oidc.tls.insecure.skip.verify: "true"
 
 controller:
   resources:
@@ -52,6 +53,7 @@ server:
     parentRefs:
       - name: traefik
         namespace: default
+        sectionName: https
     hostnames:
       - argocd.lan
 
