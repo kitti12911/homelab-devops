@@ -7,6 +7,10 @@ spec:
   secretName: wildcard-lan-tls
   privateKey:
     rotationPolicy: Always
+  usages:
+    - server auth
+    - digital signature
+    - key encipherment
   issuerRef:
     name: homelab-ca-issuer
     kind: ClusterIssuer

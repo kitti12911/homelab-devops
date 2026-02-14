@@ -135,6 +135,16 @@ run helm charts or manifests for kubernetes infrastructure.
     kubectl apply -f kubernetes/bootstrap/wildcard-lan-certificate.yml
     ```
 
+2. extract CA certificate and add to system truststore
+
+    ```bash
+    kubectl get secret homelab-ca-secret -n cert-manager -o jsonpath='{.data.tls\.crt}' | base64 -d > homelab-ca.crt
+
+    # for macos
+    sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain homelab-ca.crt
+    rm homelab-ca.crt
+    ```
+
 ### hashicorp vault
 
 ### grafana prometheus stack

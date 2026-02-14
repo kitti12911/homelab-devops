@@ -10,3 +10,6 @@
 
 # Helm decrypted file
 *.dec
+
+# certificate
+*.crt
