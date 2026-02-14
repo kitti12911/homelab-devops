@@ -153,6 +153,18 @@ run helm charts or manifests for kubernetes infrastructure.
 
 ### hashicorp vault
 
+1. initialize vault
+
+    ```bash
+    kubectl exec -n vault vault-0 -- vault operator init
+    ```
+
+2. unseal vault 3 times
+
+    ```bash
+    kubectl exec -n vault vault-0 -- vault operator unseal <unseal-key>
+    ```
+
 ### grafana prometheus stack
 
 ### grafana loki

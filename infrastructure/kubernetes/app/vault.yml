@@ -37,6 +37,19 @@ spec:
                   path = "/vault/data"
                 }
 
+            volumes:
+              - name: homelab-ca
+                configMap:
+                  name: homelab-ca
+
+            volumeMounts:
+              - name: homelab-ca
+                mountPath: /etc/ssl/certs/homelab
+                readOnly: true
+
+            extraEnvironmentVars:
+              SSL_CERT_DIR: /etc/ssl/certs/homelab
+
             resources:
               requests:
                 cpu: 100m
