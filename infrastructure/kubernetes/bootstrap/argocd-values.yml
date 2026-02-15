@@ -35,6 +35,8 @@ configs:
     timeout.reconciliation: "300"
 
 controller:
+  podAnnotations:
+    reloader.stakater.com/auto: "true"
   resources:
     requests:
       cpu: 100m
@@ -43,6 +45,8 @@ controller:
       memory: 1Gi
 
 server:
+  podAnnotations:
+    reloader.stakater.com/auto: "true"
   volumes:
     - name: homelab-ca
       configMap:
@@ -70,6 +74,8 @@ server:
       - argocd.lan
 
 repoServer:
+  podAnnotations:
+    reloader.stakater.com/auto: "true"
   env:
     - name: SOPS_AGE_KEY_FILE
       value: /sops/age/keys.txt

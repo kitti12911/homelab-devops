@@ -124,6 +124,13 @@ run helm charts or manifests for kubernetes infrastructure.
     --wait
     ```
 
+5. rollout restart after update secret
+
+    ```bash
+    kubectl rollout restart deployment -n argocd
+    kubectl rollout restart statefulset -n argocd
+    ```
+
 ### reloader
 
 - annotate workloads to enable auto-reload on secret/configmap changes
