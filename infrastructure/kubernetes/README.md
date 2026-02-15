@@ -4,6 +4,21 @@ run helm charts or manifests for kubernetes infrastructure.
 
 ## setup script
 
+### flannel (cni)
+
+> **Note:** K3s v1.34+ no longer initializes its built-in Flannel on startup.
+> Flannel must be deployed separately before any pods can start.
+> This is managed by ArgoCD via the official Flannel Helm chart, but on
+> initial cluster setup you need to install it manually first (before ArgoCD is installed).
+
+1. install flannel
+
+    ```bash
+    helm repo add flannel https://flannel-io.github.io/flannel/
+    helm install flannel --set podCidr="10.42.0.0/16" --namespace kube-flannel --create-namespace flannel/flannel
+    kubectl label --overwrite ns kube-flannel pod-security.kubernetes.io/enforce=privileged
+    ```
+
 ### gateway api
 
 1. install gateway api
