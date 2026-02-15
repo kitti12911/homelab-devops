@@ -15,7 +15,18 @@ spec:
       - prepare
       - server-plan
     image: rancher/k3s-upgrade
+  tolerations:
+    - key: dedicated
+      operator: Exists
+      effect: NoSchedule
   serviceAccountName: system-upgrade
+  window:
+    days:
+      - saturday
+      - sunday
+    startTime: "02:00"
+    endTime: "06:00"
+    timeZone: Asia/Bangkok
   upgrade:
     image: rancher/k3s-upgrade
   channel: https://update.k3s.io/v1-release/channels/stable
