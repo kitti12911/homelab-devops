@@ -1,4 +1,7 @@
 creation_rules:
+  - path_regex: .*bootstrap/argocd-secrets\.enc\.ya?ml$
+    encrypted_regex: "^(oidc\\..*)$"
+    age: age1s6q3qyvmyxrxuc05ge89e94wrfvx4p2vlylas000dgz35v8cw5aqqjj62y
   - path_regex: .*.enc.ya?ml$
     encrypted_regex: "^(data|stringData)$"
     age: age1s6q3qyvmyxrxuc05ge89e94wrfvx4p2vlylas000dgz35v8cw5aqqjj62y
