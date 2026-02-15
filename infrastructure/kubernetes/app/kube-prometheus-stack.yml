@@ -85,6 +85,9 @@ spec:
             defaultDashboardsEnabled: true
             defaultDashboardsTimezone: utc
 
+            deploymentStrategy:
+              type: Recreate
+
             persistence:
               enabled: true
               type: pvc
