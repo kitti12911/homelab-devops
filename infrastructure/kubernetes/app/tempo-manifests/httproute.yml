@@ -19,7 +19,7 @@ spec:
             value: /
       backendRefs:
         - name: tempo
-          port: 3100
+          port: 3200
           group: ""
           kind: Service
           weight: 1
