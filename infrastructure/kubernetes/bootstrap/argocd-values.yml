@@ -29,17 +29,18 @@ configs:
     scopes: "[groups]"
   params:
     server.insecure: "true"
-    # controller.status.processors: "5"
-    # controller.operation.processors: "3"
-    # controller.kubectl.parallelism.limit: "5"
+    controller.status.processors: "5"
+    controller.operation.processors: "3"
+    controller.kubectl.parallelism.limit: "5"
+    timeout.reconciliation: "300"
 
 controller:
   resources:
     requests:
       cpu: 100m
-      memory: 256Mi
-    limits:
       memory: 512Mi
+    limits:
+      memory: 1Gi
 
 server:
   volumes:
