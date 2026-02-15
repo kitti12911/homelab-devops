@@ -1,0 +1,137 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: alloy
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: alloy
+      targetRevision: "1.6.0"
+      helm:
+        valuesObject:
+          alloy:
+            configMap:
+              content: |
+                discovery.kubernetes "pods" {
+                  role = "pod"
+                }
+
+                discovery.relabel "pods" {
+                  targets = discovery.kubernetes.pods.targets
+
+                  rule {
+                    source_labels = ["__meta_kubernetes_pod_phase"]
+                    regex         = "Pending|Succeeded|Failed|Unknown"
+                    action        = "drop"
+                  }
+
+                  rule {
+                    source_labels = ["__meta_kubernetes_namespace"]
+                    target_label  = "namespace"
+                  }
+
+                  rule {
+                    source_labels = ["__meta_kubernetes_pod_name"]
+                    target_label  = "pod"
+                  }
+
+                  rule {
+                    source_labels = ["__meta_kubernetes_pod_container_name"]
+                    target_label  = "container"
+                  }
+
+                  rule {
+                    source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                    target_label  = "app"
+                  }
+
+                  rule {
+                    source_labels = ["__meta_kubernetes_pod_node_name"]
+                    target_label  = "node"
+                  }
+                }
+
+                loki.source.kubernetes "pods" {
+                  targets    = discovery.relabel.pods.output
+                  forward_to = [loki.process.pods.receiver]
+                }
+
+                loki.process "pods" {
+                  forward_to = [loki.write.default.receiver]
+
+                  stage.cri {}
+                }
+
+                loki.source.kubernetes_events "default" {
+                  forward_to = [loki.write.default.receiver]
+                }
+
+                loki.write "default" {
+                  endpoint {
+                    url = "http://loki-gateway.loki.svc.cluster.local:80/loki/api/v1/push"
+                  }
+                }
+
+                otelcol.receiver.otlp "default" {
+                  grpc {
+                    endpoint = "0.0.0.0:4317"
+                  }
+                  http {
+                    endpoint = "0.0.0.0:4318"
+                  }
+
+                  output {
+                    traces = [otelcol.processor.batch.default.input]
+                  }
+                }
+
+                otelcol.processor.batch "default" {
+                  output {
+                    traces = [otelcol.exporter.otlp.tempo.input]
+                  }
+                }
+
+                otelcol.exporter.otlp "tempo" {
+                  client {
+                    endpoint = "tempo.tempo.svc.cluster.local:4317"
+
+                    tls {
+                      insecure = true
+                    }
+                  }
+                }
+
+            extraPorts:
+              - name: otlp-grpc
+                port: 4317
+                targetPort: 4317
+                protocol: TCP
+              - name: otlp-http
+                port: 4318
+                targetPort: 4318
+                protocol: TCP
+
+            resources:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              limits:
+                memory: 512Mi
+
+          controller:
+            type: daemonset
+
+          serviceMonitor:
+            enabled: true
+
+    - repoURL: git@github.com:kitti12911/homelab-devops.git
+      targetRevision: main
+      path: infrastructure/kubernetes/app/alloy-manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: alloy
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

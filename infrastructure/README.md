@@ -17,3 +17,4 @@ setup infrastructure for homelab.
 - alertmanager.lan
 - loki.lan
 - tempo.lan
+- alloy.lan
