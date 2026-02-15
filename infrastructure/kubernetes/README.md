@@ -242,9 +242,3 @@ run helm charts or manifests for kubernetes infrastructure.
           mount_accessor="$ACCESSOR" \
           canonical_id="$DEV_GROUP_ID"
         ```
-
-### grafana prometheus stack
-
-### grafana loki
-
-### grafana tempo
