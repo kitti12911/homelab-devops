@@ -1,0 +1,85 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "argocd": {
+    "fileMatch": ["infrastructure/kubernetes/app/.+\\.yml$"]
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update SOPS version in ArgoCD repo server",
+      "fileMatch": ["infrastructure/kubernetes/bootstrap/argocd-values\\.yml$"],
+      "matchStrings": [
+        "https://github\\.com/getsops/sops/releases/download/v(?<currentValue>[\\d.]+)/sops-v[\\d.]+\\.linux\\.arm64"
+      ],
+      "replaceString": "https://github.com/getsops/sops/releases/download/v{{{newValue}}}/sops-v{{{newValue}}}.linux.arm64",
+      "depNameTemplate": "getsops/sops",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update helm-secrets version in ArgoCD repo server",
+      "fileMatch": ["infrastructure/kubernetes/bootstrap/argocd-values\\.yml$"],
+      "matchStrings": [
+        "https://github\\.com/jkroepke/helm-secrets/releases/download/v(?<currentValue>[\\d.]+)/helm-secrets\\.tar\\.gz"
+      ],
+      "depNameTemplate": "jkroepke/helm-secrets",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update kustomize-sops (ksops) version in ArgoCD repo server",
+      "fileMatch": ["infrastructure/kubernetes/bootstrap/argocd-values\\.yml$"],
+      "matchStrings": [
+        "https://github\\.com/viaduct-ai/kustomize-sops/releases/download/v(?<currentValue>[\\d.]+)/ksops_[\\d.]+_Linux_arm64\\.tar\\.gz"
+      ],
+      "replaceString": "https://github.com/viaduct-ai/kustomize-sops/releases/download/v{{{newValue}}}/ksops_{{{newValue}}}_Linux_arm64.tar.gz",
+      "depNameTemplate": "viaduct-ai/kustomize-sops",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update ArgoCD Helm chart version",
+      "fileMatch": ["infrastructure/kubernetes/bootstrap/argocd-values\\.yml$"],
+      "matchStrings": [
+        "# renovate: datasource=helm registryUrl=https://argoproj\\.github\\.io/argo-helm depName=argo-cd\\n# version: (?<currentValue>[^\\s]+)"
+      ],
+      "depNameTemplate": "argo-cd",
+      "datasourceTemplate": "helm",
+      "registryUrlTemplate": "https://argoproj.github.io/argo-helm"
+    },
+    {
+      "customType": "regex",
+      "description": "Update Docker image tags in ArgoCD values",
+      "fileMatch": ["infrastructure/kubernetes/bootstrap/argocd-values\\.yml$"],
+      "matchStrings": [
+        "image:\\s+(?<depName>[^:]+):(?<currentValue>[^\\s]+)"
+      ],
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Group Grafana observability stack chart updates",
+      "matchPackageNames": ["loki", "tempo", "alloy"],
+      "groupName": "grafana-observability-stack"
+    },
+    {
+      "description": "Group cert-manager related chart updates",
+      "matchPackageNames": ["cert-manager", "trust-manager"],
+      "groupName": "cert-manager-stack"
+    },
+    {
+      "description": "Group ArgoCD repo server tool updates",
+      "matchPackageNames": [
+        "getsops/sops",
+        "jkroepke/helm-secrets",
+        "viaduct-ai/kustomize-sops"
+      ],
+      "groupName": "argocd-repo-server-tools"
+    }
+  ]
+}

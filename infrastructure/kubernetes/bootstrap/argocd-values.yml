@@ -1,3 +1,6 @@
+# renovate: datasource=helm registryUrl=https://argoproj.github.io/argo-helm depName=argo-cd
+# version: 9.4.1
+
 global:
   domain: argocd.lan
   nodeSelector:
