@@ -2,13 +2,13 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
   "argocd": {
-    "fileMatch": ["infrastructure/kubernetes/app/.+\\.yml$"]
+    "managerFilePatterns": ["/infrastructure/kubernetes/app/.+\\.yml$/"]
   },
   "customManagers": [
     {
       "customType": "regex",
       "description": "Update SOPS version in ArgoCD repo server",
-      "fileMatch": ["infrastructure/kubernetes/bootstrap/argocd-values\\.yml$"],
+      "filePatterns": ["/infrastructure/kubernetes/bootstrap/argocd-values\\.yml$/"],
       "matchStrings": [
         "https://github\\.com/getsops/sops/releases/download/v(?<currentValue>[\\d.]+)/sops-v[\\d.]+\\.linux\\.arm64"
       ],
@@ -20,7 +20,7 @@
     {
       "customType": "regex",
       "description": "Update helm-secrets version in ArgoCD repo server",
-      "fileMatch": ["infrastructure/kubernetes/bootstrap/argocd-values\\.yml$"],
+      "filePatterns": ["/infrastructure/kubernetes/bootstrap/argocd-values\\.yml$/"],
       "matchStrings": [
         "https://github\\.com/jkroepke/helm-secrets/releases/download/v(?<currentValue>[\\d.]+)/helm-secrets\\.tar\\.gz"
       ],
@@ -31,7 +31,7 @@
     {
       "customType": "regex",
       "description": "Update kustomize-sops (ksops) version in ArgoCD repo server",
-      "fileMatch": ["infrastructure/kubernetes/bootstrap/argocd-values\\.yml$"],
+      "filePatterns": ["/infrastructure/kubernetes/bootstrap/argocd-values\\.yml$/"],
       "matchStrings": [
         "https://github\\.com/viaduct-ai/kustomize-sops/releases/download/v(?<currentValue>[\\d.]+)/ksops_[\\d.]+_Linux_arm64\\.tar\\.gz"
       ],
@@ -43,7 +43,7 @@
     {
       "customType": "regex",
       "description": "Update ArgoCD Helm chart version",
-      "fileMatch": ["infrastructure/kubernetes/bootstrap/argocd-values\\.yml$"],
+      "filePatterns": ["/infrastructure/kubernetes/bootstrap/argocd-values\\.yml$/"],
       "matchStrings": [
         "# renovate: datasource=helm registryUrl=https://argoproj\\.github\\.io/argo-helm depName=argo-cd\\n# version: (?<currentValue>[^\\s]+)"
       ],
@@ -54,7 +54,7 @@
     {
       "customType": "regex",
       "description": "Update Docker image tags in ArgoCD values",
-      "fileMatch": ["infrastructure/kubernetes/bootstrap/argocd-values\\.yml$"],
+      "filePatterns": ["/infrastructure/kubernetes/bootstrap/argocd-values\\.yml$/"],
       "matchStrings": [
         "image:\\s+(?<depName>[^:]+):(?<currentValue>[^\\s]+)"
       ],

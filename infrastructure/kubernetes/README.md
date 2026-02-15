@@ -273,3 +273,7 @@ run helm charts or manifests for kubernetes infrastructure.
           mount_accessor="$ACCESSOR" \
           canonical_id="$DEV_GROUP_ID"
         ```
+
+### renovate bot
+
+> please visit [renovate bot](https://developer.mend.io) for dashboard and documentation.
