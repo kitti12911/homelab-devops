@@ -4,8 +4,16 @@ setup infrastructure for homelab.
 
 ## static dns list
 
-- argocd.lan
 - longhorn.lan
-- s3.lan
+- keycloak.lan
+- zot.lan
 - seaweedfs.lan
 - seaweedfs-admin.lan
+- s3.lan
+- argocd.lan
+- vault.lan
+- prometheus.lan
+- grafana.lan
+- alertmanager.lan
+- loki.lan
+- tempo.lan

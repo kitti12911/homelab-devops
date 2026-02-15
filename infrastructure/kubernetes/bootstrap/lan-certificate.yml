@@ -23,3 +23,8 @@ spec:
     - s3.lan
     - argocd.lan
     - vault.lan
+    - prometheus.lan
+    - grafana.lan
+    - alertmanager.lan
+    - loki.lan
+    - tempo.lan

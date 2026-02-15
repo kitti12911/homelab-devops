@@ -1,13 +1,11 @@
 global:
   domain: argocd.lan
   nodeSelector:
-    node-role.kubernetes.io/control-plane: "true"
+    node-role.kubernetes.io/object_storage: "true"
   tolerations:
-    - key: node-role.kubernetes.io/control-plane
-      operator: Exists
-      effect: NoSchedule
-    - key: node-role.kubernetes.io/master
-      operator: Exists
+    - key: dedicated
+      operator: Equal
+      value: object_storage
       effect: NoSchedule
 
 dex:
@@ -31,9 +29,9 @@ configs:
     scopes: "[groups]"
   params:
     server.insecure: "true"
-    controller.status.processors: "5"
-    controller.operation.processors: "3"
-    controller.kubectl.parallelism.limit: "5"
+    # controller.status.processors: "5"
+    # controller.operation.processors: "3"
+    # controller.kubectl.parallelism.limit: "5"
 
 controller:
   resources:
