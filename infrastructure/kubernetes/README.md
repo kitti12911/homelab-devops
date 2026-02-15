@@ -131,6 +131,15 @@ run helm charts or manifests for kubernetes infrastructure.
     kubectl rollout restart statefulset -n argocd
     ```
 
+### system-upgrade-controller
+
+1. install system-upgrade-controller before sync argocd
+
+    ```bash
+    kubectl apply -f https://github.com/rancher/system-upgrade-controller/releases/latest/download/crd.yaml \
+      -f https://github.com/rancher/system-upgrade-controller/releases/latest/download/system-upgrade-controller.yaml
+    ```
+
 ### reloader
 
 - annotate workloads to enable auto-reload on secret/configmap changes
