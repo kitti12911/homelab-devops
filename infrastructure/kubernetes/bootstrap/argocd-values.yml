@@ -31,6 +31,9 @@ configs:
     scopes: "[groups]"
   params:
     server.insecure: "true"
+    controller.status.processors: "5"
+    controller.operation.processors: "3"
+    controller.kubectl.parallelism.limit: "5"
 
 controller:
   resources:
