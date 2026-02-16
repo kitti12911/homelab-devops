@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cosign-pubkey
+  namespace: zot
+data:
+  cosign.pub: |
+    -----BEGIN PUBLIC KEY-----
+    MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEK7CFMqUSo2LicbuGcz9F5jHKgf0Z
+    rnkTn11876VVCwtK3wk6fH5+bXlxH73dZk+aOtoqV9NnIB3B8zG7HV7B6g==
+    -----END PUBLIC KEY-----

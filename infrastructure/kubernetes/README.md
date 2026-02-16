@@ -182,6 +182,54 @@ run helm charts or manifests for kubernetes infrastructure.
 
     [https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fzot.lan&client_id=zot](https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fzot.lan&client_id=zot)
 
+- sign image with cosign
+
+1. install cosign
+
+    ```bash
+    brew install cosign
+    ```
+
+2. generate key pair
+
+    ```bash
+    cosign generate-key-pair
+    ```
+
+3. sign image
+
+    ```bash
+    cosign sign --key cosign.key zot.lan/<app>:<tag>
+    ```
+
+4. verify image
+
+    ```bash
+    cosign verify --key cosign.pub zot.lan/<app>:<tag>
+    ```
+
+5. enable secret engine
+
+    ```bash
+    vault secrets enable -path=secret kv-v2
+    ```
+
+6. store key and pub to vault
+
+    ```bash
+    vault kv put secret/cosign \
+    private-key=@cosign.key \
+    public-key=@cosign.pub
+    ```
+
+7. retrieve key and pub from vault
+
+    ```bash
+    vault kv get -field=private-key secret/cosign > /tmp/cosign.key
+    cosign sign --key /tmp/cosign.key zot.lan/sdo-rest-api:1.0.0
+    rm /tmp/cosign.key
+    ```
+
 ### hashicorp vault
 
 1. initialize vault

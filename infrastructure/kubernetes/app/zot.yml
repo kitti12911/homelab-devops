@@ -78,6 +78,10 @@ spec:
                   "scrub": {
                     "enable": true,
                     "interval": "24h"
+                  },
+                  "trust": {
+                    "enable": true,
+                    "cosign": true
                   }
                 }
               }
@@ -86,10 +90,16 @@ spec:
             - name: homelab-ca
               configMap:
                 name: homelab-ca
+            - name: cosign-pubkey
+              configMap:
+                name: cosign-pubkey
 
           extraVolumeMounts:
             - name: homelab-ca
               mountPath: /etc/ssl/certs/homelab
+              readOnly: true
+            - name: cosign-pubkey
+              mountPath: /var/lib/registry/_cosign
               readOnly: true
 
           env:
