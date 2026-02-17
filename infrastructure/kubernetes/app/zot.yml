@@ -53,7 +53,7 @@ spec:
                   "accessControl": {
                     "repositories": {
                       "**": {
-                        "defaultPolicy": ["read", "create", "update"]
+                        "defaultPolicy": ["read", "create", "update", "delete"]
                       }
                     },
                     "adminPolicy": {
