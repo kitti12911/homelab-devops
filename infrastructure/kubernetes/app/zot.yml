@@ -42,6 +42,7 @@ spec:
                   "port": "5000",
                   "externalUrl": "https://zot.lan",
                   "auth": {
+                    "apikey": true,
                     "openid": {
                       "providers": {
                         "oidc": {
@@ -54,13 +55,8 @@ spec:
                     }
                   },
                   "accessControl": {
-                    "groups": {
-                      "zot-admin-group": {
-                        "users": ["zot-admins"] 
-                      }
-                    },
                     "adminPolicy": {
-                      "groups": ["zot-admin-group"],
+                      "groups": ["zot-admins"],
                       "actions": ["read", "create", "update", "delete"]
                     },
                     "repositories": {
