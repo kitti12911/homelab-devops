@@ -60,7 +60,7 @@ spec:
                       }
                     },
                     "adminPolicy": {
-                      "users": ["admin"],
+                      "groups": ["/zot-admins"],
                       "actions": ["read", "create", "update", "delete"]
                     }
                   }
