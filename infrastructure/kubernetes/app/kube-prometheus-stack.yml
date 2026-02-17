@@ -26,10 +26,11 @@ spec:
 
           prometheus:
             prometheusSpec:
-              retention: 15d
+              retention: 7d
+              retentionSize: 10GB
 
-              scrapeInterval: 30s
-              evaluationInterval: 30s
+              scrapeInterval: 60s
+              evaluationInterval: 60s
 
               storageSpec:
                 volumeClaimTemplate:
