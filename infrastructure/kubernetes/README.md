@@ -226,7 +226,7 @@ run helm charts or manifests for kubernetes infrastructure.
 
     ```bash
     vault kv get -field=private-key secret/cosign > /tmp/cosign.key
-    cosign sign --key /tmp/cosign.key zot.lan/sdo-rest-api:1.0.0
+    cosign sign --key /tmp/cosign.key zot.lan/sdo-rest-api@sha256:1234567890...
     rm /tmp/cosign.key
     ```
 
