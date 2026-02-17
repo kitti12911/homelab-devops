@@ -65,7 +65,7 @@ spec:
                     },
                     "repositories": {
                       "**": {
-                        "defaultPolicy": ["read", "create", "update", "delete"]
+                        "defaultPolicy": ["read"]
                       }
                     }
                   }
