@@ -190,31 +190,37 @@ run helm charts or manifests for kubernetes infrastructure.
     brew install cosign
     ```
 
-2. generate key pair
+2. login cosign with zot.lan
+
+    ```bash
+    cosign login zot.lan --username <username>
+    ```
+
+3. generate key pair
 
     ```bash
     cosign generate-key-pair
     ```
 
-3. sign image
+4. sign image
 
     ```bash
     cosign sign --key cosign.key zot.lan/<app>:<tag>
     ```
 
-4. verify image
+5. verify image
 
     ```bash
     cosign verify --key cosign.pub zot.lan/<app>:<tag>
     ```
 
-5. enable secret engine
+6. enable secret engine
 
     ```bash
     vault secrets enable -path=secret kv-v2
     ```
 
-6. store key and pub to vault
+7. store key and pub to vault
 
     ```bash
     vault kv put secret/cosign \
@@ -222,7 +228,7 @@ run helm charts or manifests for kubernetes infrastructure.
     public-key=@cosign.pub
     ```
 
-7. retrieve key and pub from vault
+8. retrieve key and pub from vault
 
     ```bash
     vault kv get -field=private-key secret/cosign > /tmp/cosign.key

@@ -48,8 +48,7 @@ spec:
                           "name": "Keycloak",
                           "credentialsFile": "/etc/zot/oidc/oidc-credentials.json",
                           "issuer": "https://keycloak.lan/realms/homelab",
-                          "scopes": ["openid", "profile", "email", "groups"],
-                          "groups": "groups"
+                          "scopes": ["openid", "profile", "email", "groups"]
                         }
                       }
                     }
