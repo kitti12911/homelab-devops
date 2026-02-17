@@ -190,10 +190,10 @@ run helm charts or manifests for kubernetes infrastructure.
     brew install cosign
     ```
 
-2. login cosign with zot.lan
+2. login cosign with zot.lan (use api key as password)
 
     ```bash
-    cosign login zot.lan --username <username>
+    cosign login zot.lan --username <username> --password <api-key>
     ```
 
 3. generate key pair
@@ -202,25 +202,13 @@ run helm charts or manifests for kubernetes infrastructure.
     cosign generate-key-pair
     ```
 
-4. sign image
-
-    ```bash
-    cosign sign --key cosign.key zot.lan/<app>:<tag>
-    ```
-
-5. verify image
-
-    ```bash
-    cosign verify --key cosign.pub zot.lan/<app>:<tag>
-    ```
-
-6. enable secret engine
+4. enable vault secret engine
 
     ```bash
     vault secrets enable -path=secret kv-v2
     ```
 
-7. store key and pub to vault
+5. store key and pub to vault
 
     ```bash
     vault kv put secret/cosign \
@@ -228,12 +216,44 @@ run helm charts or manifests for kubernetes infrastructure.
     public-key=@cosign.pub
     ```
 
-8. retrieve key and pub from vault
+6. push cosign public key from vault to zot
+
+    ```bash
+    vault kv get -field=public-key secret/cosign > /tmp/cosign.pub
+
+    curl -X POST \
+    -u "<username>:<api-key>" \
+    --data-binary @/tmp/cosign.pub \
+    "https://zot.lan/v2/_zot/ext/cosign"
+
+    rm /tmp/cosign.pub
+    ```
+
+7. get image digest (use the manifest list digest for multi-arch images)
+
+    ```bash
+    docker buildx imagetools inspect zot.lan/<app>:<tag>
+    ```
+
+8. sign image with digest from vault
+
+    > **Note:** cosign v3+ uses new sigstore bundle format by default which zot
+    > does not recognize yet. use `--new-bundle-format=false --use-signing-config=false`
+    > for compatibility.
 
     ```bash
     vault kv get -field=private-key secret/cosign > /tmp/cosign.key
-    cosign sign --key /tmp/cosign.key zot.lan/sdo-rest-api@sha256:1234567890...
+    cosign sign --new-bundle-format=false --use-signing-config=false \
+    --key /tmp/cosign.key zot.lan/<app>@sha256:<digest>
     rm /tmp/cosign.key
+    ```
+
+9. verify image
+
+    ```bash
+    vault kv get -field=public-key secret/cosign > /tmp/cosign.pub
+    cosign verify --key /tmp/cosign.pub zot.lan/<app>@sha256:<digest>
+    rm /tmp/cosign.pub
     ```
 
 ### hashicorp vault
