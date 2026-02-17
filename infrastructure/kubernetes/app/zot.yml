@@ -1,3 +1,6 @@
+# renovate: datasource=docker depName=ghcr.io/project-zot/zot
+# version: v2.1.14
+
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -16,8 +19,6 @@ spec:
           image:
             repository: ghcr.io/project-zot/zot
             pullPolicy: IfNotPresent
-            # renovate: datasource=docker depName=ghcr.io/project-zot/zot
-            # version: v2.1.14
             tag: "v2.1.14"
 
           service:
