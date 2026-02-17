@@ -48,20 +48,25 @@ spec:
                           "name": "Keycloak",
                           "credentialsFile": "/etc/zot/oidc/oidc-credentials.json",
                           "issuer": "https://keycloak.lan/realms/homelab",
-                          "scopes": ["openid", "profile", "email"]
+                          "scopes": ["openid", "profile", "email", "groups"]
                         }
                       }
                     }
                   },
                   "accessControl": {
+                    "groups": {
+                      "zot-admin-group": {
+                        "users": ["/zot-admins"] 
+                      }
+                    },
+                    "adminPolicy": {
+                      "groups": ["zot-admin-group"],
+                      "actions": ["read", "create", "update", "delete"]
+                    },
                     "repositories": {
                       "**": {
                         "defaultPolicy": ["read", "create", "update", "delete"]
                       }
-                    },
-                    "adminPolicy": {
-                      "groups": ["/zot-admins"],
-                      "actions": ["read", "create", "update", "delete"]
                     }
                   }
                 },
