@@ -1,0 +1,63 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: oauth2-proxy
+  namespace: argocd
+spec:
+  project: security
+  sources:
+    - repoURL: https://oauth2-proxy.github.io/manifests
+      chart: oauth2-proxy
+      targetRevision: "10.1.3"
+      helm:
+        valuesObject:
+          config:
+            existingSecret: oauth2-proxy-oidc
+            configFile: |
+              provider = "keycloak-oidc"
+              oidc_issuer_url = "https://keycloak.lan/realms/homelab"
+              redirect_url = "https://oauth2-proxy.lan/oauth2/callback"
+              email_domains = ["*"]
+              cookie_domains = [".lan"]
+              whitelist_domains = [".lan"]
+              cookie_secure = true
+              cookie_samesite = "lax"
+              skip_provider_button = true
+              reverse_proxy = true
+              set_xauthrequest = true
+              upstreams = ["static://202"]
+              provider_ca_files = ["/etc/ssl/certs/homelab-ca.crt"]
+
+          extraVolumes:
+            - name: homelab-ca
+              configMap:
+                name: homelab-ca
+
+          extraVolumeMounts:
+            - name: homelab-ca
+              mountPath: /etc/ssl/certs/homelab-ca.crt
+              subPath: homelab-ca.crt
+              readOnly: true
+
+          podAnnotations:
+            reloader.stakater.com/auto: "true"
+
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+
+    - repoURL: git@github.com:kitti12911/homelab-devops.git
+      targetRevision: main
+      path: infrastructure/kubernetes/app/oauth2-proxy-manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: oauth2-proxy
+  syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        gateway-access: "true"
+    syncOptions:
+      - CreateNamespace=true

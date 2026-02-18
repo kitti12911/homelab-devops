@@ -18,3 +18,4 @@ setup infrastructure for homelab.
 - loki.lan
 - tempo.lan
 - alloy.lan
+- oauth2-proxy.lan

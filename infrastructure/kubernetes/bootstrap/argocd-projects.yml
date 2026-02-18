@@ -85,12 +85,15 @@ spec:
   sourceRepos:
     - https://helm.releases.hashicorp.com
     - https://github.com/keycloak/keycloak-k8s-resources.git
+    - https://oauth2-proxy.github.io/manifests
     - git@github.com:kitti12911/homelab-devops.git
   destinations:
     - server: https://kubernetes.default.svc
       namespace: vault
     - server: https://kubernetes.default.svc
       namespace: keycloak
+    - server: https://kubernetes.default.svc
+      namespace: oauth2-proxy
   clusterResourceWhitelist:
     - group: "*"
       kind: "*"

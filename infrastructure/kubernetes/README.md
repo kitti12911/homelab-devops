@@ -391,6 +391,50 @@ kubectl delete job helm-install-traefik-crd -n kube-system
           canonical_id="$DEV_GROUP_ID"
         ```
 
+### oauth2-proxy (forward auth for non-oidc UIs)
+
+1. generate cookie secret
+
+    ```bash
+    openssl rand -base64 24
+    ```
+
+2. fill in the secret and encrypt
+
+    ```bash
+    sops -e -i kubernetes/app/oauth2-proxy-manifests/oidc-secret.enc.yml
+    ```
+
+3. to protect additional apps, add two things to the app's manifests directory:
+
+    - a ForwardAuth middleware
+
+        ```yaml
+        apiVersion: traefik.io/v1alpha1
+        kind: Middleware
+        metadata:
+          name: oauth2-proxy-auth
+          namespace: <app-namespace>
+        spec:
+          forwardAuth:
+            address: http://oauth2-proxy.oauth2-proxy.svc.cluster.local:4180/oauth2/auth
+            trustForwardHeader: true
+            authResponseHeaders:
+              - X-Auth-Request-User
+              - X-Auth-Request-Email
+        ```
+
+    - an `extensionRef` filter in the app's HTTPRoute
+
+        ```yaml
+        filters:
+          - type: ExtensionRef
+            extensionRef:
+              group: traefik.io
+              kind: Middleware
+              name: oauth2-proxy-auth
+        ```
+
 ### renovate bot
 
 > please visit [renovate bot](https://developer.mend.io) for dashboard and documentation.
