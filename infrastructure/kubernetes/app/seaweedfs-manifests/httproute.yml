@@ -17,6 +17,12 @@ spec:
         - path:
             type: PathPrefix
             value: /
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: traefik.io
+            kind: Middleware
+            name: oauth2-proxy-auth
       backendRefs:
         - name: seaweedfs-admin
           port: 23646
@@ -43,6 +49,12 @@ spec:
         - path:
             type: PathPrefix
             value: /
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: traefik.io
+            kind: Middleware
+            name: oauth2-proxy-auth
       backendRefs:
         - name: seaweedfs-filer
           port: 8888

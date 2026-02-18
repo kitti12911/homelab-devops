@@ -435,6 +435,8 @@ kubectl delete job helm-install-traefik-crd -n kube-system
               name: oauth2-proxy-auth
         ```
 
+4. sign out url using [sign out](https://oauth2-proxy.lan/oauth2/sign_out) url
+
 ### renovate bot
 
 > please visit [renovate bot](https://developer.mend.io) for dashboard and documentation.
