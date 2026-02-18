@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: zot-api-key
+    namespace: zot
+type: Opaque
+stringData:
+    api-key: ENC[AES256_GCM,data:nzufwswL312wtbLmpvtU/ijs1zP49eMfQOvmOGYhOUv8WPiK,iv:4d/YMImOxvJKazVYjkj6nZtu3rfjgF/MdM92orD6qh0=,tag:cwBcZ54yV4uRGrU68HrkEg==,type:str]
+sops:
+    age:
+        - recipient: age1s6q3qyvmyxrxuc05ge89e94wrfvx4p2vlylas000dgz35v8cw5aqqjj62y
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBMZ1UwMWR2N0RyUW1tNkRv
+            MWVZeVJ6RXFNV2FDby8rbVE4MDRNLzBmZVZnCmp2RDc3ci9CN2wvTjJaZHBTbUNK
+            SWJSckVQNVhFMFZRdnpMdy9ZUWEzUDAKLS0tIE02cGx3Smh5WEhwdGpRN2oyNEJn
+            cG5OQVdKN2lYYlc2NW1MaStCM0MxWG8KFUjLrXUPjORp9bWXykCrs9wM0vylBFxk
+            3Ro4WWrFeegUErVoqpfiuDhEmKwfUx//i9UBAQ8eXzMQ7lo7Jf8A7A==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-02-18T19:03:28Z"
+    mac: ENC[AES256_GCM,data:RzyCeMVzRcRY5i+PQ1NETzZr9wvqc7R6vpyST9fThlazJqooRVXgBfYK4F7ZOlxbSM63hGfNsi9JwuY0k+KrSzGXzAXIgpKxOE4T1cDrMiRsa+U92/q7eO2IKx34H9ax8QSPUA/uqL7eXKybaRT2Kqd1g1vwkv0hKpsoRMgxSzY=,iv:aqwh4YD75xZ3lv9H6ZS6nW+6Nk4fhm/mcR8A4E1xLVY=,tag:/6ktY8nOHill3B6Agl7eyA==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.11.0
