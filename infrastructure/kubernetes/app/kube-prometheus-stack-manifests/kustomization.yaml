@@ -4,5 +4,6 @@ resources:
   - grafana-httproute.yml
   - prometheus-httproute.yml
   - alertmanager-httproute.yml
+  - forwardauth-middleware.yml
 generators:
   - secret-generator.yml
