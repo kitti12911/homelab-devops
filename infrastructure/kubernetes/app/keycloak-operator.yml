@@ -4,7 +4,7 @@ metadata:
   name: keycloak-operator
   namespace: argocd
 spec:
-  project: default
+  project: security
   source:
     repoURL: https://github.com/keycloak/keycloak-k8s-resources.git
     targetRevision: "26.5.3"

@@ -14,8 +14,12 @@ spec:
         expose:
           default: true
         exposedPort: 80
+        redirectTo:
+          port: websecure
       websecure:
         port: 8443
         expose:
           default: true
         exposedPort: 443
+        middlewares:
+          - kube-system-security-headers@kubernetescrd

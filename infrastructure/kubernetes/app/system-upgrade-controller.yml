@@ -4,7 +4,7 @@ metadata:
   name: system-upgrade-controller
   namespace: argocd
 spec:
-  project: default
+  project: platform
   source:
     repoURL: git@github.com:kitti12911/homelab-devops.git
     targetRevision: main

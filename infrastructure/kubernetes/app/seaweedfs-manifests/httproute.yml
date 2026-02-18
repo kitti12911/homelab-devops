@@ -7,8 +7,9 @@ spec:
   parentRefs:
     - name: traefik
       namespace: default
-      group: gateway.networking.k8s.io	
+      group: gateway.networking.k8s.io
       kind: Gateway
+      sectionName: https
   hostnames:
     - seaweedfs-admin.lan
   rules:
@@ -32,8 +33,9 @@ spec:
   parentRefs:
     - name: traefik
       namespace: default
-      group: gateway.networking.k8s.io	
+      group: gateway.networking.k8s.io
       kind: Gateway
+      sectionName: https
   hostnames:
     - seaweedfs.lan
   rules:
@@ -57,8 +59,9 @@ spec:
   parentRefs:
     - name: traefik
       namespace: default
-      group: gateway.networking.k8s.io	
+      group: gateway.networking.k8s.io
       kind: Gateway
+      sectionName: https
   hostnames:
     - s3.lan
   rules:

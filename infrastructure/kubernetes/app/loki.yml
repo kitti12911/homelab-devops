@@ -4,7 +4,7 @@ metadata:
   name: loki
   namespace: argocd
 spec:
-  project: default
+  project: observability
   sources:
     - repoURL: https://grafana.github.io/helm-charts
       chart: loki
@@ -118,6 +118,9 @@ spec:
     server: https://kubernetes.default.svc
     namespace: loki
   syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        gateway-access: "true"
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true

@@ -33,6 +33,31 @@ run helm charts or manifests for kubernetes infrastructure.
     kubectl apply -f kubernetes/bootstrap/traefik-helmchartconfig.yml
     ```
 
+3. apply security headers middleware
+
+    ```bash
+    kubectl apply -f kubernetes/bootstrap/traefik-middleware.yml
+    ```
+
+### traefik crd helm adoption fix
+
+if `helm-install-traefik-crd` job is stuck in `CrashLoopBackOff` because Gateway API CRDs
+already exist without Helm ownership metadata, label them so Helm can adopt them:
+
+```bash
+for crd in $(kubectl get crd -o name | grep gateway.networking.k8s.io); do
+  kubectl label "$crd" app.kubernetes.io/managed-by=Helm --overwrite
+  kubectl annotate "$crd" meta.helm.sh/release-name=traefik-crd --overwrite
+  kubectl annotate "$crd" meta.helm.sh/release-namespace=kube-system --overwrite
+done
+```
+
+then delete the stuck job so k3s recreates it:
+
+```bash
+kubectl delete job helm-install-traefik-crd -n kube-system
+```
+
 ### prometheus crds
 
 1. add prometheus crds helm repo
@@ -129,6 +154,12 @@ run helm charts or manifests for kubernetes infrastructure.
     ```bash
     kubectl rollout restart deployment -n argocd
     kubectl rollout restart statefulset -n argocd
+    ```
+
+6. apply argocd project
+
+    ```bash
+    kubectl apply -f kubernetes/bootstrap/argocd-projects.yml
     ```
 
 ### system-upgrade-controller

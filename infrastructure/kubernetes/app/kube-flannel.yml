@@ -4,7 +4,7 @@ metadata:
   name: kube-flannel
   namespace: argocd
 spec:
-  project: default
+  project: platform
   source:
     repoURL: https://flannel-io.github.io/flannel
     chart: flannel

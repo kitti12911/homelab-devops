@@ -4,7 +4,7 @@ metadata:
   name: trust-manager
   namespace: argocd
 spec:
-  project: default
+  project: platform
   source:
     repoURL: https://charts.jetstack.io
     chart: trust-manager

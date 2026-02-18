@@ -7,7 +7,7 @@ metadata:
   name: zot
   namespace: argocd
 spec:
-  project: default
+  project: registry
   sources:
     - repoURL: https://project-zot.github.io/helm-charts
       chart: zot
@@ -67,7 +67,7 @@ spec:
                   }
                 },
                 "log": {
-                  "level": "debug"
+                  "level": "info"
                 },
                 "extensions": {
                   "search": {
@@ -142,5 +142,8 @@ spec:
     server: https://kubernetes.default.svc
     namespace: zot
   syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        gateway-access: "true"
     syncOptions:
       - CreateNamespace=true

@@ -4,7 +4,7 @@ metadata:
   name: alloy
   namespace: argocd
 spec:
-  project: default
+  project: observability
   sources:
     - repoURL: https://grafana.github.io/helm-charts
       chart: alloy
@@ -137,5 +137,8 @@ spec:
     server: https://kubernetes.default.svc
     namespace: alloy
   syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        gateway-access: "true"
     syncOptions:
       - CreateNamespace=true

@@ -4,7 +4,7 @@ metadata:
   name: keycloak
   namespace: argocd
 spec:
-  project: default
+  project: security
   source:
     repoURL: git@github.com:kitti12911/homelab-devops.git
     targetRevision: main
@@ -13,5 +13,8 @@ spec:
     server: https://kubernetes.default.svc
     namespace: keycloak
   syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        gateway-access: "true"
     syncOptions:
       - CreateNamespace=true

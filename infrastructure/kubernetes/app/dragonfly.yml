@@ -4,59 +4,68 @@ metadata:
   name: dragonfly
   namespace: argocd
 spec:
-  project: default
-  source:
-    repoURL: ghcr.io/dragonflydb/dragonfly/helm
-    chart: dragonfly
-    targetRevision: "v1.36.0"
-    helm:
-      valuesObject:
-        replicaCount: 1
+  project: database
+  sources:
+    - repoURL: ghcr.io/dragonflydb/dragonfly/helm
+      chart: dragonfly
+      targetRevision: "v1.36.0"
+      helm:
+        valuesObject:
+          replicaCount: 1
 
-        storage:
-          enabled: true
-          storageClassName: local-path
-          requests: 10Gi
+          storage:
+            enabled: true
+            storageClassName: local-path
+            requests: 10Gi
 
-        service:
-          type: ClusterIP
-          port: 6379
+          service:
+            type: ClusterIP
+            port: 6379
 
-        extraArgs:
-          - --maxmemory=2gb
+          passwordFromSecret:
+            enable: true
+            existingSecret:
+              name: dragonfly-auth
+              key: password
 
-        nodeSelector:
-          node-role.kubernetes.io/database: "true"
+          extraArgs:
+            - --maxmemory=2gb
 
-        tolerations:
-          - key: dedicated
-            operator: Equal
-            value: database
-            effect: NoSchedule
+          nodeSelector:
+            node-role.kubernetes.io/database: "true"
 
-        extraObjects:
-          - apiVersion: v1
-            kind: Service
-            metadata:
-              name: dragonfly-nodeport
-              namespace: database
-            spec:
-              type: NodePort
-              selector:
-                app.kubernetes.io/name: dragonfly
-                app.kubernetes.io/instance: dragonfly
-              ports:
-                - port: 6379
-                  targetPort: dragonfly
-                  nodePort: 30379
+          tolerations:
+            - key: dedicated
+              operator: Equal
+              value: database
+              effect: NoSchedule
 
-        resources:
-          requests:
-            cpu: 250m
-            memory: 1536Mi
-          limits:
-            cpu: "1500m"
-            memory: 2560Mi
+          extraObjects:
+            - apiVersion: v1
+              kind: Service
+              metadata:
+                name: dragonfly-nodeport
+                namespace: database
+              spec:
+                type: NodePort
+                selector:
+                  app.kubernetes.io/name: dragonfly
+                  app.kubernetes.io/instance: dragonfly
+                ports:
+                  - port: 6379
+                    targetPort: dragonfly
+                    nodePort: 30379
+
+          resources:
+            requests:
+              cpu: 250m
+              memory: 1536Mi
+            limits:
+              cpu: "1500m"
+              memory: 2560Mi
+    - repoURL: git@github.com:kitti12911/homelab-devops.git
+      targetRevision: main
+      path: infrastructure/kubernetes/app/dragonfly-manifests
   destination:
     server: https://kubernetes.default.svc
     namespace: database

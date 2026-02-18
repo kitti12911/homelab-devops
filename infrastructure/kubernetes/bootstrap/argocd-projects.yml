@@ -1,0 +1,114 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform
+  namespace: argocd
+spec:
+  description: Core infrastructure - CNI, certificates, storage, system utilities
+  sourceRepos:
+    - https://flannel-io.github.io/flannel
+    - https://charts.jetstack.io
+    - https://charts.longhorn.io
+    - https://stakater.github.io/stakater-charts
+    - git@github.com:kitti12911/homelab-devops.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: kube-flannel
+    - server: https://kubernetes.default.svc
+      namespace: cert-manager
+    - server: https://kubernetes.default.svc
+      namespace: longhorn-system
+    - server: https://kubernetes.default.svc
+      namespace: reloader
+    - server: https://kubernetes.default.svc
+      namespace: system-upgrade
+    - server: https://kubernetes.default.svc
+      namespace: kube-system
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: database
+  namespace: argocd
+spec:
+  description: Data services - PostgreSQL, Dragonfly, NATS
+  sourceRepos:
+    - https://cloudnative-pg.github.io/charts
+    - ghcr.io/dragonflydb/dragonfly/helm
+    - https://nats-io.github.io/k8s/helm/charts/
+    - git@github.com:kitti12911/homelab-devops.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: cnpg-system
+    - server: https://kubernetes.default.svc
+      namespace: database
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: observability
+  namespace: argocd
+spec:
+  description: Monitoring, logging, and tracing
+  sourceRepos:
+    - https://prometheus-community.github.io/helm-charts
+    - https://grafana.github.io/helm-charts
+    - git@github.com:kitti12911/homelab-devops.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: monitoring
+    - server: https://kubernetes.default.svc
+      namespace: loki
+    - server: https://kubernetes.default.svc
+      namespace: tempo
+    - server: https://kubernetes.default.svc
+      namespace: alloy
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: security
+  namespace: argocd
+spec:
+  description: Authentication and secrets management
+  sourceRepos:
+    - https://helm.releases.hashicorp.com
+    - https://github.com/keycloak/keycloak-k8s-resources.git
+    - git@github.com:kitti12911/homelab-devops.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: vault
+    - server: https://kubernetes.default.svc
+      namespace: keycloak
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: registry
+  namespace: argocd
+spec:
+  description: Container and object storage registries
+  sourceRepos:
+    - https://project-zot.github.io/helm-charts
+    - https://seaweedfs.github.io/seaweedfs/helm
+    - git@github.com:kitti12911/homelab-devops.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: zot
+    - server: https://kubernetes.default.svc
+      namespace: seaweedfs
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"

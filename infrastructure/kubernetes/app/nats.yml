@@ -4,45 +4,49 @@ metadata:
   name: nats
   namespace: argocd
 spec:
-  project: default
-  source:
-    repoURL: https://nats-io.github.io/k8s/helm/charts/
-    chart: nats
-    targetRevision: "2.12.4"
-    helm:
-      valuesObject:
-        config:
-          jetstream:
-            enabled: true
-            fileStore:
+  project: database
+  sources:
+    - repoURL: https://nats-io.github.io/k8s/helm/charts/
+      chart: nats
+      targetRevision: "2.12.4"
+      helm:
+        valuesObject:
+          config:
+            jetstream:
               enabled: true
-              dir: /data
-              pvc:
+              fileStore:
                 enabled: true
-                size: 5Gi
-                storageClassName: local-path
+                dir: /data
+                pvc:
+                  enabled: true
+                  size: 5Gi
+                  storageClassName: local-path
+            merge:
+              authorization:
+                users:
+                  - user: $NATS_USER
+                    password: $NATS_PASSWORD
 
-        container:
-          resources:
-            requests:
-              cpu: 100m
-              memory: 256Mi
-            limits:
-              cpu: 500m
-              memory: 768Mi
+          container:
+            env:
+              NATS_USER:
+                valueFrom:
+                  secretKeyRef:
+                    name: nats-auth
+                    key: username
+              NATS_PASSWORD:
+                valueFrom:
+                  secretKeyRef:
+                    name: nats-auth
+                    key: password
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                cpu: 500m
+                memory: 768Mi
 
-        podTemplate:
-          merge:
-            spec:
-              nodeSelector:
-                node-role.kubernetes.io/database: "true"
-              tolerations:
-                - key: dedicated
-                  operator: Equal
-                  value: database
-                  effect: NoSchedule
-
-        natsBox:
           podTemplate:
             merge:
               spec:
@@ -54,22 +58,37 @@ spec:
                     value: database
                     effect: NoSchedule
 
-        extraResources:
-          - apiVersion: v1
-            kind: Service
-            metadata:
-              name: nats-nodeport
-              namespace: database
-            spec:
-              type: NodePort
-              selector:
-                app.kubernetes.io/name: nats
-                app.kubernetes.io/instance: nats
-              ports:
-                - name: nats
-                  port: 4222
-                  targetPort: 4222
-                  nodePort: 30422
+          natsBox:
+            podTemplate:
+              merge:
+                spec:
+                  nodeSelector:
+                    node-role.kubernetes.io/database: "true"
+                  tolerations:
+                    - key: dedicated
+                      operator: Equal
+                      value: database
+                      effect: NoSchedule
+
+          extraResources:
+            - apiVersion: v1
+              kind: Service
+              metadata:
+                name: nats-nodeport
+                namespace: database
+              spec:
+                type: NodePort
+                selector:
+                  app.kubernetes.io/name: nats
+                  app.kubernetes.io/instance: nats
+                ports:
+                  - name: nats
+                    port: 4222
+                    targetPort: 4222
+                    nodePort: 30422
+    - repoURL: git@github.com:kitti12911/homelab-devops.git
+      targetRevision: main
+      path: infrastructure/kubernetes/app/nats-manifests
   destination:
     server: https://kubernetes.default.svc
     namespace: database

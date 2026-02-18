@@ -4,7 +4,7 @@ metadata:
   name: seaweedfs
   namespace: argocd
 spec:
-  project: default
+  project: registry
   sources:
     - repoURL: https://seaweedfs.github.io/seaweedfs/helm
       chart: seaweedfs
@@ -97,7 +97,7 @@ spec:
             enabled: true
             replicas: 1
             defaultReplicaPlacement: "000"
-            encryptVolumeData: false
+            encryptVolumeData: true
 
             affinity: ""
 
@@ -134,7 +134,8 @@ spec:
             s3:
               enabled: true
               port: 8333
-              enableAuth: false
+              enableAuth: true
+              existingConfigSecret: seaweedfs-s3-auth
 
           s3:
             enabled: false
@@ -185,5 +186,8 @@ spec:
     server: https://kubernetes.default.svc
     namespace: seaweedfs
   syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        gateway-access: "true"
     syncOptions:
       - CreateNamespace=true
