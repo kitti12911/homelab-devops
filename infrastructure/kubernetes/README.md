@@ -130,7 +130,19 @@ kubectl delete job helm-install-traefik-crd -n kube-system
     --from-file=keys.txt=$HOME/.config/sops/age/keys.txt
     ```
 
-3. install helm secrets plugin
+3. apply argocd projects
+
+    ```bash
+    kubectl apply -f kubernetes/bootstrap/argocd-projects.yml
+    ```
+
+4. add private git repo (leave project empty so all projects can access it)
+
+    ```bash
+    argocd repo add git@github.com:kitti12911/homelab-devops.git --ssh-private-key-path ~/.ssh/id_ed25519
+    ```
+
+5. install helm secrets plugin
 
     ```bash
     helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v4.7.4/secrets-4.7.4.tgz --verify=false
@@ -138,7 +150,7 @@ kubectl delete job helm-install-traefik-crd -n kube-system
     helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v4.7.4/secrets-post-renderer-4.7.4.tgz --verify=false
     ```
 
-4. install argocd
+6. install argocd
 
     ```bash
     helm secrets upgrade --install argocd argo/argo-cd \
@@ -149,14 +161,14 @@ kubectl delete job helm-install-traefik-crd -n kube-system
     --wait
     ```
 
-5. rollout restart after update secret
+7. rollout restart after update secret
 
     ```bash
     kubectl rollout restart deployment -n argocd
     kubectl rollout restart statefulset -n argocd
     ```
 
-6. apply argocd project
+8. apply argocd project
 
     ```bash
     kubectl apply -f kubernetes/bootstrap/argocd-projects.yml
