@@ -351,3 +351,17 @@ run helm charts or manifests for kubernetes infrastructure.
 ### renovate bot
 
 > please visit [renovate bot](https://developer.mend.io) for dashboard and documentation.
+
+### coredns warning suppressed
+
+1. apply coredns warning suppressed configmap
+
+    ```bash
+    kubectl apply -f kubernetes/bootstrap/coredns-warning-suppressed.yml
+    ```
+
+2. restart coredns pod
+
+    ```bash
+    kubectl rollout restart deployment coredns -n kube-system
+    ```
