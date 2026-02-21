@@ -1,0 +1,19 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: alloy-otlp
+  namespace: alloy
+spec:
+  parentRefs:
+    - name: traefik
+      namespace: default
+      group: gateway.networking.k8s.io
+      kind: Gateway
+      sectionName: otlp-grpc
+  rules:
+    - backendRefs:
+        - name: alloy
+          port: 4317
+          group: ""
+          kind: Service
+          weight: 1

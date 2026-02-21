@@ -26,3 +26,12 @@ spec:
           selector:
             matchLabels:
               gateway-access: "true"
+    - name: otlp-grpc
+      port: 4317
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              gateway-access: "true"

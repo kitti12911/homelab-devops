@@ -23,3 +23,9 @@ spec:
         exposedPort: 443
         middlewares:
           - kube-system-security-headers@kubernetescrd
+      otlp-grpc:
+        port: 4317
+        expose:
+          default: true
+        exposedPort: 4317
+        protocol: TCP
