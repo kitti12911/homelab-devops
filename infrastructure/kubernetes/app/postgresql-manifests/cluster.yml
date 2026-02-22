@@ -55,6 +55,13 @@ spec:
         createrole: false
         passwordSecret:
           name: postgresql-keycloak-secret
+      - name: example
+        login: true
+        superuser: false
+        createdb: false
+        createrole: false
+        passwordSecret:
+          name: postgresql-example-secret
     services:
       additional:
         - selectorType: rw

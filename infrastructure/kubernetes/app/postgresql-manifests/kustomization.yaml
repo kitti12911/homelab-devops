@@ -3,5 +3,6 @@ kind: Kustomization
 resources:
   - cluster.yml
   - keycloak-database.yml
+  - example-database.yml
 generators:
   - secret-generator.yml
