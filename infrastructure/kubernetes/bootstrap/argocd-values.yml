@@ -113,7 +113,7 @@ repoServer:
           cd /custom-tools
           mkdir -p /custom-tools/helm-plugins
 
-          wget -qO sops https://github.com/getsops/sops/releases/download/v3.11.0/sops-v3.11.0.linux.arm64
+          wget -qO sops https://github.com/getsops/sops/releases/download/v3.12.1/sops-v3.12.1.linux.arm64
           echo "c71d32f74b3a73ce283affe6ed36e221a8f1476c3d37963f60bd962fb1676681  sops" | sha256sum -c -
           chmod +x sops
 
