@@ -19,3 +19,6 @@ setup infrastructure for homelab.
 - tempo.lan
 - alloy.lan
 - oauth2-proxy.lan
+- postgres.lan (TCP :5432)
+- nats.lan (TCP :4222)
+- dragonfly.lan (TCP :6379)
