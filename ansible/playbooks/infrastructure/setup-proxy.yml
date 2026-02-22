@@ -8,6 +8,7 @@
     envoy_service_name: "envoy"
     traefik_http_port: 32755
     traefik_https_port: 30880
+    traefik_otlp_grpc_port: 32442
     envoy_log_level: "warning"
     envoy_apt_suite: "{{ 'bookworm' if ansible_facts.distribution_release == 'trixie' else ansible_facts.distribution_release }}"
 
