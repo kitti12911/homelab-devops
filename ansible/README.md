@@ -1,15 +1,29 @@
 # ansible
 
-ansible playbooks and roles for homelab infra
+ansible playbooks for provisioning homelab nodes and setting up k3s cluster.
 
-## prerequisites
+## requirements
 
 - ansible installed
-- ssh access to node(s)
+- ssh access to target node(s)
+
+## install ansible
+
+- macos:
+
+    ```bash
+    brew install ansible
+    ```
+
+- linux (pip):
+
+    ```bash
+    pip install ansible
+    ```
 
 ## setup
 
-### set ssh access for ansible
+### ssh access
 
 1. generate ssh key for ansible
 
@@ -20,98 +34,127 @@ ansible playbooks and roles for homelab infra
 2. copy public key to node(s)
 
     ```bash
-    ssh-copy-id -i <ssh location> <user>@<host>
+    ssh-copy-id -i ~/.ssh/id_ed25519_ansible.pub <user>@<host>
     ```
 
-3. test connection with specific private key
+3. test connection
 
     ```bash
-    ssh -i <ssh location> <user>@<host>
+    ssh -i ~/.ssh/id_ed25519_ansible <user>@<host>
     ```
 
-    or ping with
+### vault password
 
-    ```bash
-    ansible all --key-file <ssh location> -i inventory/<inventory file> -m ping
-    ```
+ansible vault is used to encrypt sensitive variables (like passwords, tokens).
 
-    or with `ansible.cfg` set
+create vault password file:
 
-    ```bash
-    ansible all -i inventory/<inventory file> -m ping
-    ```
+```bash
+echo "your-vault-password" > .vault_password
+chmod 600 .vault_password
+```
 
-    or more beautiful ad hoc output
+> `.vault_password` is gitignored. don't commit it.
 
-    ```bash
-    ANSIBLE_CALLBACK_RESULT_FORMAT=yaml ansible all -m ping
-    ```
+create encrypted vault file:
 
-### inventory file
+```bash
+ansible-vault create inventory/group_vars/all/vault.yml
+```
 
-- see `inventory/hosts.yml` for the inventory file.
-- see current structure with
+edit:
 
-    ```bash
-    ansible-inventory --graph
-    ```
+```bash
+ansible-vault edit inventory/group_vars/all/vault.yml
+```
 
-- ping with less commands
+encrypt / decrypt manually:
 
-    ```bash
-    ansible all -m ping
-    ```
+```bash
+ansible-vault encrypt inventory/group_vars/all/vault.yml
+ansible-vault decrypt inventory/group_vars/all/vault.yml
+```
 
-### vault password management
+## inventory
 
-- run command to create vault password
+inventory is defined in `inventory/hosts.yml`. the `ansible.cfg` already points to it so you don't need to pass `-i` every time.
 
-    ```bash
-    ansible-vault create inventory/group_vars/all/vault.yml
-    ```
+### host groups
 
-- edit vault password
+| group          | hosts                        | description            |
+|----------------|------------------------------|------------------------|
+| master         | alpha-actual                 | k3s master node        |
+| computer       | bravo, charlie, delta        | k3s worker nodes       |
+| object_storage | kilo                         | object storage node    |
+| database       | november                     | database node          |
+| nas            | sierra                       | nas / file storage     |
+| builder        | romeo                        | build server           |
+| proxy          | hotel                        | reverse proxy          |
 
-    ```bash
-    ansible-vault edit inventory/group_vars/all/vault.yml
-    ```
+check current inventory:
 
-- decrypt vault password
+```bash
+ansible-inventory --graph
+```
 
-    ```bash
-    ansible-vault decrypt inventory/group_vars/all/vault.yml
-    ```
+test connection to all hosts:
 
-- encrypt vault password
+```bash
+ansible all -m ping
+```
 
-    ```bash
-    ansible-vault encrypt inventory/group_vars/all/vault.yml
-    ```
+## playbooks
 
-### install ansible collections
+### infrastructure
 
-### run playbook
+| playbook                    | description                        |
+|-----------------------------|------------------------------------|
+| `setup-raspberry-pi-os.yml` | initial raspberry pi os setup      |
+| `setup-cloudflared.yml`     | setup cloudflare tunnel            |
+| `setup-proxy.yml`           | setup envoy proxy node             |
+| `add-public-key.yml`        | add ssh public keys to nodes       |
+| `update-dependencies.yml`   | update system packages             |
 
-- see `playbooks/setup-raspberry-pi-os.yml` for an example
+### kubernetes
 
-    ```bash
-    ansible-playbook -i inventory/hosts.yml playbooks/infrastructure/setup-raspberry-pi-os.yml
-    ```
+| playbook                    | description                        |
+|-----------------------------|------------------------------------|
+| `initial-setup-node.yml`    | prepare node for k3s               |
+| `setup-master.yml`          | install k3s master                 |
+| `setup-worker.yml`          | install k3s worker and join cluster|
 
-- run with specific host(s)
+### utility
 
-    ```bash
-    ansible-playbook -i inventory/hosts.yml playbooks/infrastructure/setup-raspberry-pi-os.yml -l november
-    ```
+| playbook        | description           |
+|-----------------|-----------------------|
+| `reboot.yml`    | reboot hosts          |
+| `poweroff.yml`  | power off hosts       |
 
-- run with specific host(s) and specific task
+## how to run
 
-    ```bash
-    ansible-playbook -i inventory/hosts.yml playbooks/infrastructure/setup-raspberry-pi-os.yml -l november -t "Get root filesystem device"
-    ```
+run a playbook on all hosts in its target group:
 
-- run with limit
+```bash
+ansible-playbook playbooks/infrastructure/setup-raspberry-pi-os.yml
+```
 
-    ```bash
-    ansible-playbook playbooks/infrastructure/setup-raspberry-pi-os.yml --limit "november"
-    ```
+run on a specific host:
+
+```bash
+ansible-playbook playbooks/infrastructure/setup-raspberry-pi-os.yml --limit november
+```
+
+run a specific task by tag:
+
+```bash
+ansible-playbook playbooks/infrastructure/setup-raspberry-pi-os.yml --limit november -t "Get root filesystem device"
+```
+
+## config
+
+`ansible.cfg` is already set up with:
+
+- default inventory: `inventory/`
+- ssh key: `~/.ssh/id_ed25519_ansible`
+- vault password file: `.vault_password`
+- ssh pipelining enabled for faster execution

@@ -1,48 +1,76 @@
 # kubernetes infrastructure setup
 
-run helm charts or manifests for kubernetes infrastructure.
+bootstrap and manage kubernetes applications via argocd. all apps are deployed as argocd Applications and synced from this repo.
 
-## setup script
+## requirements
 
-### flannel (cni)
+- k3s cluster running (see [ansible README](../../ansible/README.md) for cluster setup)
+- kubectl configured to talk to the cluster
+- helm installed
+- sops + age installed (for secret management)
 
-> **Note:** K3s v1.34+ no longer initializes its built-in Flannel on startup.
-> Flannel must be deployed separately before any pods can start.
-> This is managed by ArgoCD via the official Flannel Helm chart, but on
-> initial cluster setup you need to install it manually first (before ArgoCD is installed).
+## deployed applications
 
-1. install flannel
+| app                       | namespace          | url / endpoint                                | description                     |
+|---------------------------|--------------------|-----------------------------------------------|---------------------------------|
+| flannel                   | kube-flannel       | -                                             | cni plugin                      |
+| cert-manager              | cert-manager       | -                                             | certificate management          |
+| trust-manager             | cert-manager       | -                                             | certificate trust distribution  |
+| traefik                   | kube-system        | -                                             | ingress / gateway               |
+| argocd                    | argocd             | argocd.lan                                    | gitops deployment               |
+| keycloak                  | keycloak           | keycloak.lan                                  | identity provider               |
+| oauth2-proxy              | oauth2-proxy       | oauth2-proxy.lan                              | forward auth for non-oidc apps  |
+| postgresql                | postgresql         | postgres.lan:5432                             | database                        |
+| dragonfly                 | dragonfly          | dragonfly.lan:6379                            | redis-compatible cache          |
+| nats                      | nats               | nats.lan:4222                                 | messaging                       |
+| longhorn                  | longhorn-system    | longhorn.lan                                  | distributed storage             |
+| seaweedfs                 | seaweedfs          | seaweedfs.lan, s3.lan                         | object storage                  |
+| zot                       | zot                | zot.lan                                       | oci container registry          |
+| vault                     | vault              | vault.lan                                     | secret management               |
+| kube-prometheus-stack     | monitoring         | grafana.lan, prometheus.lan, alertmanager.lan | monitoring                      |
+| loki                      | loki               | loki.lan                                      | log aggregation                 |
+| tempo                     | tempo              | tempo.lan                                     | distributed tracing             |
+| alloy                     | alloy              | alloy.lan                                     | observability agent             |
+| reloader                  | reloader           | -                                             | auto-reload on config changes   |
+| system-upgrade-controller | system-upgrade     | -                                             | k3s auto-upgrades               |
+| cloudnative-pg            | cnpg-system        | -                                             | postgresql operator             |
 
-    ```bash
-    helm repo add flannel https://flannel-io.github.io/flannel/
-    helm install flannel --set podCidr="10.42.0.0/16" --namespace kube-flannel --create-namespace flannel/flannel
-    kubectl label --overwrite ns kube-flannel pod-security.kubernetes.io/enforce=privileged
-    ```
+## bootstrap order
 
-### gateway api
+run these steps in order on a fresh cluster. after argocd is running, it handles everything else.
 
-1. install gateway api
+### 1. flannel (cni)
 
-    ```bash
-    kubectl apply -f kubernetes/bootstrap/gateway.yml
-    ```
+> K3s v1.34+ no longer initializes its built-in Flannel on startup.
+> install flannel manually before argocd is available.
 
-2. enable traefik gateway provider
+```bash
+helm repo add flannel https://flannel-io.github.io/flannel/
+helm install flannel --set podCidr="10.42.0.0/16" --namespace kube-flannel --create-namespace flannel/flannel
+kubectl label --overwrite ns kube-flannel pod-security.kubernetes.io/enforce=privileged
+```
 
-    ```bash
-    kubectl apply -f kubernetes/bootstrap/traefik-helmchartconfig.yml
-    ```
+### 2. gateway api
 
-3. apply security headers middleware
+```bash
+kubectl apply -f kubernetes/bootstrap/gateway.yml
+```
 
-    ```bash
-    kubectl apply -f kubernetes/bootstrap/traefik-middleware.yml
-    ```
+enable traefik gateway provider:
 
-### traefik crd helm adoption fix
+```bash
+kubectl apply -f kubernetes/bootstrap/traefik-helmchartconfig.yml
+```
 
-if `helm-install-traefik-crd` job is stuck in `CrashLoopBackOff` because Gateway API CRDs
-already exist without Helm ownership metadata, label them so Helm can adopt them:
+apply security headers middleware:
+
+```bash
+kubectl apply -f kubernetes/bootstrap/traefik-middleware.yml
+```
+
+### 3. traefik crd helm adoption fix
+
+if `helm-install-traefik-crd` job is stuck in CrashLoopBackOff because Gateway API CRDs already exist without Helm ownership metadata:
 
 ```bash
 for crd in $(kubectl get crd -o name | grep gateway.networking.k8s.io); do
@@ -58,38 +86,17 @@ then delete the stuck job so k3s recreates it:
 kubectl delete job helm-install-traefik-crd -n kube-system
 ```
 
-### prometheus crds
+### 4. prometheus crds
 
-1. add prometheus crds helm repo
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+helm install prometheus-operator-crds prometheus-community/prometheus-operator-crds
+```
 
-    ```bash
-    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-    helm repo update
-    ```
+### 5. sops/age
 
-2. install prometheus crds
-
-    ```bash
-    helm install prometheus-operator-crds prometheus-community/prometheus-operator-crds
-    ```
-
-### sops/age
-
-1. install age tool
-
-    ```bash
-    go install filippo.io/age/cmd/...@latest
-    ```
-
-2. install sops tool
-
-    ```bash
-    curl -LO https://github.com/getsops/sops/releases/download/v3.11.0/sops-v3.11.0.darwin.arm64
-    sudo mv sops-v3.11.0.darwin.arm64 /usr/local/bin/sops
-    sudo chmod +x /usr/local/bin/sops
-    ```
-
-3. generate age key (don't push to git!)
+1. generate age key (don't push to git!)
 
     ```bash
     age-keygen -o age.key
@@ -101,28 +108,28 @@ kubectl delete job helm-install-traefik-crd -n kube-system
     source ~/.zshrc
     ```
 
-4. encrypt secret
+2. encrypt a secret
 
     ```bash
     sops -e -i <path>
     ```
 
-5. decrypt secret
+3. decrypt a secret
 
     ```bash
     sops -d -i <path>
     ```
 
-### argocd
+### 6. argocd
 
-1. add argocd helm repo
+1. add helm repo
 
     ```bash
     helm repo add argo https://argoproj.github.io/argo-helm
     helm repo update
     ```
 
-2. add age key to argocd secret
+2. add age key as kubernetes secret
 
     ```bash
     kubectl create secret generic sops-age \
@@ -130,19 +137,7 @@ kubectl delete job helm-install-traefik-crd -n kube-system
     --from-file=keys.txt=$HOME/.config/sops/age/keys.txt
     ```
 
-3. apply argocd projects
-
-    ```bash
-    kubectl apply -f kubernetes/bootstrap/argocd-projects.yml
-    ```
-
-4. add private git repo (leave project empty so all projects can access it)
-
-    ```bash
-    argocd repo add git@github.com:kitti12911/homelab-devops.git --ssh-private-key-path ~/.ssh/id_ed25519
-    ```
-
-5. install helm secrets plugin
+3. install helm-secrets plugin
 
     ```bash
     helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v4.7.4/secrets-4.7.4.tgz --verify=false
@@ -150,7 +145,7 @@ kubectl delete job helm-install-traefik-crd -n kube-system
     helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v4.7.4/secrets-post-renderer-4.7.4.tgz --verify=false
     ```
 
-6. install argocd
+4. install argocd
 
     ```bash
     helm secrets upgrade --install argocd argo/argo-cd \
@@ -161,143 +156,190 @@ kubectl delete job helm-install-traefik-crd -n kube-system
     --wait
     ```
 
-7. rollout restart after update secret
+5. apply argocd projects
+
+    ```bash
+    kubectl apply -f kubernetes/bootstrap/argocd-projects.yml
+    ```
+
+6. add private git repo
+
+    ```bash
+    argocd repo add git@github.com:kitti12911/homelab-devops.git --ssh-private-key-path ~/.ssh/id_ed25519
+    ```
+
+7. rollout restart after updating secrets
 
     ```bash
     kubectl rollout restart deployment -n argocd
     kubectl rollout restart statefulset -n argocd
     ```
 
-8. apply argocd project
+### 7. system-upgrade-controller
 
-    ```bash
-    kubectl apply -f kubernetes/bootstrap/argocd-projects.yml
-    ```
+install before syncing argocd:
 
-### system-upgrade-controller
+```bash
+kubectl apply -f https://github.com/rancher/system-upgrade-controller/releases/latest/download/crd.yaml \
+  -f https://github.com/rancher/system-upgrade-controller/releases/latest/download/system-upgrade-controller.yaml
+```
 
-1. install system-upgrade-controller before sync argocd
+### 8. cert-manager
 
-    ```bash
-    kubectl apply -f https://github.com/rancher/system-upgrade-controller/releases/latest/download/crd.yaml \
-      -f https://github.com/rancher/system-upgrade-controller/releases/latest/download/system-upgrade-controller.yaml
-    ```
+apply wildcard certificate:
+
+```bash
+kubectl apply -f kubernetes/bootstrap/lan-certificate.yml
+```
+
+extract CA certificate and add to system truststore:
+
+```bash
+kubectl get secret homelab-ca-secret -n cert-manager -o jsonpath='{.data.tls\.crt}' | base64 -d > homelab-ca.crt
+
+# macos
+sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain homelab-ca.crt
+rm homelab-ca.crt
+```
+
+### 9. coredns warning suppressed
+
+```bash
+kubectl apply -f kubernetes/bootstrap/coredns-warning-suppressed.yml
+kubectl rollout restart deployment coredns -n kube-system
+```
+
+## app-specific setup
 
 ### reloader
 
-- annotate workloads to enable auto-reload on secret/configmap changes
+annotate workloads to enable auto-reload on secret/configmap changes:
 
-    ```yaml
-    metadata:
-      annotations:
-        reloader.stakater.com/auto: "true"
-    ```
+```yaml
+metadata:
+  annotations:
+    reloader.stakater.com/auto: "true"
+```
 
 ### postgresql
 
-1. set superuser password and encrypt before deploying
+set superuser password and encrypt before deploying:
+
+```bash
+sops -e -i kubernetes/app/postgresql-manifests/superuser-secret.enc.yml
+```
+
+### oauth2-proxy
+
+1. generate cookie secret
 
     ```bash
-    sops -e -i kubernetes/app/postgresql-manifests/superuser-secret.enc.yml
+    openssl rand -base64 24
     ```
 
-### cert-manager
-
-1. apply wildcard certificate
+2. fill in the secret and encrypt
 
     ```bash
-    kubectl apply -f kubernetes/bootstrap/lan-certificate.yml
+    sops -e -i kubernetes/app/oauth2-proxy-manifests/oidc-secret.enc.yml
     ```
 
-2. extract CA certificate and add to system truststore
+3. to protect an app with oauth2-proxy, add a ForwardAuth middleware to the app's manifests:
 
-    ```bash
-    kubectl get secret homelab-ca-secret -n cert-manager -o jsonpath='{.data.tls\.crt}' | base64 -d > homelab-ca.crt
-
-    # for macos
-    sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain homelab-ca.crt
-    rm homelab-ca.crt
+    ```yaml
+    apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+    name: oauth2-proxy-auth
+    namespace: <app-namespace>
+    spec:
+    forwardAuth:
+        address: http://oauth2-proxy.oauth2-proxy.svc.cluster.local/
+        trustForwardHeader: true
+        authResponseHeaders:
+        - X-Auth-Request-User
+        - X-Auth-Request-Email
     ```
 
-### zot
+then add an `extensionRef` filter in the app's HTTPRoute:
 
-- zot do not support logout url so please use following url for logout after zot logout
+```yaml
+filters:
+  - type: ExtensionRef
+    extensionRef:
+      group: traefik.io
+      kind: Middleware
+      name: oauth2-proxy-auth
+```
 
-    [https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fzot.lan&client_id=zot](https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fzot.lan&client_id=zot)
+sign out: [https://oauth2-proxy.lan/oauth2/sign_out](https://oauth2-proxy.lan/oauth2/sign_out)
 
-- sign image with cosign
+### zot (container registry)
 
-1. install cosign
+install cosign for image signing:
 
-    ```bash
-    brew install cosign
-    ```
+```bash
+brew install cosign
+```
 
-2. login cosign with zot.lan (use api key as password)
+login to zot (use api key as password):
 
-    ```bash
-    cosign login zot.lan --username <username> --password <api-key>
-    ```
+```bash
+cosign login zot.lan --username <username> --password <api-key>
+```
 
-3. generate key pair
+generate key pair:
 
-    ```bash
-    cosign generate-key-pair
-    ```
+```bash
+cosign generate-key-pair
+```
 
-4. enable vault secret engine
+enable vault secret engine and store keys:
 
-    ```bash
-    vault secrets enable -path=secret kv-v2
-    ```
+```bash
+vault secrets enable -path=secret kv-v2
 
-5. store key and pub to vault
+vault kv put secret/cosign \
+  private-key=@cosign.key \
+  public-key=@cosign.pub
+```
 
-    ```bash
-    vault kv put secret/cosign \
-    private-key=@cosign.key \
-    public-key=@cosign.pub
-    ```
+push cosign public key to zot:
 
-6. push cosign public key from vault to zot
+```bash
+vault kv get -field=public-key secret/cosign > /tmp/cosign.pub
 
-    ```bash
-    vault kv get -field=public-key secret/cosign > /tmp/cosign.pub
+curl -X POST \
+  -u "<username>:<api-key>" \
+  --data-binary @/tmp/cosign.pub \
+  "https://zot.lan/v2/_zot/ext/cosign"
 
-    curl -X POST \
-    -u "<username>:<api-key>" \
-    --data-binary @/tmp/cosign.pub \
-    "https://zot.lan/v2/_zot/ext/cosign"
+rm /tmp/cosign.pub
+```
 
-    rm /tmp/cosign.pub
-    ```
+sign an image:
 
-7. get image digest (use the manifest list digest for multi-arch images)
+> cosign v3+ uses new sigstore bundle format by default which zot does not recognize yet. use `--new-bundle-format=false --use-signing-config=false` for compatibility.
 
-    ```bash
-    docker buildx imagetools inspect zot.lan/<app>:<tag>
-    ```
+```bash
+# get image digest first
+docker buildx imagetools inspect zot.lan/<app>:<tag>
 
-8. sign image with digest from vault
+# sign with digest
+vault kv get -field=private-key secret/cosign > /tmp/cosign.key
+cosign sign --new-bundle-format=false --use-signing-config=false \
+  --key /tmp/cosign.key zot.lan/<app>@sha256:<digest>
+rm /tmp/cosign.key
+```
 
-    > **Note:** cosign v3+ uses new sigstore bundle format by default which zot
-    > does not recognize yet. use `--new-bundle-format=false --use-signing-config=false`
-    > for compatibility.
+verify an image:
 
-    ```bash
-    vault kv get -field=private-key secret/cosign > /tmp/cosign.key
-    cosign sign --new-bundle-format=false --use-signing-config=false \
-    --key /tmp/cosign.key zot.lan/<app>@sha256:<digest>
-    rm /tmp/cosign.key
-    ```
+```bash
+vault kv get -field=public-key secret/cosign > /tmp/cosign.pub
+cosign verify --key /tmp/cosign.pub zot.lan/<app>@sha256:<digest>
+rm /tmp/cosign.pub
+```
 
-9. verify image
-
-    ```bash
-    vault kv get -field=public-key secret/cosign > /tmp/cosign.pub
-    cosign verify --key /tmp/cosign.pub zot.lan/<app>@sha256:<digest>
-    rm /tmp/cosign.pub
-    ```
+zot does not support logout url, use: [keycloak logout for zot](https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fzot.lan&client_id=zot)
 
 ### hashicorp vault
 
@@ -307,7 +349,7 @@ kubectl delete job helm-install-traefik-crd -n kube-system
     kubectl exec -n vault vault-0 -- vault operator init
     ```
 
-2. unseal vault 3 times
+2. unseal vault (3 times with different keys)
 
     ```bash
     kubectl exec -n vault vault-0 -- vault operator unseal <unseal-key>
@@ -327,7 +369,7 @@ kubectl delete job helm-install-traefik-crd -n kube-system
     vault login <root-token>
     ```
 
-5. create role with
+5. create oidc role
 
     ```bash
     vault write auth/oidc/role/default \
@@ -338,119 +380,55 @@ kubectl delete job helm-install-traefik-crd -n kube-system
     token_policies="default"
     ```
 
-6. like zot, vault don't support logout url so please use following url for logout after vault logout
+6. (optional) map vault roles with keycloak groups
 
-    [https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fvault.lan&client_id=vault](https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fvault.lan&client_id=vault)
-
-7. (optional) map vault role with keycloak group
-
-    - create policies
-
-        ```bash
-        # admin policy (full access)
-        vault policy write vault-admin - <<EOF
-        path "*" {
-          capabilities = ["create", "read", "update", "delete", "list", "sudo"]
-        }
-        EOF
-
-        # dev policy (read only under secret/data/dev/*)
-        vault policy write vault-dev - <<EOF
-        path "secret/data/dev/*" {
-          capabilities = ["read", "list"]
-        }
-        path "secret/metadata/dev/*" {
-          capabilities = ["list"]
-        }
-        EOF
-        ```
-
-    - create keycloak groups `vault-admins` and `vault-devs`
-
-    - map keycloak groups to vault policies
-
-        ```bash
-        ACCESSOR=$(vault auth list -format=json | jq -r '.["oidc/"].accessor')
-
-        ADMIN_GROUP_ID=$(vault write -format=json identity/group \
-          name="vault-admins" type="external" policies="vault-admin" \
-          | jq -r '.data.id')
-
-        vault write identity/group-alias \
-          name="vault-admins" \
-          mount_accessor="$ACCESSOR" \
-          canonical_id="$ADMIN_GROUP_ID"
-
-        DEV_GROUP_ID=$(vault write -format=json identity/group \
-          name="vault-devs" type="external" policies="vault-dev" \
-          | jq -r '.data.id')
-
-        vault write identity/group-alias \
-          name="vault-devs" \
-          mount_accessor="$ACCESSOR" \
-          canonical_id="$DEV_GROUP_ID"
-        ```
-
-### oauth2-proxy (forward auth for non-oidc UIs)
-
-1. generate cookie secret
+    create policies:
 
     ```bash
-    openssl rand -base64 24
+    # admin policy (full access)
+    vault policy write vault-admin - <<EOF
+    path "*" {
+    capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+    }
+    EOF
+
+    # dev policy (read only under secret/data/dev/*)
+    vault policy write vault-dev - <<EOF
+    path "secret/data/dev/*" {
+    capabilities = ["read", "list"]
+    }
+    path "secret/metadata/dev/*" {
+    capabilities = ["list"]
+    }
+    EOF
     ```
 
-2. fill in the secret and encrypt
+create keycloak groups `vault-admins` and `vault-devs`, then map them:
 
-    ```bash
-    sops -e -i kubernetes/app/oauth2-proxy-manifests/oidc-secret.enc.yml
-    ```
+```bash
+ACCESSOR=$(vault auth list -format=json | jq -r '.["oidc/"].accessor')
 
-3. to protect additional apps, add two things to the app's manifests directory:
+ADMIN_GROUP_ID=$(vault write -format=json identity/group \
+  name="vault-admins" type="external" policies="vault-admin" \
+  | jq -r '.data.id')
 
-    - a ForwardAuth middleware
+vault write identity/group-alias \
+  name="vault-admins" \
+  mount_accessor="$ACCESSOR" \
+  canonical_id="$ADMIN_GROUP_ID"
 
-        ```yaml
-        apiVersion: traefik.io/v1alpha1
-        kind: Middleware
-        metadata:
-          name: oauth2-proxy-auth
-          namespace: <app-namespace>
-        spec:
-          forwardAuth:
-            address: http://oauth2-proxy.oauth2-proxy.svc.cluster.local/
-            trustForwardHeader: true
-            authResponseHeaders:
-              - X-Auth-Request-User
-              - X-Auth-Request-Email
-        ```
+DEV_GROUP_ID=$(vault write -format=json identity/group \
+  name="vault-devs" type="external" policies="vault-dev" \
+  | jq -r '.data.id')
 
-    - an `extensionRef` filter in the app's HTTPRoute
+vault write identity/group-alias \
+  name="vault-devs" \
+  mount_accessor="$ACCESSOR" \
+  canonical_id="$DEV_GROUP_ID"
+```
 
-        ```yaml
-        filters:
-          - type: ExtensionRef
-            extensionRef:
-              group: traefik.io
-              kind: Middleware
-              name: oauth2-proxy-auth
-        ```
-
-4. sign out url using [sign out](https://oauth2-proxy.lan/oauth2/sign_out) url
+vault does not support logout url, use: [keycloak logout for vault](https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fvault.lan&client_id=vault)
 
 ### renovate bot
 
-> please visit [renovate bot](https://developer.mend.io) for dashboard and documentation.
-
-### coredns warning suppressed
-
-1. apply coredns warning suppressed configmap
-
-    ```bash
-    kubectl apply -f kubernetes/bootstrap/coredns-warning-suppressed.yml
-    ```
-
-2. restart coredns pod
-
-    ```bash
-    kubectl rollout restart deployment coredns -n kube-system
-    ```
+visit [renovate bot dashboard](https://developer.mend.io) for dependency update management.
