@@ -4,7 +4,7 @@ metadata:
   name: example-db
   namespace: database
 spec:
-  name: example_db
+  name: example
   owner: example_user
   cluster:
     name: postgresql
