@@ -1,6 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
+  "schedule": ["before 5am on monday"],
   "argocd": {
     "managerFilePatterns": ["/infrastructure/kubernetes/app/.+\\.yml$/"]
   },
@@ -68,6 +69,30 @@
         "# renovate: datasource=docker depName=(?<depName>[^\\n]+)\\n# version: (?<currentValue>[^\\s]+)"
       ],
       "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Update SOPS version in README",
+      "managerFilePatterns": ["/README\\.md$/"],
+      "matchStrings": [
+        "curl -LO https://github\\.com/getsops/sops/releases/download/v(?<currentValue>[\\d.]+)/sops-v[\\d.]+\\.darwin\\.arm64\\nsudo mv sops-v[\\d.]+\\.darwin\\.arm64 /usr/local/bin/sops"
+      ],
+      "autoReplaceStringTemplate": "curl -LO https://github.com/getsops/sops/releases/download/v{{{newValue}}}/sops-v{{{newValue}}}.darwin.arm64\nsudo mv sops-v{{{newValue}}}.darwin.arm64 /usr/local/bin/sops",
+      "depNameTemplate": "getsops/sops",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update helm-secrets version in kubernetes README",
+      "managerFilePatterns": ["/infrastructure/kubernetes/README\\.md$/"],
+      "matchStrings": [
+        "helm plugin install https://github\\.com/jkroepke/helm-secrets/releases/download/v(?<currentValue>[\\d.]+)/secrets-[\\d.]+\\.tgz --verify=false\\n\\s+helm plugin install https://github\\.com/jkroepke/helm-secrets/releases/download/v[\\d.]+/secrets-getter-[\\d.]+\\.tgz --verify=false\\n\\s+helm plugin install https://github\\.com/jkroepke/helm-secrets/releases/download/v[\\d.]+/secrets-post-renderer-[\\d.]+\\.tgz --verify=false"
+      ],
+      "autoReplaceStringTemplate": "helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v{{{newValue}}}/secrets-{{{newValue}}}.tgz --verify=false\n    helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v{{{newValue}}}/secrets-getter-{{{newValue}}}.tgz --verify=false\n    helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v{{{newValue}}}/secrets-post-renderer-{{{newValue}}}.tgz --verify=false",
+      "depNameTemplate": "jkroepke/helm-secrets",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
     }
   ],
   "packageRules": [
