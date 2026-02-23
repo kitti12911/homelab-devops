@@ -68,8 +68,8 @@ spec:
                   stage.cri {}
 
                   stage.drop {
-                    expression  = ".*POST /loki/api/v1/push.*"
-                    drop_counter_reason = "loki_push_access_log"
+                    expression  = ".*/loki/api/v1/.*"
+                    drop_counter_reason = "loki_api_access_log"
                   }
                 }
 
