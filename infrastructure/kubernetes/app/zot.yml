@@ -67,7 +67,7 @@ spec:
                   }
                 },
                 "log": {
-                  "level": "info"
+                  "level": "warn"
                 },
                 "extensions": {
                   "search": {
