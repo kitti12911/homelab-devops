@@ -66,6 +66,11 @@ spec:
                   forward_to = [loki.write.default.receiver]
 
                   stage.cri {}
+
+                  stage.drop {
+                    expression  = ".*POST /loki/api/v1/push.*"
+                    drop_counter_reason = "loki_push_access_log"
+                  }
                 }
 
                 loki.source.kubernetes_events "default" {
