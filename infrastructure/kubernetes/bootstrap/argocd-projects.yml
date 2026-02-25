@@ -10,6 +10,7 @@ spec:
     - https://charts.jetstack.io
     - https://charts.longhorn.io
     - https://stakater.github.io/stakater-charts
+    - https://kubernetes-sigs.github.io/descheduler/
     - git@github.com:kitti12911/homelab-devops.git
   destinations:
     - server: https://kubernetes.default.svc
