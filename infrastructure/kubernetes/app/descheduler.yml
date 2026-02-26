@@ -12,12 +12,6 @@ spec:
     helm:
       valuesObject:
         schedule: "*/10 * * * *"
-
-        rbac:
-          additionalClusterRoleRules:
-            - apiGroups: [""]
-              resources: ["persistentvolumeclaims"]
-              verbs: ["get", "list", "watch"]
         successfulJobsHistoryLimit: 1
         failedJobsHistoryLimit: 1
 
