@@ -3,3 +3,5 @@ kind: Kustomization
 resources:
   - forwardauth-middleware.yml
   - httproute.yml
+generators:
+  - secret-generator.yml

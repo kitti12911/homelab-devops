@@ -53,7 +53,9 @@ spec:
 
           auth:
             sasl:
-              enabled: false
+              enabled: true
+              mechanism: SCRAM-SHA-256
+              secretRef: redpanda-users
 
           console:
             enabled: true
@@ -71,6 +73,14 @@ spec:
               container:
                 max: 2560Mi
                 min: 2560Mi
+
+          config:
+            cluster:
+              cloud_storage_enabled: false
+              audit_enabled: false
+              partition_autobalancing_mode: node_add
+              core_balancing_continuous: false
+              enable_schema_id_validation: false
 
           monitoring:
             enabled: true
