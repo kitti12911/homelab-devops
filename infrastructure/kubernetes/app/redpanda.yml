@@ -1,0 +1,61 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: redpanda
+  namespace: argocd
+spec:
+  project: database
+  source:
+    repoURL: https://charts.redpanda.com
+    chart: redpanda
+    targetRevision: "25.3.2"
+    helm:
+      valuesObject:
+        statefulset:
+          replicas: 1
+          podTemplate:
+            spec:
+              nodeSelector:
+                node-role.kubernetes.io/database: "true"
+              tolerations:
+                - key: dedicated
+                  operator: Equal
+                  value: database
+                  effect: NoSchedule
+
+        tls:
+          enabled: false
+
+        external:
+          enabled: false
+
+        auth:
+          sasl:
+            enabled: false
+
+        console:
+          enabled: true
+
+        storage:
+          persistentVolume:
+            enabled: true
+            size: 20Gi
+            storageClass: local-path
+
+        resources:
+          cpu:
+            cores: 1
+          memory:
+            container:
+              max: 2560Mi
+              min: 2560Mi
+
+        monitoring:
+          enabled: true
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: database
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

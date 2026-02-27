@@ -35,11 +35,12 @@ metadata:
   name: database
   namespace: argocd
 spec:
-  description: Data services - PostgreSQL, Dragonfly, NATS
+  description: Data services - PostgreSQL, Dragonfly, NATS, Redpanda
   sourceRepos:
     - https://cloudnative-pg.github.io/charts
     - ghcr.io/dragonflydb/dragonfly/helm
     - https://nats-io.github.io/k8s/helm/charts/
+    - https://charts.redpanda.com
     - git@github.com:kitti12911/homelab-devops.git
   destinations:
     - server: https://kubernetes.default.svc
