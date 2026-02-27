@@ -39,10 +39,12 @@ spec:
                   advertisedPorts:
                     - 31092
             schemaRegistry:
+              enabled: true
               external:
                 default:
                   enabled: false
             http:
+              enabled: true
               external:
                 default:
                   enabled: false
