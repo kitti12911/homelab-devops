@@ -23,6 +23,7 @@ bootstrap and manage kubernetes applications via argocd. all apps are deployed a
 | postgresql                | postgresql         | postgres.lan:5432                             | database                        |
 | dragonfly                 | dragonfly          | dragonfly.lan:6379                            | redis-compatible cache          |
 | nats                      | nats               | nats.lan:4222                                 | messaging                       |
+| redpanda                  | database           | redpanda.lan, redpanda.lan:9092               | kafka-compatible streaming      |
 | longhorn                  | longhorn-system    | longhorn.lan                                  | distributed storage             |
 | seaweedfs                 | seaweedfs          | seaweedfs.lan, s3.lan                         | object storage                  |
 | zot                       | zot                | zot.lan                                       | oci container registry          |

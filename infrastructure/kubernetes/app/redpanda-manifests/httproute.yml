@@ -1,0 +1,31 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: redpanda-console
+  namespace: database
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: traefik
+      namespace: default
+      sectionName: https
+  hostnames:
+    - redpanda.lan
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: traefik.io
+            kind: Middleware
+            name: oauth2-proxy-auth
+      backendRefs:
+        - group: ''
+          kind: Service
+          name: redpanda-console
+          port: 8080
+          weight: 1

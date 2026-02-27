@@ -107,6 +107,19 @@ static_resources:
           "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           stat_prefix: ingress_dragonfly
           cluster: cluster_dragonfly
+  - name: listener_redpanda_kafka
+    address:
+      socket_address:
+        protocol: TCP
+        address: 0.0.0.0
+        port_value: 9092
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          stat_prefix: ingress_redpanda_kafka
+          cluster: cluster_redpanda_kafka
   clusters:
   - name: cluster_traefik_http
     connect_timeout: 30s
@@ -191,4 +204,18 @@ static_resources:
               socket_address:
                 address: {{ hostvars[host]['ansible_host'] }}
                 port_value: {{ dragonfly_nodeport }}
+{% endfor %}
+  - name: cluster_redpanda_kafka
+    connect_timeout: 30s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: cluster_redpanda_kafka
+      endpoints:
+      - lb_endpoints:
+{% for host in groups['computer'] %}        - endpoint:
+            address:
+              socket_address:
+                address: {{ hostvars[host]['ansible_host'] }}
+                port_value: {{ redpanda_kafka_nodeport }}
 {% endfor %}

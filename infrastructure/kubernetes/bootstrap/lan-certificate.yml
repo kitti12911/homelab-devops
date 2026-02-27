@@ -30,3 +30,4 @@ spec:
     - tempo.lan
     - alloy.lan
     - oauth2-proxy.lan
+    - redpanda.lan

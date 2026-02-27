@@ -25,11 +25,13 @@ for full bootstrap and setup instructions, see [kubernetes/README.md](kubernetes
 | loki.lan             | log aggregation              |
 | tempo.lan            | distributed tracing          |
 | alloy.lan            | observability agent          |
+| redpanda.lan         | kafka streaming console      |
 
 ### tcp services
 
-| dns              | port  | description              |
-|------------------|-------|--------------------------|
-| postgres.lan     | 5432  | postgresql database      |
-| nats.lan         | 4222  | nats messaging           |
-| dragonfly.lan    | 6379  | redis-compatible cache   |
+| dns              | port  | description                |
+|------------------|-------|----------------------------|
+| postgres.lan     | 5432  | postgresql database        |
+| nats.lan         | 4222  | nats messaging             |
+| dragonfly.lan    | 6379  | redis-compatible cache     |
+| redpanda.lan     | 9092  | kafka-compatible streaming |

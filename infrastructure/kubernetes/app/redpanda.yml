@@ -5,57 +5,85 @@ metadata:
   namespace: argocd
 spec:
   project: database
-  source:
-    repoURL: https://charts.redpanda.com
-    chart: redpanda
-    targetRevision: "25.3.2"
-    helm:
-      valuesObject:
-        statefulset:
-          replicas: 1
-          podTemplate:
-            spec:
-              nodeSelector:
-                node-role.kubernetes.io/database: "true"
-              tolerations:
-                - key: dedicated
-                  operator: Equal
-                  value: database
-                  effect: NoSchedule
+  sources:
+    - repoURL: https://charts.redpanda.com
+      chart: redpanda
+      targetRevision: "25.3.2"
+      helm:
+        valuesObject:
+          statefulset:
+            replicas: 1
+            podTemplate:
+              spec:
+                nodeSelector:
+                  node-role.kubernetes.io/database: "true"
+                tolerations:
+                  - key: dedicated
+                    operator: Equal
+                    value: database
+                    effect: NoSchedule
 
-        tls:
-          enabled: false
-
-        external:
-          enabled: false
-
-        auth:
-          sasl:
+          tls:
             enabled: false
 
-        console:
-          enabled: true
-
-        storage:
-          persistentVolume:
+          external:
             enabled: true
-            size: 20Gi
-            storageClass: local-path
+            type: NodePort
+            addresses:
+              - redpanda.lan
 
-        resources:
-          cpu:
-            cores: 1
-          memory:
-            container:
-              max: 2560Mi
-              min: 2560Mi
+          listeners:
+            kafka:
+              external:
+                default:
+                  advertisedPorts:
+                    - 31092
+            schemaRegistry:
+              external:
+                default:
+                  enabled: false
+            http:
+              external:
+                default:
+                  enabled: false
+            admin:
+              external:
+                default:
+                  enabled: false
 
-        monitoring:
-          enabled: true
+          auth:
+            sasl:
+              enabled: false
 
+          console:
+            enabled: true
+
+          storage:
+            persistentVolume:
+              enabled: true
+              size: 20Gi
+              storageClass: local-path
+
+          resources:
+            cpu:
+              cores: 1
+            memory:
+              container:
+                max: 2560Mi
+                min: 2560Mi
+
+          monitoring:
+            enabled: true
+
+    - repoURL: git@github.com:kitti12911/homelab-devops.git
+      targetRevision: main
+      path: infrastructure/kubernetes/app/redpanda-manifests
   destination:
     server: https://kubernetes.default.svc
     namespace: database
   syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        gateway-access: "true"
     syncOptions:
       - CreateNamespace=true
