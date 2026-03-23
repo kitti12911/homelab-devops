@@ -114,7 +114,7 @@ repoServer:
           mkdir -p /custom-tools/helm-plugins
 
           wget -qO sops https://github.com/getsops/sops/releases/download/v3.12.2/sops-v3.12.2.linux.arm64
-          echo "c7904d07bf1fb3ffdc329b0103ce70ff6a884aa7af7931427402bea0c09cc522  sops" | sha256sum -c -
+          echo "f66de6f528dca946e910d74fa36a62a7714c11d0db16bd3c9bd8acf73b66704b  sops" | sha256sum -c -
           chmod +x sops
 
           wget -qO helm-secrets.tar.gz https://github.com/jkroepke/helm-secrets/releases/download/v4.7.5/helm-secrets.tar.gz
