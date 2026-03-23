@@ -90,6 +90,14 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: database
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      name: redpanda-bootstrap-user
+      namespace: database
+      jsonPointers:
+        - /data/password
+        - /stringData/password
   syncPolicy:
     managedNamespaceMetadata:
       labels:
