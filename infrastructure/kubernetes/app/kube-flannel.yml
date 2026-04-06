@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://flannel-io.github.io/flannel
     chart: flannel
-    targetRevision: "v0.28.1"
+    targetRevision: "v0.28.2"
     helm:
       valuesObject:
         podCidr: "10.42.0.0/16"
