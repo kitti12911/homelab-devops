@@ -114,16 +114,16 @@ repoServer:
           mkdir -p /custom-tools/helm-plugins
 
           wget -qO sops https://github.com/getsops/sops/releases/download/v3.12.2/sops-v3.12.2.linux.arm64
-          echo "f66de6f528dca946e910d74fa36a62a7714c11d0db16bd3c9bd8acf73b66704b  sops" | sha256sum -c -
+          echo "f66de6f528dca946e910d74fa36a62a7714c11d0db16bd3c9bd8acf73b66704b sops" | sha256sum -c -
           chmod +x sops
 
-          wget -qO helm-secrets.tar.gz https://github.com/jkroepke/helm-secrets/releases/download/v4.7.5/helm-secrets.tar.gz
-          echo "7331a63edb22cc4c2b6aa33f276e69d412e82005605cd188e7e61d47fada1102  helm-secrets.tar.gz" | sha256sum -c -
+          wget -qO helm-secrets.tar.gz https://github.com/jkroepke/helm-secrets/releases/download/v4.7.6/helm-secrets.tar.gz
+          echo "7331a63edb22cc4c2b6aa33f276e69d412e82005605cd188e7e61d47fada1102 helm-secrets.tar.gz" | sha256sum -c -
           tar -C /custom-tools/helm-plugins -xzf helm-secrets.tar.gz
           rm helm-secrets.tar.gz
 
           wget -qO ksops.tar.gz https://github.com/viaduct-ai/kustomize-sops/releases/download/v4.4.0/ksops_4.4.0_Linux_arm64.tar.gz
-          echo "df0ced165a73801c7f03e4e650314e645f050c1a453f891f6f7ca45695af6fc6  ksops.tar.gz" | sha256sum -c -
+          echo "df0ced165a73801c7f03e4e650314e645f050c1a453f891f6f7ca45695af6fc6 ksops.tar.gz" | sha256sum -c -
           tar xz -f ksops.tar.gz
           rm ksops.tar.gz
 
