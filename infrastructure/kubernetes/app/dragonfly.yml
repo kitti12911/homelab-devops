@@ -15,8 +15,8 @@ spec:
 
           storage:
             enabled: true
-            storageClassName: local-path
-            requests: 10Gi
+            storageClassName: longhorn-local
+            requests: 1Gi
 
           service:
             type: ClusterIP
@@ -30,15 +30,6 @@ spec:
 
           extraArgs:
             - --maxmemory=2gb
-
-          nodeSelector:
-            node-role.kubernetes.io/database: "true"
-
-          tolerations:
-            - key: dedicated
-              operator: Equal
-              value: database
-              effect: NoSchedule
 
           extraObjects:
             - apiVersion: v1

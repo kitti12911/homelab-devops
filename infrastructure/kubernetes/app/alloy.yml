@@ -84,7 +84,7 @@ spec:
 
                 loki.write "default" {
                   endpoint {
-                    url = "http://loki-gateway.loki.svc.cluster.local:80/loki/api/v1/push"
+                    url = "http://loki-gateway.observability.svc.cluster.local:80/loki/api/v1/push"
                   }
                 }
 
@@ -109,7 +109,7 @@ spec:
 
                 otelcol.exporter.otlp "tempo" {
                   client {
-                    endpoint = "tempo.tempo.svc.cluster.local:4317"
+                    endpoint = "tempo.observability.svc.cluster.local:4317"
 
                     tls {
                       insecure = true
@@ -145,7 +145,7 @@ spec:
       path: infrastructure/kubernetes/app/alloy-manifests
   destination:
     server: https://kubernetes.default.svc
-    namespace: alloy
+    namespace: observability
   syncPolicy:
     managedNamespaceMetadata:
       labels:

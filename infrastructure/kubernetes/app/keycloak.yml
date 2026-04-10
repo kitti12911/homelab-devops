@@ -11,7 +11,7 @@ spec:
     path: infrastructure/kubernetes/app/keycloak-manifests
   destination:
     server: https://kubernetes.default.svc
-    namespace: keycloak
+    namespace: auth
   syncPolicy:
     managedNamespaceMetadata:
       labels:

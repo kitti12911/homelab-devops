@@ -13,7 +13,7 @@ for full bootstrap and setup instructions, see [kubernetes/README.md](kubernetes
 | argocd.lan           | gitops deployment            |
 | keycloak.lan         | identity provider            |
 | oauth2-proxy.lan     | forward auth proxy           |
-| vault.lan            | secret management            |
+<!-- | vault.lan            | secret management            | -->
 | longhorn.lan         | distributed storage          |
 | zot.lan              | container registry           |
 | seaweedfs.lan        | object storage (filer)       |
@@ -25,7 +25,7 @@ for full bootstrap and setup instructions, see [kubernetes/README.md](kubernetes
 | loki.lan             | log aggregation              |
 | tempo.lan            | distributed tracing          |
 | alloy.lan            | observability agent          |
-| redpanda.lan         | kafka streaming console      |
+<!-- | redpanda.lan         | kafka streaming console      | -->
 
 ### tcp services
 
@@ -34,4 +34,4 @@ for full bootstrap and setup instructions, see [kubernetes/README.md](kubernetes
 | postgres.lan     | 5432  | postgresql database        |
 | nats.lan         | 4222  | nats messaging             |
 | dragonfly.lan    | 6379  | redis-compatible cache     |
-| redpanda.lan     | 9092  | kafka-compatible streaming |
+<!-- | redpanda.lan     | 9092  | kafka-compatible streaming | -->

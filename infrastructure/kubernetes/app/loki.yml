@@ -119,7 +119,7 @@ spec:
       path: infrastructure/kubernetes/app/loki-manifests
   destination:
     server: https://kubernetes.default.svc
-    namespace: loki
+    namespace: observability
   syncPolicy:
     managedNamespaceMetadata:
       labels:

@@ -16,7 +16,7 @@ spec:
           defaultSettings:
             defaultDataPath: "/var/lib/longhorn/"
             storageMinimalAvailablePercentage: "5"
-            defaultReplicaCount: "2"
+            defaultReplicaCount: "3"
             allowRecurringJobWhileVolumeDetached: false
             storageReservedPercentageForDefaultDisk: 10
           ingress:
@@ -25,7 +25,7 @@ spec:
             enabled: false
           persistence:
             defaultClass: true
-            defaultClassReplicaCount: 2
+            defaultClassReplicaCount: 3
             defaultFsType: ext4
             reclaimPolicy: Retain
             volumeBindingMode: WaitForFirstConsumer

@@ -5,13 +5,8 @@ global:
   logging:
     level: error
   domain: argocd.lan
-  nodeSelector:
-    node-role.kubernetes.io/object_storage: "true"
-  tolerations:
-    - key: dedicated
-      operator: Equal
-      value: object_storage
-      effect: NoSchedule
+  nodeSelector: {}
+  tolerations: []
 
 dex:
   enabled: false
@@ -34,20 +29,20 @@ configs:
     scopes: "[groups]"
   params:
     server.insecure: "true"
-    controller.status.processors: "5"
-    controller.operation.processors: "3"
-    controller.kubectl.parallelism.limit: "5"
-    timeout.reconciliation: "300"
+    controller.status.processors: "20"
+    controller.operation.processors: "10"
+    controller.kubectl.parallelism.limit: "10"
+    timeout.reconciliation: "180"
 
 controller:
   podAnnotations:
     reloader.stakater.com/auto: "true"
   resources:
     requests:
-      cpu: 100m
+      cpu: 250m
       memory: 512Mi
     limits:
-      memory: 1Gi
+      memory: 2Gi
 
 server:
   podAnnotations:
@@ -56,6 +51,7 @@ server:
     - name: homelab-ca
       configMap:
         name: homelab-ca
+        optional: true
   volumeMounts:
     - name: homelab-ca
       mountPath: /etc/ssl/certs/homelab
@@ -63,6 +59,10 @@ server:
   env:
     - name: SSL_CERT_DIR
       value: /etc/ssl/certs/homelab
+  service:
+    type: NodePort
+    nodePortHttp: 30800
+    nodePortHttps: 30801
   resources:
     requests:
       cpu: 50m

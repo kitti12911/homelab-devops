@@ -18,20 +18,21 @@ bootstrap and manage kubernetes applications via argocd. all apps are deployed a
 | trust-manager             | cert-manager       | -                                             | certificate trust distribution  |
 | traefik                   | kube-system        | -                                             | ingress / gateway               |
 | argocd                    | argocd             | argocd.lan                                    | gitops deployment               |
-| keycloak                  | keycloak           | keycloak.lan                                  | identity provider               |
-| oauth2-proxy              | oauth2-proxy       | oauth2-proxy.lan                              | forward auth for non-oidc apps  |
-| postgresql                | postgresql         | postgres.lan:5432                             | database                        |
-| dragonfly                 | dragonfly          | dragonfly.lan:6379                            | redis-compatible cache          |
-| nats                      | nats               | nats.lan:4222                                 | messaging                       |
-| redpanda                  | database           | redpanda.lan, redpanda.lan:9092               | kafka-compatible streaming      |
+| keycloak                  | auth               | keycloak.lan                                  | identity provider               |
+| keycloak-operator         | auth               | -                                             | keycloak operator               |
+| oauth2-proxy              | auth               | oauth2-proxy.lan                              | forward auth for non-oidc apps  |
+| postgresql                | database           | postgres.lan:5432                             | database                        |
+| dragonfly                 | database           | dragonfly.lan:6379                            | redis-compatible cache          |
+| nats                      | database           | nats.lan:4222                                 | messaging                       |
+| ~~redpanda~~              | ~~database~~       | ~~redpanda.lan, redpanda.lan:9092~~           | ~~kafka-compatible streaming~~  |
 | longhorn                  | longhorn-system    | longhorn.lan                                  | distributed storage             |
 | seaweedfs                 | seaweedfs          | seaweedfs.lan, s3.lan                         | object storage                  |
 | zot                       | zot                | zot.lan                                       | oci container registry          |
-| vault                     | vault              | vault.lan                                     | secret management               |
-| kube-prometheus-stack     | monitoring         | grafana.lan, prometheus.lan, alertmanager.lan | monitoring                      |
-| loki                      | loki               | loki.lan                                      | log aggregation                 |
-| tempo                     | tempo              | tempo.lan                                     | distributed tracing             |
-| alloy                     | alloy              | alloy.lan                                     | observability agent             |
+| ~~vault~~                 | ~~vault~~          | ~~vault.lan~~                                 | ~~secret management~~           |
+| kube-prometheus-stack     | observability      | grafana.lan, prometheus.lan, alertmanager.lan | monitoring                      |
+| loki                      | observability      | loki.lan                                      | log aggregation                 |
+| tempo                     | observability      | tempo.lan                                     | distributed tracing             |
+| alloy                     | observability      | alloy.lan                                     | observability agent             |
 | reloader                  | reloader           | -                                             | auto-reload on config changes   |
 | system-upgrade-controller | system-upgrade     | -                                             | k3s auto-upgrades               |
 | cloudnative-pg            | cnpg-system        | -                                             | postgresql operator             |
@@ -254,7 +255,7 @@ sops -e -i kubernetes/app/postgresql-manifests/superuser-secret.enc.yml
     namespace: <app-namespace>
     spec:
     forwardAuth:
-        address: http://oauth2-proxy.oauth2-proxy.svc.cluster.local/
+        address: http://oauth2-proxy.auth.svc.cluster.local/
         trustForwardHeader: true
         authResponseHeaders:
         - X-Auth-Request-User
@@ -342,7 +343,7 @@ rm /tmp/cosign.pub
 
 zot does not support logout url, use: [keycloak logout for zot](https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fzot.lan&client_id=zot)
 
-### hashicorp vault
+<!-- ### hashicorp vault
 
 1. initialize vault
 
@@ -428,7 +429,7 @@ vault write identity/group-alias \
   canonical_id="$DEV_GROUP_ID"
 ```
 
-vault does not support logout url, use: [keycloak logout for vault](https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fvault.lan&client_id=vault)
+vault does not support logout url, use: [keycloak logout for vault](https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fvault.lan&client_id=vault) -->
 
 ### renovate bot
 

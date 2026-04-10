@@ -31,7 +31,7 @@ spec:
 
             metricsGenerator:
               enabled: true
-              remoteWriteUrl: "http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write"
+              remoteWriteUrl: "http://kube-prometheus-stack-prometheus.observability.svc.cluster.local:9090/api/v1/write"
 
           persistence:
             enabled: true
@@ -48,7 +48,7 @@ spec:
       path: infrastructure/kubernetes/app/tempo-manifests
   destination:
     server: https://kubernetes.default.svc
-    namespace: tempo
+    namespace: observability
   syncPolicy:
     managedNamespaceMetadata:
       labels:

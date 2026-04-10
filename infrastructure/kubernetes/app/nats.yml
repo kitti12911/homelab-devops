@@ -19,8 +19,8 @@ spec:
                 dir: /data
                 pvc:
                   enabled: true
-                  size: 20Gi
-                  storageClassName: local-path
+                  size: 5Gi
+                  storageClassName: longhorn-local
             merge:
               authorization:
                 users:
@@ -46,29 +46,6 @@ spec:
               limits:
                 cpu: 500m
                 memory: 768Mi
-
-          podTemplate:
-            merge:
-              spec:
-                nodeSelector:
-                  node-role.kubernetes.io/database: "true"
-                tolerations:
-                  - key: dedicated
-                    operator: Equal
-                    value: database
-                    effect: NoSchedule
-
-          natsBox:
-            podTemplate:
-              merge:
-                spec:
-                  nodeSelector:
-                    node-role.kubernetes.io/database: "true"
-                  tolerations:
-                    - key: dedicated
-                      operator: Equal
-                      value: database
-                      effect: NoSchedule
 
           extraResources:
             - apiVersion: v1

@@ -137,7 +137,7 @@ spec:
               - name: Loki
                 type: loki
                 uid: loki
-                url: http://loki-gateway.loki.svc.cluster.local:80
+                url: http://loki-gateway.observability.svc.cluster.local:80
                 access: proxy
                 jsonData:
                   maxLines: 1000
@@ -149,7 +149,7 @@ spec:
               - name: Tempo
                 type: tempo
                 uid: tempo
-                url: http://tempo.tempo.svc.cluster.local:3200
+                url: http://tempo.observability.svc.cluster.local:3200
                 access: proxy
                 jsonData:
                   tracesToLogsV2:
@@ -205,7 +205,7 @@ spec:
       path: infrastructure/kubernetes/app/kube-prometheus-stack-manifests
   destination:
     server: https://kubernetes.default.svc
-    namespace: monitoring
+    namespace: observability
   syncPolicy:
     managedNamespaceMetadata:
       labels:

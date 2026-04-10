@@ -26,13 +26,7 @@ spec:
             affinity: ""
 
             nodeSelector: |
-              node-role.kubernetes.io/object_storage: "true"
-
-            tolerations: |
-              - key: "dedicated"
-                operator: "Equal"
-                value: "object_storage"
-                effect: "NoSchedule"
+              node-role.kubernetes.io/object-storage: "true"
 
             data:
               type: "persistentVolumeClaim"
@@ -65,13 +59,7 @@ spec:
             affinity: ""
 
             nodeSelector: |
-              node-role.kubernetes.io/object_storage: "true"
-
-            tolerations: |
-              - key: "dedicated"
-                operator: "Equal"
-                value: "object_storage"
-                effect: "NoSchedule"
+              node-role.kubernetes.io/object-storage: "true"
 
             dataDirs:
               - name: data
@@ -102,13 +90,7 @@ spec:
             affinity: ""
 
             nodeSelector: |
-              node-role.kubernetes.io/object_storage: "true"
-
-            tolerations: |
-              - key: "dedicated"
-                operator: "Equal"
-                value: "object_storage"
-                effect: "NoSchedule"
+              node-role.kubernetes.io/object-storage: "true"
 
             data:
               type: "persistentVolumeClaim"
@@ -150,13 +132,7 @@ spec:
             affinity: ""
 
             nodeSelector: |
-              node-role.kubernetes.io/object_storage: "true"
-
-            tolerations: |
-              - key: "dedicated"
-                operator: "Equal"
-                value: "object_storage"
-                effect: "NoSchedule"
+              node-role.kubernetes.io/object-storage: "true"
 
             data:
               type: "emptyDir"
