@@ -1,1 +1,4 @@
 ansible_user: kitti
+
+object_storage_nodes:
+  - echo
