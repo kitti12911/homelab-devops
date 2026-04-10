@@ -1,0 +1,3 @@
+# USB SSD storage - SSD is fast but USB bus is the bottleneck
+sysctl_dirty_ratio: "15"
+sysctl_dirty_background_ratio: "5"

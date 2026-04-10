@@ -1,5 +1,5 @@
 - name: Initial node setup
-  hosts: cluster
+  hosts: cluster:proxy
   become: true
 
   vars:
@@ -12,13 +12,16 @@
       register: cgroups_check
       failed_when: false
       changed_when: false
+      when: "'cluster' in group_names"
 
     - name: Enable cgroups in cmdline.txt
       ansible.builtin.replace:
         path: "{{ cmdline_path }}"
         regexp: '^(.+)$'
         replace: '\1 cgroup_memory=1 cgroup_enable=memory'
-      when: cgroups_check.rc != 0
+      when:
+        - "'cluster' in group_names"
+        - cgroups_check.rc != 0
 
     - name: Set hostname
       ansible.builtin.copy:
@@ -43,6 +46,18 @@
         path: "/etc/ssh/sshd_config"
         regexp: '^#?KbdInteractiveAuthentication'
         line: "KbdInteractiveAuthentication no"
+
+    - name: Load nf_conntrack module (required before setting conntrack sysctls)
+      ansible.builtin.modprobe:
+        name: nf_conntrack
+        state: present
+
+    - name: Ensure nf_conntrack loads at boot
+      ansible.builtin.lineinfile:
+        path: /etc/modules
+        line: nf_conntrack
+        create: true
+        mode: "0644"
 
     - name: Tune kernel parameters for Kubernetes workloads
       ansible.posix.sysctl:
@@ -85,12 +100,44 @@
         - { key: net.ipv4.ip_local_port_range, value: "1024 65535" }
         # Orphaned socket limit - prevent memory leak from half-closed connections
         - { key: net.ipv4.tcp_max_orphans, value: "16384" }
+        # Raise socket buffer ceilings so apps (Envoy, databases) can use larger windows
+        - { key: net.core.rmem_max, value: "4194304" }
+        - { key: net.core.wmem_max, value: "4194304" }
+        # TCP buffer auto-tuning ranges: min / pressure / max (conservative for Pi RAM)
+        - { key: net.ipv4.tcp_rmem, value: "4096 87380 4194304" }
+        - { key: net.ipv4.tcp_wmem, value: "4096 65536 4194304" }
+
+        # --- Network - throughput ---
+        # TCP Fast Open - saves a round trip on repeated connections (client + server)
+        - { key: net.ipv4.tcp_fastopen, value: "3" }
+        # Keep congestion window warm after idle instead of resetting to slow-start
+        - { key: net.ipv4.tcp_slow_start_after_idle, value: "0" }
+        # Probe for path MTU to avoid silent black holes
+        - { key: net.ipv4.tcp_mtu_probing, value: "1" }
+
+        # --- Network - security hardening ---
+        # SYN flood protection
+        - { key: net.ipv4.tcp_syncookies, value: "1" }
+        # Ignore ICMP redirects - prevents MITM route poisoning
+        - { key: net.ipv4.conf.all.accept_redirects, value: "0" }
+        - { key: net.ipv4.conf.default.accept_redirects, value: "0" }
+        - { key: net.ipv4.conf.all.send_redirects, value: "0" }
+        # Reject source-routed packets
+        - { key: net.ipv4.conf.all.accept_source_route, value: "0" }
+        - { key: net.ipv4.conf.default.accept_source_route, value: "0" }
+        # Log packets with impossible source addresses
+        - { key: net.ipv4.conf.all.log_martians, value: "1" }
+        # Ignore broadcast pings (smurf attack protection)
+        - { key: net.ipv4.icmp_echo_ignore_broadcasts, value: "1" }
 
         # --- VM / memory ---
         # Lower swappiness - Pi has limited RAM, prefer keeping app pages in memory
         - { key: vm.swappiness, value: "10" }
         # Don't panic on OOM, let the OOM killer do its job
         - { key: vm.panic_on_oom, value: "0" }
+        # Flush dirty pages - tuned per storage type via group_vars
+        - { key: vm.dirty_ratio, value: "{{ sysctl_dirty_ratio }}" }
+        - { key: vm.dirty_background_ratio, value: "{{ sysctl_dirty_background_ratio }}" }
 
 - name: Longhorn prerequisites (worker computer nodes)
   hosts: computer
