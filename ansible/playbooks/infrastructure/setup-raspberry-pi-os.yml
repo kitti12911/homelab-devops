@@ -159,13 +159,29 @@
       ansible.builtin.pause:
         seconds: 2
 
+    - name: Unmount NVMe partitions if auto-mounted by udev
+      ansible.builtin.shell: |
+        umount {{ nvme_root_partition }} 2>/dev/null || true
+        umount {{ nvme_boot_partition }} 2>/dev/null || true
+      changed_when: false
+
     - name: Extend root partition to 100%
-      community.general.parted:
-        device: "{{ nvme_device }}"
-        number: 2
-        part_end: "100%"
-        resize: true
-        state: present
+      ansible.builtin.shell:
+        cmd: "echo ', +' | sfdisk --no-reread --force -N 2 {{ nvme_device }}"
+      register: sfdisk_result
+      changed_when: true
+
+    - name: Inform kernel of updated partition table
+      ansible.builtin.command:
+        cmd: partprobe {{ nvme_device }}
+      ignore_errors: true
+
+    - name: Check filesystem before resize
+      ansible.builtin.command:
+        cmd: e2fsck -f -y {{ nvme_root_partition }}
+      register: e2fsck_result
+      failed_when: e2fsck_result.rc > 2
+      changed_when: e2fsck_result.rc == 1
 
     - name: Resize filesystem
       ansible.builtin.command:
