@@ -118,7 +118,7 @@ repoServer:
           chmod +x sops
 
           wget -qO helm-secrets.tar.gz https://github.com/jkroepke/helm-secrets/releases/download/v4.7.5/helm-secrets.tar.gz
-          echo "f1e332f159e67100612815dcb8773ea46ae75a682fcf058c29bd300581fe2401  helm-secrets.tar.gz" | sha256sum -c -
+          echo "7331a63edb22cc4c2b6aa33f276e69d412e82005605cd188e7e61d47fada1102  helm-secrets.tar.gz" | sha256sum -c -
           tar -C /custom-tools/helm-plugins -xzf helm-secrets.tar.gz
           rm helm-secrets.tar.gz
 
