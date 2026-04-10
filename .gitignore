@@ -15,3 +15,5 @@
 *.crt
 
 .DS_Store
+
+.cursor/
