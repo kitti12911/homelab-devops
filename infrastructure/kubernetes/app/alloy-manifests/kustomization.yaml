@@ -3,4 +3,3 @@ kind: Kustomization
 resources:
   - httproute.yml
   - grpcroute.yml
-  - forwardauth-middleware.yml
