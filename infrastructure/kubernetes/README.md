@@ -314,3 +314,19 @@ after your own admin user is working, delete the temporary bootstrap account:
     ```
 
 sign out: [https://oauth2-proxy.lan/oauth2/sign_out](https://oauth2-proxy.lan/oauth2/sign_out)
+
+### 9. coredns warning suppressed
+
+```bash
+kubectl apply -f kubernetes/bootstrap/coredns-warning-suppressed.yml
+kubectl rollout restart deployment coredns -n kube-system
+```
+
+### 10. system-upgrade-controller
+
+install before syncing argocd:
+
+```bash
+kubectl apply -f https://github.com/rancher/system-upgrade-controller/releases/latest/download/crd.yaml \
+  -f https://github.com/rancher/system-upgrade-controller/releases/latest/download/system-upgrade-controller.yaml
+```
