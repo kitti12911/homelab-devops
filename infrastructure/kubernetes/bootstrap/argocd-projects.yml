@@ -113,3 +113,20 @@ spec:
   clusterResourceWhitelist:
     - group: "*"
       kind: "*"
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: code-quality
+  namespace: argocd
+spec:
+  description: Code quality and analysis tools
+  sourceRepos:
+    - https://SonarSource.github.io/helm-chart-sonarqube
+    - git@github.com:kitti12911/homelab-devops.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: sonarqube
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"

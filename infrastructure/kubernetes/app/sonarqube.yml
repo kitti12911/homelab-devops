@@ -1,0 +1,57 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sonarqube
+  namespace: argocd
+spec:
+  project: code-quality
+  sources:
+    - repoURL: https://SonarSource.github.io/helm-chart-sonarqube
+      chart: sonarqube
+      targetRevision: "2026.2.1"
+      helm:
+        valuesObject:
+          community:
+            enabled: true
+
+          service:
+            type: ClusterIP
+
+          ingress:
+            enabled: false
+
+          postgresql:
+            enabled: false
+
+          jdbcOverwrite:
+            enable: true
+            jdbcUrl: jdbc:postgresql://postgresql-rw.database.svc.cluster.local:5432/sonarqube
+            jdbcUsername: sonarqube
+            jdbcSecretName: sonarqube-db-secret
+            jdbcSecretPasswordKey: password
+
+          persistence:
+            enabled: true
+            storageClass: longhorn
+            size: 20Gi
+
+          resources:
+            requests:
+              cpu: 400m
+              memory: 2Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+
+    - repoURL: git@github.com:kitti12911/homelab-devops.git
+      targetRevision: main
+      path: infrastructure/kubernetes/app/sonarqube-manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sonarqube
+  syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        gateway-access: "true"
+    syncOptions:
+      - CreateNamespace=true

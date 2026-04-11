@@ -27,7 +27,7 @@ spec:
     name: postgresql-superuser-secret
 
   storage:
-    size: 100Gi
+    size: 180Gi
     storageClass: local-path
 
   affinity:
@@ -62,6 +62,13 @@ spec:
         createrole: false
         passwordSecret:
           name: postgresql-example-secret
+      - name: sonarqube
+        login: true
+        superuser: false
+        createdb: false
+        createrole: false
+        passwordSecret:
+          name: postgresql-sonarqube-secret
     services:
       additional:
         - selectorType: rw
