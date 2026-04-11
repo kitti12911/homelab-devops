@@ -17,4 +17,5 @@
 .DS_Store
 
 .cursor/
-pgbench-results-before/
+pgbench-results-local/
+pgbench-results/

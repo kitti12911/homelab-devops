@@ -7,6 +7,8 @@ set -euo pipefail
 #   run     — execute read / mixed / write benchmarks at four concurrency levels
 #   all     — init + run  (default)
 #   cleanup — drop pgbench tables
+# example: PG_RESULTS_DIR=pgbench-results-before ./scripts/pgbench-benchmark.sh
+
 
 NAMESPACE="${PG_NAMESPACE:-database}"
 POD="${PG_POD:-postgresql-1}"
