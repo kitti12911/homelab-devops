@@ -36,17 +36,18 @@ bootstrap and manage kubernetes applications via argocd. all apps are deployed a
 | reloader                  | reloader           | -                                             | auto-reload on config changes   |
 | system-upgrade-controller | system-upgrade     | -                                             | k3s auto-upgrades               |
 | cloudnative-pg            | cnpg-system        | -                                             | postgresql operator             |
+| trivy-operator            | trivy-system       | -                                             | kubernetes security scanning    |
 
 ## app sync order
 
 sync apps in this order after argocd is running. each wave depends on the previous being healthy.
 
-| wave | apps                                                                       | reason                                                                 |
-|------|----------------------------------------------------------------------------|------------------------------------------------------------------------|
-| 1    | cert-manager, cloudnative-pg, keycloak-operator, longhorn                  | operators and storage - no dependencies                                |
-| 2    | trust-manager, postgresql, dragonfly, nats, seaweedfs                      | trust-manager needs cert-manager; dbs need cnpg + longhorn             |
-| 3    | keycloak, kube-prometheus-stack                                            | keycloak needs keycloak-operator + postgresql                          |
-| 4    | oauth2-proxy, zot, loki, tempo, alloy, reloader, system-upgrade-controller | oauth2-proxy + zot need keycloak; observability stack needs prometheus |
+| wave | apps                                                                                       | reason                                                                 |
+|------|--------------------------------------------------------------------------------------------|------------------------------------------------------------------------|
+| 1    | cert-manager, cloudnative-pg, keycloak-operator, longhorn                                  | operators and storage - no dependencies                                |
+| 2    | trust-manager, postgresql, dragonfly, nats, seaweedfs                                      | trust-manager needs cert-manager; dbs need cnpg + longhorn             |
+| 3    | keycloak, kube-prometheus-stack                                                            | keycloak needs keycloak-operator + postgresql                          |
+| 4    | oauth2-proxy, zot, loki, tempo, alloy, reloader, system-upgrade-controller, trivy-operator | oauth2-proxy + zot need keycloak; observability stack needs prometheus |
 
 ## bootstrap order
 
