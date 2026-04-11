@@ -19,7 +19,7 @@ spec:
           image:
             repository: ghcr.io/project-zot/zot
             pullPolicy: IfNotPresent
-            tag: "v2.1.14"
+            tag: "v2.1.15"
 
           service:
             type: ClusterIP
@@ -33,7 +33,7 @@ spec:
           configFiles:
             config.json: |-
               {
-                "distSpecVersion": "1.1.0",
+                "distSpecVersion": "1.1.1",
                 "storage": {
                   "rootDirectory": "/var/lib/registry"
                 },
