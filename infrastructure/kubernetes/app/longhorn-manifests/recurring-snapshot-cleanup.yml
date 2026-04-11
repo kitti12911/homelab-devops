@@ -8,5 +8,5 @@ spec:
   task: snapshot-cleanup
   groups:
     - default
-  retain: 2
+  retain: 0
   concurrency: 1
