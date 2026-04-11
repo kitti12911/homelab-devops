@@ -23,7 +23,6 @@ spec:
 
         serviceMonitor:
           enabled: true
-          namespace: observability
           labels:
             release: kube-prometheus-stack
 
