@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: age
+    namespace: database
+type: Opaque
+stringData:
+    age.key: ENC[AES256_GCM,data:g0Ahp/uWZ0QsSAW0N8CH8URwzXfv7RN/HE2HvZnPoUlCLXP00ZRAqd1hZf5YSSQP6gJmbh+ERThyLVcU+vpQkAiDeH5Al1yuHm0TdFcdP8G9B4NcCHKZc6o8ETg3gOM7kxTP4rC4pv35mBWt9VyK9Dh8Fa3BLdzngmx+HAvW4L5GnAOjPgBoTAOZWwNOQ3Z2f2zPhZXhkNTfx1HEGsmB2jKzYKFPwOeWud7DW34UXWYgJ5u+ie1F4fXz/Yk=,iv:BK/wV5RYMqMUt+b2rJcxLhQkT1p3INiIZm2LzcopIqM=,tag:PywTe0Cu5G4VBonI1mbwwg==,type:str]
+sops:
+    age:
+        - recipient: age1s6q3qyvmyxrxuc05ge89e94wrfvx4p2vlylas000dgz35v8cw5aqqjj62y
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBYVWo2REwyRDVRNHMzWWRN
+            WlFWcTMyemVWRDU2b0VrY3cvQmlzVjdxQ2tNCkVRM3B1Q1dnMjVQa2Z2VW1pWXZl
+            aVRxajh0RzRlRVJmYVJjTHU4b2lYTDAKLS0tIFBlb3JnOUdvNUF3MFhrbGVoOWl1
+            RjJIUktLMUZTak1RaWM3a2VUMGhLdmsKa3K0wIoCMYUF6jYa3sXTCFdHVXyj/Ra1
+            5cPpyYKs/xpLyqIN4S6Yma04pExjMRUG4xoRWIegiochgks8Wxqbpg==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-04-11T16:59:22Z"
+    mac: ENC[AES256_GCM,data:uoGT+xWMDDLgIqq9Av93xFBBm4pLdfKQ6s3Qe8/mTjvUF05Xm+B4duZ6KffZPJpN+CK0DrKK94qRGQBFigJDxWdzsWUgBAXzSgLv/agnqamHmcpyvFVPWkhsnOazQbZbO3y3+LJoHMSPKUXS7w/wkKDJjd8vzcj96HAJh1LUewo=,iv:87C78su6AQiF9PY3ShP8G6Q1R1eKx4ciaZgMRdVzuE0=,tag:BubBo9kMn0BHyEz/C5JNDw==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.12.2

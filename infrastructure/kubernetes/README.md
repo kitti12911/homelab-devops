@@ -52,7 +52,7 @@ sync apps in this order after argocd is running. each wave depends on the previo
 
 run these steps in order on a fresh cluster. after argocd is running, it handles everything else.
 
-### 2. gateway api
+### 1. gateway api
 
 ```bash
 kubectl apply -f kubernetes/bootstrap/gateway.yml
@@ -70,7 +70,7 @@ apply security headers middleware:
 kubectl apply -f kubernetes/bootstrap/traefik-middleware.yml
 ```
 
-### 4. prometheus crds
+### 2. prometheus crds
 
 ```bash
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
@@ -78,7 +78,7 @@ helm repo update
 helm install prometheus-operator-crds prometheus-community/prometheus-operator-crds
 ```
 
-### 5. sops/age
+### 3. sops/age
 
 1. generate age key (don't push to git!)
 
@@ -112,7 +112,7 @@ helm install prometheus-operator-crds prometheus-community/prometheus-operator-c
     helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v4.7.6/secrets-post-renderer-4.7.6.tgz --verify=false
     ```
 
-### 6. argocd
+### 4. argocd
 
 1. install argocd
 
@@ -156,7 +156,7 @@ helm install prometheus-operator-crds prometheus-community/prometheus-operator-c
     kubectl delete secret argocd-initial-admin-secret -n argocd
     ```
 
-### 7. cert-manager
+### 5. cert-manager
 
 apply wildcard certificate:
 
@@ -174,7 +174,7 @@ sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keyc
 rm homelab-ca.crt
 ```
 
-### 7. keycloak configuration
+### 6. keycloak configuration
 
 after keycloak is running, set up the realm and clients so all apps can authenticate.
 
@@ -199,6 +199,7 @@ create these groups (used for role mapping across apps):
 | `argocd-viewers`  | argocd — readonly role          |
 | `grafana-admins`  | grafana — Admin role            |
 | `grafana-editors` | grafana — Editor role           |
+| `zot-admins`      | zot — admin role                |
 
 #### client scope: groups
 
@@ -271,7 +272,7 @@ after your own admin user is working, delete the temporary bootstrap account:
     kubectl delete secret keycloak-initial-admin -n auth
     ```
 
-### 8. oauth2-proxy
+### 7. oauth2-proxy
 
 1. generate cookie secret
 
@@ -281,48 +282,7 @@ after your own admin user is working, delete the temporary bootstrap account:
 
 2. fill in the secret and encrypt
 
-    ```bash
-    sops -e -i kubernetes/app/oauth2-proxy-manifests/oidc-secret.enc.yml
-    ```
-
-3. to protect an app with oauth2-proxy, add a ForwardAuth middleware to the app's manifests:
-
-    ```yaml
-    apiVersion: traefik.io/v1alpha1
-    kind: Middleware
-    metadata:
-    name: oauth2-proxy-auth
-    namespace: <app-namespace>
-    spec:
-    forwardAuth:
-        address: http://oauth2-proxy.auth.svc.cluster.local/
-        trustForwardHeader: true
-        authResponseHeaders:
-        - X-Auth-Request-User
-        - X-Auth-Request-Email
-    ```
-
-    then add an `extensionRef` filter in the app's HTTPRoute:
-
-    ```yaml
-    filters:
-    - type: ExtensionRef
-        extensionRef:
-        group: traefik.io
-        kind: Middleware
-        name: oauth2-proxy-auth
-    ```
-
-sign out: [https://oauth2-proxy.lan/oauth2/sign_out](https://oauth2-proxy.lan/oauth2/sign_out)
-
-### 9. coredns warning suppressed
-
-```bash
-kubectl apply -f kubernetes/bootstrap/coredns-warning-suppressed.yml
-kubectl rollout restart deployment coredns -n kube-system
-```
-
-### 10. system-upgrade-controller
+### 8. system-upgrade-controller
 
 install before syncing argocd:
 
@@ -330,3 +290,225 @@ install before syncing argocd:
 kubectl apply -f https://github.com/rancher/system-upgrade-controller/releases/latest/download/crd.yaml \
   -f https://github.com/rancher/system-upgrade-controller/releases/latest/download/system-upgrade-controller.yaml
 ```
+
+## fixes
+
+### traefik crd helm adoption fix
+
+if `helm-install-traefik-crd` job is stuck in CrashLoopBackOff because Gateway API CRDs already exist without Helm ownership metadata:
+
+```bash
+for crd in $(kubectl get crd -o name | grep gateway.networking.k8s.io); do
+  kubectl label "$crd" app.kubernetes.io/managed-by=Helm --overwrite
+  kubectl annotate "$crd" meta.helm.sh/release-name=traefik-crd --overwrite
+  kubectl annotate "$crd" meta.helm.sh/release-namespace=kube-system --overwrite
+done
+```
+
+then delete the stuck job so k3s recreates it:
+
+```bash
+kubectl delete job helm-install-traefik-crd -n kube-system
+```
+
+### coredns warning suppressed
+
+if coredns logs are spamming warnings about the kubernetes plugin deprecation:
+
+```bash
+kubectl apply -f kubernetes/bootstrap/coredns-warning-suppressed.yml
+kubectl rollout restart deployment coredns -n kube-system
+```
+
+## reloader
+
+### enabling auto-reload
+
+annotate workloads to auto-restart when their referenced secrets or configmaps change:
+
+```yaml
+metadata:
+  annotations:
+    reloader.stakater.com/auto: "true"
+```
+
+### watching specific resources
+
+to only reload when specific labeled resources change:
+
+```yaml
+metadata:
+  annotations:
+    reloader.stakater.com/search: "true"
+```
+
+then label the secret or configmap:
+
+```yaml
+metadata:
+  labels:
+    reloader.stakater.com/match: "true"
+```
+
+to watch a specific secret or configmap by name:
+
+```yaml
+metadata:
+  annotations:
+    secret.reloader.stakater.com/reload: "my-secret"
+    configmap.reloader.stakater.com/reload: "my-configmap"
+```
+
+multiple resources can be comma-separated:
+
+```yaml
+secret.reloader.stakater.com/reload: "secret1,secret2"
+```
+
+### verifying reloader
+
+check reloader logs to confirm it detected a change and triggered a rollout:
+
+```bash
+kubectl logs -n reloader -l app.kubernetes.io/name=reloader --tail=50
+```
+
+check if a deployment was recently rolled:
+
+```bash
+kubectl rollout history deployment/<name> -n <namespace>
+```
+
+## oauth2-proxy usage
+
+### protecting an app with oauth2-proxy
+
+1. create a `Middleware` resource in the app's namespace:
+
+    ```yaml
+    apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: oauth2-proxy-auth
+      namespace: <app-namespace>
+    spec:
+      forwardAuth:
+        address: http://oauth2-proxy.auth.svc.cluster.local/
+        trustForwardHeader: true
+        authResponseHeaders:
+          - X-Auth-Request-User
+          - X-Auth-Request-Email
+    ```
+
+2. add an `extensionRef` filter to the app's HTTPRoute:
+
+    ```yaml
+    filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: traefik.io
+          kind: Middleware
+          name: oauth2-proxy-auth
+    ```
+
+3. create the keycloak client for oauth2-proxy if not already done (see [keycloak configuration](#6-keycloak-configuration))
+
+### sign out
+
+clear the oauth2-proxy session: [https://oauth2-proxy.lan/oauth2/sign_out](https://oauth2-proxy.lan/oauth2/sign_out)
+
+full logout (also signs out of keycloak):
+
+```text
+https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Foauth2-proxy.lan&client_id=oauth2-proxy
+```
+
+### troubleshooting
+
+```bash
+kubectl logs -n auth -l app.kubernetes.io/name=oauth2-proxy --tail=50
+```
+
+- **redirect loop**: verify `valid redirect uris` in the keycloak client match the actual callback URL exactly.
+- **403 after login**: user not in the required keycloak group, or `groups` client scope not assigned to the client.
+- **cookie too large**: too many groups/claims in the token. reduce claims or switch to a redis session store.
+
+## zot image signing
+
+### setup
+
+install cosign:
+
+```bash
+brew install cosign
+```
+
+login to zot (use api key as password):
+
+```bash
+cosign login zot.lan --username <username> --password <api-key>
+```
+
+generate key pair:
+
+```bash
+cosign generate-key-pair
+```
+
+store keys in the repo and encrypt the private key:
+
+```bash
+mkdir -p kubernetes/secrets/cosign
+mv cosign.key kubernetes/secrets/cosign/cosign.key
+mv cosign.pub kubernetes/secrets/cosign/cosign.pub
+```
+
+push cosign public key to zot:
+
+```bash
+curl -X POST \
+  -u "<username>:<api-key>" \
+  --data-binary @kubernetes/secrets/cosign/cosign.pub \
+  "https://zot.lan/v2/_zot/ext/cosign"
+```
+
+### building and pushing an image
+
+login to zot:
+
+```bash
+docker login zot.lan --username <username> --password <api-key>
+```
+
+build and push:
+
+```bash
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t zot.lan/<app>:<tag> --push .
+```
+
+single platform:
+
+```bash
+docker build -t zot.lan/<app>:<tag> .
+docker push zot.lan/<app>:<tag>
+```
+
+### signing an image
+
+> cosign v3+ uses new sigstore bundle format by default which zot does not recognize yet. use `--new-bundle-format=false --use-signing-config=false` for compatibility.
+
+```bash
+docker buildx imagetools inspect zot.lan/<app>:<tag>
+
+cosign sign --new-bundle-format=false --use-signing-config=false \
+  --key kubernetes/secrets/cosign/cosign.key zot.lan/<app>@sha256:<digest>
+```
+
+### verifying an image
+
+```bash
+cosign verify --key kubernetes/secrets/cosign/cosign.pub zot.lan/<app>@sha256:<digest>
+```
+
+zot does not support logout url, use: [keycloak logout for zot](https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fzot.lan&client_id=zot)

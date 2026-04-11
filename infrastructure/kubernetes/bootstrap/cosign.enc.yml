@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: cosign
+    namespace: zot
+type: Opaque
+stringData:
+    api-key: zak_68737999c1854aebb9f7bebac06c8734
+    cosign.key: |-
+      -----BEGIN ENCRYPTED SIGSTORE PRIVATE KEY-----
+      eyJrZGYiOnsibmFtZSI6InNjcnlwdCIsInBhcmFtcyI6eyJOIjo2NTUzNiwiciI6
+      OCwicCI6MX0sInNhbHQiOiJOTnAzQWNOV2lXRlNKNXRoNlZNMDFNcldNek5YTWVD
+      U3BwSEdRaDVxNm9ZPSJ9LCJjaXBoZXIiOnsibmFtZSI6Im5hY2wvc2VjcmV0Ym94
+      Iiwibm9uY2UiOiJIWnFTZlJlaHBFaDRacHF0MzV5ZXFzbGlJcnd6SlZzcSJ9LCJj
+      aXBoZXJ0ZXh0IjoiUDdkcUVvVlFLUkJ5UWpJU1BIZjhXYkZrUmx1QWVvaGcvdEEz
+      OUw1UUFhdlBYZTY0OENmRS9vejdxRld1bTV2a1RiOW9MeG1OMkRLbXU2Z2d2M0JG
+      ODN1Tk5nR2J4clUrdjEzTnVoL3hjd2xhaUZsejR0eFlVNmtub0pkQnVFYjRMLytD
+      OVQ4bnlqbGw0eUg0SHlwVHkxcGRVV2JZTGhHNzgvYjVjN0NEbCs0aG1zQVdhVHB4
+      OXphMy8rT2tSUkcvQVlMeXBFb2xjN0RYNkE9PSJ9
+      -----END ENCRYPTED SIGSTORE PRIVATE KEY-----
+    cosign.pub: |-
+      -----BEGIN PUBLIC KEY-----
+      MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEIR03mPrUeMXW0Ca/naVbvFBs+WkB
+      0FoPTJDar1SG3/ombvuh8fF8Pq3dECRyywahh4S9DZt5ht3h5Ui43Qzs8A==
+      -----END PUBLIC KEY-----
+
