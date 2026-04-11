@@ -14,6 +14,9 @@ spec:
           community:
             enabled: true
 
+          monitoringPasscodeSecretName: sonarqube-monitoring-secret
+          monitoringPasscodeSecretKey: passcode
+
           service:
             type: ClusterIP
 
