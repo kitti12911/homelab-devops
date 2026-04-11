@@ -31,3 +31,4 @@ spec:
     - alloy.lan
     - oauth2-proxy.lan
     - redpanda.lan
+    - sonarqube.lan
