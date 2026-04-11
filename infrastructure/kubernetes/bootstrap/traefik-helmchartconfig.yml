@@ -14,6 +14,7 @@ spec:
         expose:
           default: true
         exposedPort: 80
+        nodePort: 32755
         redirectTo:
           port: websecure
       websecure:
@@ -21,6 +22,7 @@ spec:
         expose:
           default: true
         exposedPort: 443
+        nodePort: 30880
         middlewares:
           - kube-system-security-headers@kubernetescrd
       otlp-grpc:
@@ -28,4 +30,5 @@ spec:
         expose:
           default: true
         exposedPort: 4317
+        nodePort: 32442
         protocol: TCP
