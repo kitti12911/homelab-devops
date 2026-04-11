@@ -270,3 +270,47 @@ after your own admin user is working, delete the temporary bootstrap account:
     ```bash
     kubectl delete secret keycloak-initial-admin -n auth
     ```
+
+### 8. oauth2-proxy
+
+1. generate cookie secret
+
+    ```bash
+    openssl rand -base64 24
+    ```
+
+2. fill in the secret and encrypt
+
+    ```bash
+    sops -e -i kubernetes/app/oauth2-proxy-manifests/oidc-secret.enc.yml
+    ```
+
+3. to protect an app with oauth2-proxy, add a ForwardAuth middleware to the app's manifests:
+
+    ```yaml
+    apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+    name: oauth2-proxy-auth
+    namespace: <app-namespace>
+    spec:
+    forwardAuth:
+        address: http://oauth2-proxy.auth.svc.cluster.local/
+        trustForwardHeader: true
+        authResponseHeaders:
+        - X-Auth-Request-User
+        - X-Auth-Request-Email
+    ```
+
+    then add an `extensionRef` filter in the app's HTTPRoute:
+
+    ```yaml
+    filters:
+    - type: ExtensionRef
+        extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: oauth2-proxy-auth
+    ```
+
+sign out: [https://oauth2-proxy.lan/oauth2/sign_out](https://oauth2-proxy.lan/oauth2/sign_out)
