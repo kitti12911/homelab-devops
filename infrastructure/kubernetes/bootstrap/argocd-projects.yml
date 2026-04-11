@@ -25,6 +25,8 @@ spec:
       namespace: system-upgrade
     - server: https://kubernetes.default.svc
       namespace: kube-system
+    - server: https://kubernetes.default.svc
+      namespace: cloudflare-system
   clusterResourceWhitelist:
     - group: "*"
       kind: "*"
