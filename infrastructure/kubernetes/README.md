@@ -33,6 +33,7 @@ bootstrap and manage kubernetes applications via argocd. all apps are deployed a
 | loki                      | observability      | loki.lan                                      | log aggregation                 |
 | tempo                     | observability      | tempo.lan                                     | distributed tracing             |
 | alloy                     | observability      | alloy.lan                                     | observability agent             |
+| sonarqube                 | sonarqube          | sonarqube.lan                                 | code quality analysis           |
 | reloader                  | reloader           | -                                             | auto-reload on config changes   |
 | system-upgrade-controller | system-upgrade     | -                                             | k3s auto-upgrades               |
 | cloudnative-pg            | cnpg-system        | -                                             | postgresql operator             |
@@ -42,12 +43,12 @@ bootstrap and manage kubernetes applications via argocd. all apps are deployed a
 
 sync apps in this order after argocd is running. each wave depends on the previous being healthy.
 
-| wave | apps                                                                                       | reason                                                                 |
-|------|--------------------------------------------------------------------------------------------|------------------------------------------------------------------------|
-| 1    | cert-manager, cloudnative-pg, keycloak-operator, longhorn                                  | operators and storage - no dependencies                                |
-| 2    | trust-manager, postgresql, dragonfly, nats, seaweedfs                                      | trust-manager needs cert-manager; dbs need cnpg + longhorn             |
-| 3    | keycloak, kube-prometheus-stack                                                            | keycloak needs keycloak-operator + postgresql                          |
-| 4    | oauth2-proxy, zot, loki, tempo, alloy, reloader, system-upgrade-controller, trivy-operator | oauth2-proxy + zot need keycloak; observability stack needs prometheus |
+| wave | apps                                                                                                  | reason                                                                                             |
+|------|-------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| 1    | cert-manager, cloudnative-pg, keycloak-operator, longhorn                                             | operators and storage - no dependencies                                                            |
+| 2    | trust-manager, postgresql, dragonfly, nats, seaweedfs                                                 | trust-manager needs cert-manager; dbs need cnpg + longhorn                                         |
+| 3    | keycloak, kube-prometheus-stack                                                                       | keycloak needs keycloak-operator + postgresql                                                      |
+| 4    | oauth2-proxy, zot, sonarqube, loki, tempo, alloy, reloader, system-upgrade-controller, trivy-operator | oauth2-proxy + zot need keycloak; sonarqube needs postgresql; observability stack needs prometheus |
 
 ## bootstrap order
 
@@ -201,6 +202,7 @@ create these groups (used for role mapping across apps):
 | `grafana-admins`  | grafana — Admin role            |
 | `grafana-editors` | grafana — Editor role           |
 | `zot-admins`      | zot — admin role                |
+| `sonarqube-admins`| sonarqube — admin role          |
 
 #### client scope: groups
 
@@ -244,6 +246,56 @@ create these clients (capability config: `client authentication` on, `standard f
 | valid redirect uris            | `https://zot.lan/zot/auth/callback` |
 | valid post logout redirect uris| `https://zot.lan`                   |
 | web origins                    | `https://zot.lan`                   |
+
+##### sonarqube (SAML)
+
+sonarqube uses SAML instead of OIDC. create a SAML client in keycloak:
+
+**step 1:** **clients** → create client → client type: `SAML`, client id: `sonarqube`
+
+**step 2:** configure the client:
+
+| field                          | value                                                  |
+|--------------------------------|--------------------------------------------------------|
+| root url                       | `https://sonarqube.lan`                                |
+| home url                       | `https://sonarqube.lan`                                |
+| valid redirect uris            | `https://sonarqube.lan/*`                              |
+| valid post logout redirect uris| `https://sonarqube.lan`                                |
+| master saml processing url     | `https://sonarqube.lan/oauth2/callback/saml`           |
+
+**step 3:** under **keys** tab, leave `Client signature required` set to `Off`
+
+**step 4:** add mappers (under **client scopes** → `sonarqube-dedicated` → **add mapper** → **by configuration**):
+
+| mapper type        | name    | property    | saml attribute name       | friendly name |
+|--------------------|---------|-------------|---------------------------|---------------|
+| User Property      | email   | email       | email                     | email         |
+| User Property      | login   | username    | login                     | login         |
+| User Property      | name    | firstName   | name                      | name          |
+| Group list         | groups  | -           | group attribute: `groups` | groups        |  
+
+for the group list mapper, set `single group attribute` to `on` and `full group path` to `off`.
+
+**step 5:** configure sonarqube (after it is running):
+
+go to **administration** → **configuration** → **general settings** → **authentication** → **SAML**:
+
+| setting                        | value                                                                                         |
+|--------------------------------|-----------------------------------------------------------------------------------------------|
+| enabled                        | `true`                                                                                        |
+| application id                 | `sonarqube`                                                                                   |
+| provider name                  | `Keycloak`                                                                                    |
+| provider id                    | `https://keycloak.lan/realms/homelab`                                                         |
+| saml login url                 | `https://keycloak.lan/realms/homelab/protocol/saml`                                           |
+| provider certificate           | keycloak → **realm settings** → **keys** → `RS256` row → click **Certificate** → copy value   |
+| user login attribute           | `login`                                                                                       |
+| user name attribute            | `name`                                                                                        |
+| user email attribute           | `email`                                                                                       |
+| group attribute                | `groups`                                                                                      |
+
+**step 6:** log in to sonarqube via SAML (the `sonarqube-admins` group will be auto-created from keycloak). then grant it admin permissions:
+
+go to **administration** → **security** → **global permissions** → find the `sonarqube-admins` group and enable the **Administer** permission. this is a one-time setup; group membership syncs from keycloak on each login.
 
 ##### oauth2-proxy
 
