@@ -18,6 +18,7 @@ spec:
             storageMinimalAvailablePercentage: "5"
             defaultReplicaCount: "2"
             allowRecurringJobWhileVolumeDetached: false
+            replicaAutoBalance: "best-effort"
             storageReservedPercentageForDefaultDisk: 10
           ingress:
             enabled: false
