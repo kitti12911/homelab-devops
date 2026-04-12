@@ -29,7 +29,7 @@ spec:
               key: password
 
           extraArgs:
-            - --maxmemory=2gb
+            - --maxmemory=1gb
 
           extraObjects:
             - apiVersion: v1
@@ -50,10 +50,10 @@ spec:
           resources:
             requests:
               cpu: 250m
-              memory: 1536Mi
+              memory: 768Mi
             limits:
               cpu: "1500m"
-              memory: 2560Mi
+              memory: 1280Mi
     - repoURL: git@github.com:kitti12911/homelab-devops.git
       targetRevision: main
       path: infrastructure/kubernetes/app/dragonfly-manifests
