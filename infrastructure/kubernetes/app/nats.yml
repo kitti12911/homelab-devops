@@ -29,6 +29,8 @@ spec:
 
           container:
             env:
+              GOMEMLIMIT:
+                value: "691MiB"
               NATS_USER:
                 valueFrom:
                   secretKeyRef:

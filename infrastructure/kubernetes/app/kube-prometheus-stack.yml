@@ -42,6 +42,12 @@ spec:
                       requests:
                         storage: 20Gi
 
+              containers:
+                - name: prometheus
+                  env:
+                    - name: GOMEMLIMIT
+                      value: "1382MiB"
+
               resources:
                 requests:
                   cpu: 200m
@@ -97,6 +103,10 @@ spec:
               accessModes:
                 - ReadWriteOnce
               size: 2Gi
+
+            extraEnvVars:
+              - name: GOMEMLIMIT
+                value: "461MiB"
 
             resources:
               requests:

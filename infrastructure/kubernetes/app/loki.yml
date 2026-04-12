@@ -42,6 +42,10 @@ spec:
           singleBinary:
             replicas: 1
 
+            extraEnv:
+              - name: GOMEMLIMIT
+                value: "922MiB"
+
             persistence:
               enabled: true
               storageClass: longhorn

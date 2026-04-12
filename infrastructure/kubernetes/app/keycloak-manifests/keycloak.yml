@@ -34,3 +34,12 @@ spec:
     limits:
       cpu: "1"
       memory: 1Gi
+
+  unsupported:
+    podTemplate:
+      spec:
+        containers:
+          - name: keycloak
+            env:
+              - name: JAVA_TOOL_OPTIONS
+                value: "-XX:MaxRAMPercentage=75.0"

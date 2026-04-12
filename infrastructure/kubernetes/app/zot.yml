@@ -103,6 +103,8 @@ spec:
           env:
             - name: SSL_CERT_DIR
               value: /etc/ssl/certs/homelab
+            - name: GOMEMLIMIT
+              value: "922MiB"
 
           externalSecrets:
             - secretName: "zot-oidc-credentials"

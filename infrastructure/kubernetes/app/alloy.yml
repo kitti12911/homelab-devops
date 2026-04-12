@@ -127,12 +127,16 @@ spec:
                 targetPort: 4318
                 protocol: TCP
 
+            extraEnv:
+              - name: GOMEMLIMIT
+                value: "345MiB"
+
             resources:
               requests:
                 cpu: 50m
                 memory: 128Mi
               limits:
-                memory: 512Mi
+                memory: 384Mi
 
           controller:
             type: daemonset
