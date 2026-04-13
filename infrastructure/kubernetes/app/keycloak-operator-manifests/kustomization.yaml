@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - https://github.com/keycloak/keycloak-k8s-resources//kubernetes?ref=26.6.0
+patches:
+  - target:
+      kind: Deployment
+      name: keycloak-operator
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: QUARKUS_OTEL_SDK_DISABLED
+          value: "true"
