@@ -1,0 +1,49 @@
+# Revert macOS network tuning back to system defaults without rebooting.
+# Also unloads and removes the LaunchDaemon so settings stay reset after next reboot.
+#
+# Run with: ansible-playbook playbooks/local/reset-mac.yml --ask-become-pass
+
+- name: Reset macOS network tuning to system defaults
+  hosts: macbook
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Unload LaunchDaemon (stops it running at next boot too)
+      ansible.builtin.command:
+        cmd: launchctl bootout system /Library/LaunchDaemons/dev.homelab.mac-tuning.plist
+      failed_when: false
+      changed_when: false
+
+    - name: Remove LaunchDaemon plist
+      ansible.builtin.file:
+        path: /Library/LaunchDaemons/dev.homelab.mac-tuning.plist
+        state: absent
+
+    - name: Restore sysctl values to macOS defaults
+      ansible.builtin.command:
+        cmd: sysctl -w {{ item.key }}={{ item.value }}
+      loop:
+        - { key: kern.maxfiles,                value: "12288" }
+        - { key: kern.maxfilesperproc,         value: "10240" }
+        - { key: net.inet.ip.portrange.first,  value: "49152" }
+        - { key: net.inet.tcp.msl,             value: "15000" }
+        - { key: kern.ipc.somaxconn,           value: "128" }
+        - { key: kern.ipc.maxsockbuf,          value: "4194304" }
+        - { key: net.inet.tcp.recvspace,       value: "131072" }
+        - { key: net.inet.tcp.sendspace,       value: "131072" }
+      changed_when: false
+
+- name: Remove ulimit from zsh profile
+  hosts: macbook
+  become: false
+  gather_facts: true
+  gather_subset:
+    - min
+
+  tasks:
+    - name: Remove ulimit line from .zshrc
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_facts['user_dir'] }}/.zshrc"
+        regexp: '^ulimit -n'
+        state: absent

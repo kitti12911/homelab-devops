@@ -1,3 +1,0 @@
-# MicroSD storage - slow random writes, flush early to avoid I/O storms
-sysctl_dirty_ratio: "10"
-sysctl_dirty_background_ratio: "5"

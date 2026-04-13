@@ -1,0 +1,24 @@
+hw_board: "Apple Mac"   # update to e.g. "Apple MacBook Pro M3" if desired
+hw_network: "1Gbps Ethernet / WiFi"
+
+# --- macOS load-testing tuning values ---
+# Applied at boot via LaunchDaemon and immediately on playbook run
+
+# File descriptors: avoid "too many open files" from load test tools (k6, wrk, hey)
+mac_maxfiles: 524288
+
+# Ephemeral port range: start at 1024 instead of default 49152 (~16K → ~64K ports)
+mac_portrange_first: 1024
+
+# TIME_WAIT duration: 1s instead of default 15s — faster port recycling under load
+mac_tcp_msl: 1000
+
+# Listen queue depth per socket — default 128 is the main bottleneck for ingress load testing
+mac_somaxconn: 8192
+
+# Socket buffer ceiling: 8MB — modern macOS default, kept explicit for clarity
+mac_maxsockbuf: 8388608
+
+# Default TCP buffer per socket: 4MB (default 128KB)
+mac_tcp_recvspace: 4194304
+mac_tcp_sendspace: 4194304

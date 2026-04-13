@@ -1,0 +1,6 @@
+hw_board: "Raspberry Pi Zero 2 W"
+hw_ram_gb: 0.5
+hw_storage_primary: "64GB MicroSD"
+hw_storage_type: "sd"
+# USB Ethernet adapter used instead of onboard WiFi for reliability
+hw_network: "1Gbps Ethernet via USB adapter"

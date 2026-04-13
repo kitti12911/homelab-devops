@@ -1,0 +1,5 @@
+hw_board: "Raspberry Pi 5"
+hw_ram_gb: 8
+hw_storage_primary: "128GB NVMe SSD"
+hw_storage_type: "nvme"
+hw_network: "1Gbps Ethernet"

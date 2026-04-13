@@ -1,3 +1,0 @@
-# NVMe storage - can handle large write bursts, use Linux defaults
-sysctl_dirty_ratio: "20"
-sysctl_dirty_background_ratio: "10"

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>dev.homelab.mac-tuning</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/sbin/sysctl</string>
+        <string>-w</string>
+        <string>kern.maxfiles={{ mac_maxfiles }}</string>
+        <string>kern.maxfilesperproc={{ mac_maxfiles }}</string>
+        <string>net.inet.ip.portrange.first={{ mac_portrange_first }}</string>
+        <string>net.inet.tcp.msl={{ mac_tcp_msl }}</string>
+        <string>kern.ipc.somaxconn={{ mac_somaxconn }}</string>
+        <string>kern.ipc.maxsockbuf={{ mac_maxsockbuf }}</string>
+        <string>net.inet.tcp.recvspace={{ mac_tcp_recvspace }}</string>
+        <string>net.inet.tcp.sendspace={{ mac_tcp_sendspace }}</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/var/log/homelab-mac-tuning.log</string>
+    <key>StandardErrorPath</key>
+    <string>/var/log/homelab-mac-tuning.log</string>
+</dict>
+</plist>

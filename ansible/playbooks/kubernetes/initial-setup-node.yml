@@ -1,11 +1,36 @@
 - name: Initial node setup
   hosts: cluster:proxy
   become: true
+  strategy: free
+  gather_facts: true
+  gather_subset:
+    - hardware   # provides ansible_facts['memtotal_mb']
+    - min        # hostname, OS, platform basics
 
   vars:
     cmdline_path: "/boot/firmware/cmdline.txt"
 
+  handlers:
+    - name: restart sshd
+      ansible.builtin.systemd:
+        name: sshd
+        state: restarted
+
   tasks:
+    # --- Tuning variables derived from host hardware ---
+    # Memory tiers: >=7GB (8GB Pi), >=3GB (4GB Pi), <3GB (small Pi/proxy)
+    # Storage dirty ratios sourced from hw_storage_type in host_vars:
+    #   nvme: high thresholds (fast writes, can buffer more)
+    #   usb_ssd / sata_ssd: mid thresholds (SSD speed limited by bus)
+    #   sd: low thresholds (flush early to avoid I/O bursts on slow media)
+    - name: Set hardware-derived tuning variables
+      ansible.builtin.set_fact:
+        sysctl_min_free_kbytes: "{{ '131072' if ansible_facts['memtotal_mb'] >= 7000 else '65536' if ansible_facts['memtotal_mb'] >= 3000 else '32768' }}"
+        sysctl_conntrack_max: "{{ '524288' if ansible_facts['memtotal_mb'] >= 7000 else '262144' if ansible_facts['memtotal_mb'] >= 3000 else '131072' }}"
+        sysctl_conntrack_buckets: "{{ '131072' if ansible_facts['memtotal_mb'] >= 7000 else '65536' if ansible_facts['memtotal_mb'] >= 3000 else '32768' }}"
+        sysctl_dirty_ratio: "{{ {'nvme': '30', 'usb_ssd': '20', 'sata_ssd': '20', 'sd': '10'}[hw_storage_type] }}"
+        sysctl_dirty_background_ratio: "{{ {'nvme': '15', 'usb_ssd': '10', 'sata_ssd': '10', 'sd': '5'}[hw_storage_type] }}"
+
     # --- Swap ---
     - name: Turn off dphys swap
       ansible.builtin.command:
@@ -47,9 +72,7 @@
       failed_when: false
       loop:
         - zramswap
-        - mkswap
         - "systemd-zram-setup@zram0"
-        - "systemd-zram-setup@.service"
       when: "'cluster' in group_names"
 
     - name: Disable all remaining swap
@@ -147,17 +170,29 @@
         path: "/etc/ssh/sshd_config"
         regexp: '^#?PasswordAuthentication'
         line: "PasswordAuthentication no"
+      notify: restart sshd
 
     - name: Disable SSH challenge-response authentication
       ansible.builtin.lineinfile:
         path: "/etc/ssh/sshd_config"
         regexp: '^#?KbdInteractiveAuthentication'
         line: "KbdInteractiveAuthentication no"
+      notify: restart sshd
 
+    # --- Kernel modules ---
     - name: Load nf_conntrack module (required before setting conntrack sysctls)
       ansible.builtin.modprobe:
         name: nf_conntrack
         state: present
+
+    - name: Load kernel modules required by Kubernetes networking
+      ansible.builtin.modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - br_netfilter
+        - overlay
+      when: "'cluster' in group_names"
 
     - name: Ensure nf_conntrack loads at boot
       ansible.builtin.lineinfile:
@@ -166,7 +201,18 @@
         create: true
         mode: "0644"
 
-    - name: Tune kernel parameters for Kubernetes workloads
+    - name: Ensure Kubernetes networking modules load at boot
+      ansible.builtin.lineinfile:
+        path: /etc/modules
+        line: "{{ item }}"
+        create: true
+        mode: "0644"
+      loop:
+        - br_netfilter
+        - overlay
+      when: "'cluster' in group_names"
+
+    - name: Tune kernel parameters
       ansible.posix.sysctl:
         name: "{{ item.key }}"
         value: "{{ item.value }}"
@@ -179,8 +225,8 @@
         # inotify - fix "too many open files" for fsnotify watchers
         - { key: fs.inotify.max_user_watches, value: "524288" }
         - { key: fs.inotify.max_user_instances, value: "1024" }
-        # File descriptor limit - k8s pods open many fds for sockets, logs, mounts
-        - { key: fs.file-max, value: "131072" }
+        # Raised to handle Longhorn's iSCSI and replica fd usage
+        - { key: fs.file-max, value: "524288" }
 
         # --- Network - backlog and queues ---
         - { key: net.ipv4.tcp_max_syn_backlog, value: "8192" }
@@ -188,8 +234,11 @@
         # Incoming packet queue per CPU - prevents drops on bursty traffic (Pi has slow CPUs)
         - { key: net.core.netdev_max_backlog, value: "4096" }
 
-        # --- Network - connection tracking for k8s service networking ---
-        - { key: net.netfilter.nf_conntrack_max, value: "524288" }
+        # --- Network - connection tracking ---
+        # Scaled to available RAM: 8GB=524288, 4GB=262144, <4GB=131072
+        - { key: net.netfilter.nf_conntrack_max, value: "{{ sysctl_conntrack_max }}" }
+        # Hash table size (rule: buckets = max / 4) - prevents CPU spikes from long hash chains
+        - { key: net.netfilter.nf_conntrack_buckets, value: "{{ sysctl_conntrack_buckets }}" }
 
         # --- Network - connection lifecycle ---
         # Faster cleanup of closing/time-wait connections
@@ -215,11 +264,11 @@
         - { key: net.ipv4.tcp_wmem, value: "4096 65536 4194304" }
 
         # --- Network - throughput ---
-        # TCP Fast Open - saves a round trip on repeated connections (client + server)
-        - { key: net.ipv4.tcp_fastopen, value: "3" }
+        # TCP Fast Open server-side only - client-side (value 3) can fail through some NATs
+        - { key: net.ipv4.tcp_fastopen, value: "1" }
         # Keep congestion window warm after idle instead of resetting to slow-start
         - { key: net.ipv4.tcp_slow_start_after_idle, value: "0" }
-        # Probe for path MTU to avoid silent black holes
+        # Probe for path MTU to avoid silent black holes in overlay networks
         - { key: net.ipv4.tcp_mtu_probing, value: "1" }
 
         # --- Network - security hardening ---
@@ -240,15 +289,43 @@
         # --- VM / memory ---
         # Lower swappiness - Pi has limited RAM, prefer keeping app pages in memory
         - { key: vm.swappiness, value: "10" }
-        # Don't panic on OOM, let the OOM killer do its job
+        # Don't panic on OOM, let the OOM killer do its job (killed pod < crashed node)
         - { key: vm.panic_on_oom, value: "0" }
+        # Allow overcommit - Kubernetes memory requests/limits rely on this behavior
+        - { key: vm.overcommit_memory, value: "1" }
+        # Reserve a floor of free RAM to prevent allocation stalls under memory pressure
+        # Scaled to RAM: 8GB=128MB, 4GB=64MB, <4GB=32MB
+        - { key: vm.min_free_kbytes, value: "{{ sysctl_min_free_kbytes }}" }
         # Flush dirty pages - tuned per storage type via group_vars
         - { key: vm.dirty_ratio, value: "{{ sysctl_dirty_ratio }}" }
         - { key: vm.dirty_background_ratio, value: "{{ sysctl_dirty_background_ratio }}" }
 
+        # --- Kernel ---
+        # Raise PID limit - many containers + threads can exhaust the default (32768)
+        - { key: kernel.pid_max, value: "4194304" }
+        # Prevent non-root pods from reading kernel ring buffer via dmesg
+        - { key: kernel.dmesg_restrict, value: "1" }
+
+    - name: Tune Kubernetes networking parameters
+      ansible.posix.sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        sysctl_file: /etc/sysctl.d/99-kubernetes-tuning.conf
+        sysctl_set: true
+        state: present
+        reload: true
+      loop:
+        # Required by kubeadm preflight - must load br_netfilter before these take effect
+        - { key: net.ipv4.ip_forward, value: "1" }
+        - { key: net.bridge.bridge-nf-call-iptables, value: "1" }
+        - { key: net.bridge.bridge-nf-call-ip6tables, value: "1" }
+      when: "'cluster' in group_names"
+
 - name: Longhorn prerequisites (worker computer nodes)
   hosts: computer
   become: true
+  strategy: free
+  gather_facts: false
 
   tasks:
     - name: Install iSCSI and NFS utilities

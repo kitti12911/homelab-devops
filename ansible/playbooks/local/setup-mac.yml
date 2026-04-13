@@ -1,0 +1,65 @@
+# macOS network tuning for load testing the homelab cluster.
+# Raises file descriptor limits, expands ephemeral port range, and speeds up
+# TIME_WAIT cleanup so tools like k6/wrk/hey don't exhaust ports or fds.
+#
+# Run with: ansible-playbook playbooks/local/setup-mac.yml
+# Requires: sudo password (will prompt)
+
+- name: macOS system-level network tuning
+  hosts: macbook
+  become: true
+  gather_facts: true
+  gather_subset:
+    - min
+
+  handlers:
+    - name: reload mac-tuning launchd
+      ansible.builtin.shell:
+        cmd: |
+          launchctl bootout system /Library/LaunchDaemons/dev.homelab.mac-tuning.plist || true
+          launchctl bootstrap system /Library/LaunchDaemons/dev.homelab.mac-tuning.plist
+
+  tasks:
+    - name: Assert target is macOS
+      ansible.builtin.assert:
+        that: ansible_facts['system'] == "Darwin"
+        fail_msg: "This playbook is macOS only"
+
+    - name: Deploy sysctl LaunchDaemon
+      ansible.builtin.template:
+        src: templates/mac-tuning.plist.j2
+        dest: /Library/LaunchDaemons/dev.homelab.mac-tuning.plist
+        owner: root
+        group: wheel
+        mode: "0644"
+      notify: reload mac-tuning launchd
+
+    - name: Apply sysctl settings immediately (no reboot needed)
+      ansible.builtin.command:
+        cmd: sysctl -w {{ item.key }}={{ item.value }}
+      loop:
+        - { key: kern.maxfiles,                   value: "{{ mac_maxfiles }}" }
+        - { key: kern.maxfilesperproc,             value: "{{ mac_maxfiles }}" }
+        - { key: net.inet.ip.portrange.first,      value: "{{ mac_portrange_first }}" }
+        - { key: net.inet.tcp.msl,                   value: "{{ mac_tcp_msl }}" }
+        - { key: kern.ipc.somaxconn,               value: "{{ mac_somaxconn }}" }
+        - { key: kern.ipc.maxsockbuf,              value: "{{ mac_maxsockbuf }}" }
+        - { key: net.inet.tcp.recvspace,           value: "{{ mac_tcp_recvspace }}" }
+        - { key: net.inet.tcp.sendspace,           value: "{{ mac_tcp_sendspace }}" }
+      changed_when: false
+
+- name: macOS user shell configuration
+  hosts: macbook
+  become: false
+  gather_facts: true
+  gather_subset:
+    - min
+
+  tasks:
+    - name: Set file descriptor limit in zsh profile
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_facts['user_dir'] }}/.zshrc"
+        regexp: '^ulimit -n'
+        line: "ulimit -n {{ mac_maxfiles }}"
+        create: true
+        mode: "0644"

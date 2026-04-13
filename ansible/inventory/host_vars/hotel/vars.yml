@@ -1,0 +1,5 @@
+hw_board: "Raspberry Pi 5"
+hw_ram_gb: 2
+hw_storage_primary: "64GB MicroSD"
+hw_storage_type: "sd"
+hw_network: "1Gbps Ethernet"

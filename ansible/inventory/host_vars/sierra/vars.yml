@@ -1,0 +1,6 @@
+hw_board: "x86-64"
+hw_ram_gb: 8
+hw_storage_primary: "SATA SSD (OS)"
+hw_storage_type: "sata_ssd"
+hw_storage_secondary: "2x 1.8TB HDD (NAS data)"
+hw_network: "1Gbps Ethernet"
