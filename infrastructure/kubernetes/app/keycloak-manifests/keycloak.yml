@@ -18,6 +18,9 @@ spec:
       name: keycloak-db-secret
       key: password
 
+  ingress:
+    enabled: false
+
   hostname:
     hostname: keycloak.lan
 
