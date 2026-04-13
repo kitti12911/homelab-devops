@@ -61,7 +61,7 @@ After ArgoCD syncs, fire a test alert:
 ```bash
 kubectl exec -n observability \
   $(kubectl get pod -n observability -l app.kubernetes.io/name=alertmanager -o name | head -1) \
-  -- sh -c 'wget -qO- --post-data='\''[{"labels":{"alertname":"TestAlert","severity":"warning","namespace":"observability"},"annotations":{"summary":"This is a test alert from Alertmanager"}}]'\'' http://localhost:9093/api/v2/alerts'
+  -- sh -c 'wget -qO- --header="Content-Type: application/json" --post-data='\''[{"labels":{"alertname":"TestAlert","severity":"warning","namespace":"observability"},"annotations":{"summary":"This is a test alert from Alertmanager"}}]'\'' http://localhost:9093/api/v2/alerts'
 ```
 
 You should receive a Telegram message within ~30 seconds.
