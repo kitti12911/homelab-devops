@@ -6,8 +6,8 @@ metadata:
 spec:
   project: security
   source:
-    repoURL: https://github.com/kitti12911/homelab-devops.git
-    targetRevision: HEAD
+    repoURL: git@github.com:kitti12911/homelab-devops.git
+    targetRevision: main
     path: infrastructure/kubernetes/app/keycloak-operator-manifests
   destination:
     server: https://kubernetes.default.svc
