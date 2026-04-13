@@ -43,3 +43,5 @@ spec:
             env:
               - name: JAVA_TOOL_OPTIONS
                 value: "-XX:MaxRAMPercentage=75.0"
+              - name: KC_TRACING_ENDPOINT
+                value: "http://alloy.observability.svc.cluster.local:4317"
