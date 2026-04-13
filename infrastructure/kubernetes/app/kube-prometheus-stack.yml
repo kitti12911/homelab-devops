@@ -77,6 +77,16 @@ spec:
                   - receiver: 'null'
                     matchers:
                       - alertname =~ "Watchdog|InfoInhibitor"
+                  - receiver: 'null'
+                    matchers:
+                      # disabled components — no scrape targets exist
+                      - alertname =~ "KubeControllerManagerDown|KubeSchedulerDown|KubeProxyDown|KubeEtcdDown"
+                  - receiver: 'null'
+                    matchers:
+                      # default Longhorn alerts are info/noise at homelab scale
+                      - alertname =~ "LonghornVolumeStatusWarning"
+                      - severity = "warning"
+                      - issue =~ ".*Degraded.*"
                   - receiver: telegram
                     matchers:
                       - severity =~ "warning|critical"
