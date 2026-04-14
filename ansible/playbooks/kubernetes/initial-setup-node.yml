@@ -153,6 +153,10 @@
         - "'cluster' in group_names"
         - cgroups_check.rc != 0
 
+    - name: Set timezone to Asia/Bangkok
+      community.general.timezone:
+        name: Asia/Bangkok
+
     - name: Set hostname
       ansible.builtin.copy:
         content: "{{ inventory_hostname }}\n"
