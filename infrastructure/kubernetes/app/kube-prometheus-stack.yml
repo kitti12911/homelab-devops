@@ -265,32 +265,6 @@ spec:
                     sourceLabels: [__meta_kubernetes_pod_node_name]
                     targetLabel: nodename
 
-          kube-state-metrics:
-            resources:
-              requests:
-                cpu: 10m
-                memory: 64Mi
-              limits:
-                memory: 128Mi
-            collectors:
-              - pods
-              - nodes
-              - deployments
-              - statefulsets
-              - daemonsets
-              - persistentvolumeclaims
-              - namespaces
-              - replicasets
-              - services
-              - configmaps
-              - endpoints
-              - horizontalpodautoscalers
-              - ingresses
-              - networkpolicies
-              - secrets
-            metricLabelsAllowlist: []
-            metricAnnotationsAllowList: []
-
           kubelet:
             serviceMonitor:
               cAdvisorMetricRelabelings:
@@ -300,6 +274,14 @@ spec:
                 - sourceLabels: [container]
                   regex: ''
                   action: drop
+
+          kube-state-metrics:
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 128Mi
 
           kubeProxy:
             enabled: false
