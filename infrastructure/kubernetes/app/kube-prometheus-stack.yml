@@ -265,16 +265,6 @@ spec:
                     sourceLabels: [__meta_kubernetes_pod_node_name]
                     targetLabel: nodename
 
-          kubelet:
-            serviceMonitor:
-              cAdvisorMetricRelabelings:
-                - sourceLabels: [__name__]
-                  regex: 'container_blkio_device_usage_total|container_tasks_state|container_memory_failures_total|container_file_descriptors|container_sockets|container_threads|container_threads_max|container_ulimits_soft'
-                  action: drop
-                - sourceLabels: [container]
-                  regex: '^$'
-                  action: drop
-
           kube-state-metrics:
             resources:
               requests:
