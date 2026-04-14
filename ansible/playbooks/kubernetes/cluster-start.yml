@@ -1,0 +1,43 @@
+- name: Start k3s server on master
+  hosts: master
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Start k3s service
+      ansible.builtin.systemd:
+        name: k3s
+        state: started
+
+    - name: Wait for API server to be ready
+      ansible.builtin.command:
+        cmd: k3s kubectl get nodes
+      register: api_ready
+      changed_when: false
+      retries: 18
+      delay: 10
+      until: api_ready.rc == 0
+
+- name: Start k3s agent on worker nodes
+  hosts: worker
+  become: true
+  gather_facts: false
+  strategy: free
+
+  tasks:
+    - name: Start k3s-agent service
+      ansible.builtin.systemd:
+        name: k3s-agent
+        state: started
+
+- name: Wait for all worker nodes to become Ready
+  hosts: master
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Wait for worker node to become Ready
+      ansible.builtin.command:
+        cmd: k3s kubectl wait node/{{ item }} --for=condition=Ready --timeout=120s
+      loop: "{{ groups['worker'] }}"
+      changed_when: false

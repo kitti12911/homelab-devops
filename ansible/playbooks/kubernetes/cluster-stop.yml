@@ -1,0 +1,22 @@
+- name: Stop k3s agent on worker nodes
+  hosts: worker
+  become: true
+  gather_facts: false
+  strategy: free
+
+  tasks:
+    - name: Stop k3s-agent service
+      ansible.builtin.systemd:
+        name: k3s-agent
+        state: stopped
+
+- name: Stop k3s server on master
+  hosts: master
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Stop k3s service
+      ansible.builtin.systemd:
+        name: k3s
+        state: stopped
