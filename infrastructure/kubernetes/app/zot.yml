@@ -131,10 +131,9 @@ spec:
 
           resources:
             requests:
-              cpu: "200m"
+              cpu: "100m"
               memory: "512Mi"
             limits:
-              cpu: "1000m"
               memory: "1Gi"
 
     - repoURL: git@github.com:kitti12911/homelab-devops.git

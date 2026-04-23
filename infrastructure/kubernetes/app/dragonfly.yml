@@ -52,7 +52,6 @@ spec:
               cpu: 250m
               memory: 768Mi
             limits:
-              cpu: "1500m"
               memory: 1280Mi
     - repoURL: git@github.com:kitti12911/homelab-devops.git
       targetRevision: main

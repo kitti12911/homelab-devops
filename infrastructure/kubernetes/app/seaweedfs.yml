@@ -41,7 +41,6 @@ spec:
                 cpu: "100m"
                 memory: "128Mi"
               limits:
-                cpu: "500m"
                 memory: "256Mi"
 
             extraEnvironmentVars:
@@ -79,7 +78,6 @@ spec:
                 cpu: "100m"
                 memory: "256Mi"
               limits:
-                cpu: "1000m"
                 memory: "1536Mi"
 
             extraEnvironmentVars:
@@ -109,7 +107,6 @@ spec:
                 cpu: "100m"
                 memory: "256Mi"
               limits:
-                cpu: "1000m"
                 memory: "1Gi"
 
             extraEnvironmentVars:
@@ -150,7 +147,6 @@ spec:
                 cpu: "50m"
                 memory: "64Mi"
               limits:
-                cpu: "250m"
                 memory: "128Mi"
 
             service:
