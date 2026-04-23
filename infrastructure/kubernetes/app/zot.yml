@@ -19,7 +19,7 @@ spec:
           image:
             repository: ghcr.io/project-zot/zot
             pullPolicy: IfNotPresent
-            tag: "v2.1.15"
+            tag: "v2.1.16"
 
           service:
             type: ClusterIP
