@@ -28,6 +28,12 @@ spec:
             nodeSelector: |
               node-role.kubernetes.io/object-storage: "true"
 
+            tolerations:
+              - key: dedicated
+                operator: Equal
+                value: object-storage
+                effect: NoSchedule
+
             data:
               type: "persistentVolumeClaim"
               size: "1Gi"
@@ -61,6 +67,12 @@ spec:
             nodeSelector: |
               node-role.kubernetes.io/object-storage: "true"
 
+            tolerations:
+              - key: dedicated
+                operator: Equal
+                value: object-storage
+                effect: NoSchedule
+
             dataDirs:
               - name: data
                 type: "persistentVolumeClaim"
@@ -76,12 +88,12 @@ spec:
             resources:
               requests:
                 cpu: "100m"
-                memory: "256Mi"
+                memory: "128Mi"
               limits:
-                memory: "1536Mi"
+                memory: "512Mi"
 
             extraEnvironmentVars:
-              GOMEMLIMIT: "1382MiB"
+              GOMEMLIMIT: "460MiB"
 
           filer:
             enabled: true
@@ -94,6 +106,12 @@ spec:
             nodeSelector: |
               node-role.kubernetes.io/object-storage: "true"
 
+            tolerations:
+              - key: dedicated
+                operator: Equal
+                value: object-storage
+                effect: NoSchedule
+
             data:
               type: "persistentVolumeClaim"
               size: "5Gi"
@@ -105,12 +123,12 @@ spec:
             resources:
               requests:
                 cpu: "100m"
-                memory: "256Mi"
+                memory: "128Mi"
               limits:
-                memory: "1Gi"
+                memory: "384Mi"
 
             extraEnvironmentVars:
-              GOMEMLIMIT: "922MiB"
+              GOMEMLIMIT: "345MiB"
               WEED_LEVELDB2_ENABLED: "true"
               WEED_FILER_OPTIONS_RECURSIVE_DELETE: "false"
               WEED_FILER_BUCKETS_FOLDER: "/buckets"
@@ -135,6 +153,12 @@ spec:
 
             nodeSelector: |
               node-role.kubernetes.io/object-storage: "true"
+
+            tolerations:
+              - key: dedicated
+                operator: Equal
+                value: object-storage
+                effect: NoSchedule
 
             data:
               type: "emptyDir"

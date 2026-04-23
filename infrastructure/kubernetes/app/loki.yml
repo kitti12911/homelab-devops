@@ -42,10 +42,6 @@ spec:
           singleBinary:
             replicas: 1
 
-            # TODO: uncomment it when joining kilo node
-            # nodeSelector:
-            #   node-role.kubernetes.io/object-storage: "true"
-
             extraEnv:
               - name: GOMEMLIMIT
                 value: "460MiB"
@@ -91,10 +87,6 @@ spec:
           gateway:
             enabled: true
             replicas: 1
-
-            # TODO: uncomment it when joining kilo node
-            # nodeSelector:
-            #   node-role.kubernetes.io/object-storage: "true"
 
             resources:
               requests:

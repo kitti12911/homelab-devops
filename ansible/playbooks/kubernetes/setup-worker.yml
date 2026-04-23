@@ -80,8 +80,16 @@
       loop: "{{ groups['database'] }}"
       when: groups['database'] | length > 0
 
-    - name: Label object storage nodes (no taint - regular workloads still schedule here)
-      ansible.builtin.command: >
-        /usr/local/bin/k3s kubectl label node {{ item }}
-        node-role.kubernetes.io/object-storage=true --overwrite
+    - name: Remove object-storage label and taint from all worker nodes (cleanup before reapply)
+      ansible.builtin.shell: |
+        /usr/local/bin/k3s kubectl label node {{ item }} node-role.kubernetes.io/object-storage- 2>/dev/null || true
+        /usr/local/bin/k3s kubectl taint node {{ item }} dedicated=object-storage:NoSchedule- 2>/dev/null || true
+      loop: "{{ groups['worker'] }}"
+      ignore_errors: true
+      changed_when: false
+
+    - name: Label and taint object storage nodes
+      ansible.builtin.shell: |
+        /usr/local/bin/k3s kubectl label node {{ item }} node-role.kubernetes.io/object-storage=true --overwrite
+        /usr/local/bin/k3s kubectl taint node {{ item }} dedicated=object-storage:NoSchedule --overwrite
       loop: "{{ object_storage_nodes }}"

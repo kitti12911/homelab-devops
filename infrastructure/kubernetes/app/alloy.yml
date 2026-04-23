@@ -146,6 +146,21 @@ spec:
 
           controller:
             type: daemonset
+            tolerations:
+              - key: node-role.kubernetes.io/control-plane
+                operator: Exists
+                effect: NoSchedule
+              - key: node-role.kubernetes.io/master
+                operator: Exists
+                effect: NoSchedule
+              - key: dedicated
+                operator: Equal
+                value: database
+                effect: NoSchedule
+              - key: dedicated
+                operator: Equal
+                value: object-storage
+                effect: NoSchedule
 
           serviceMonitor:
             enabled: true

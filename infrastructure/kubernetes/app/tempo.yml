@@ -37,9 +37,13 @@ spec:
               enabled: true
               remoteWriteUrl: "http://kube-prometheus-stack-prometheus.observability.svc.cluster.local:9090/api/v1/write"
 
-          # TODO: uncomment it when joining kilo node
-          # nodeSelector:
-          #   node-role.kubernetes.io/object-storage: "true"
+          nodeSelector:
+            node-role.kubernetes.io/object-storage: "true"
+          tolerations:
+            - key: dedicated
+              operator: Equal
+              value: object-storage
+              effect: NoSchedule
 
           persistence:
             enabled: true
