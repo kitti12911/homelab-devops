@@ -33,9 +33,25 @@ spec:
               limits:
                 memory: 512Mi
 
+            overrides:
+              defaults:
+                metrics_generator:
+                  processors:
+                    - service-graphs
+                    - span-metrics
+                    - local-blocks
+
             metricsGenerator:
               enabled: true
               remoteWriteUrl: "http://kube-prometheus-stack-prometheus.observability.svc.cluster.local:9090/api/v1/write"
+              processor:
+                local_blocks:
+                  flush_to_storage: true
+                  filter_server_spans: false
+              storage:
+                path: /var/tempo/generator/wal
+              traces_storage:
+                path: /var/tempo/generator/traces
 
           nodeSelector:
             node-role.kubernetes.io/object-storage: "true"
@@ -50,7 +66,7 @@ spec:
             storageClassName: longhorn
             accessModes:
               - ReadWriteOnce
-            size: 10Gi
+            size: 20Gi
 
           serviceMonitor:
             enabled: true
