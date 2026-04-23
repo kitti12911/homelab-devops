@@ -9,9 +9,9 @@ spec:
 
   postgresql:
     parameters:
-      shared_buffers: "1GB"
-      effective_cache_size: "2GB"
-      work_mem: "64MB"
+      shared_buffers: "1536MB"
+      effective_cache_size: "2560MB"
+      work_mem: "32MB"
       maintenance_work_mem: "256MB"
       max_connections: "100"
 
@@ -85,6 +85,6 @@ spec:
   resources:
     requests:
       cpu: 500m
-      memory: 2500Mi
+      memory: 2750Mi
     limits:
-      memory: 3Gi
+      memory: 3328Mi
