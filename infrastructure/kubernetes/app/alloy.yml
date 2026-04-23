@@ -135,14 +135,14 @@ spec:
 
             extraEnv:
               - name: GOMEMLIMIT
-                value: "345MiB"
+                value: "460MiB"
 
             resources:
               requests:
                 cpu: 50m
-                memory: 128Mi
+                memory: 192Mi
               limits:
-                memory: 384Mi
+                memory: 512Mi
 
           controller:
             type: daemonset

@@ -16,7 +16,7 @@ spec:
 
             extraEnv:
               - name: GOMEMLIMIT
-                value: "922MiB"
+                value: "460MiB"
 
             receivers:
               otlp:
@@ -29,13 +29,17 @@ spec:
             resources:
               requests:
                 cpu: 100m
-                memory: 256Mi
+                memory: 192Mi
               limits:
-                memory: 1Gi
+                memory: 512Mi
 
             metricsGenerator:
               enabled: true
               remoteWriteUrl: "http://kube-prometheus-stack-prometheus.observability.svc.cluster.local:9090/api/v1/write"
+
+          # TODO: uncomment it when joining kilo node
+          # nodeSelector:
+          #   node-role.kubernetes.io/object-storage: "true"
 
           persistence:
             enabled: true
