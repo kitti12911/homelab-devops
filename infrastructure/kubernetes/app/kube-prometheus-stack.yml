@@ -208,6 +208,11 @@ spec:
                 role_attribute_path: "contains(groups[*], 'grafana-admins') && 'Admin' || contains(groups[*], 'grafana-editors') && 'Editor' || 'Viewer'"
 
             additionalDataSources:
+              - name: Pyroscope
+                type: grafana-pyroscope-datasource
+                uid: pyroscope
+                url: http://pyroscope.observability.svc.cluster.local:4040
+                access: proxy
               - name: Loki
                 type: loki
                 uid: loki
