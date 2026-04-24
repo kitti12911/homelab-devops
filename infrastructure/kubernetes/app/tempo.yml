@@ -14,9 +14,11 @@ spec:
           tempo:
             retention: 168h
 
+            memBallastSizeMbs: 0
+
             extraEnv:
               - name: GOMEMLIMIT
-                value: "460MiB"
+                value: "1200MiB"
 
             receivers:
               otlp:
@@ -29,9 +31,9 @@ spec:
             resources:
               requests:
                 cpu: 100m
-                memory: 192Mi
-              limits:
                 memory: 512Mi
+              limits:
+                memory: 1536Mi
 
             overrides:
               defaults:
