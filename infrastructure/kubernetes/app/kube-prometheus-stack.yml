@@ -168,6 +168,9 @@ spec:
                 - ReadWriteOnce
               size: 2Gi
 
+            plugins:
+              - grafana-pyroscope-app
+
             extraEnvVars:
               - name: GOMEMLIMIT
                 value: "461MiB"
