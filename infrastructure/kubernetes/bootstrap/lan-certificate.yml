@@ -32,3 +32,4 @@ spec:
     - oauth2-proxy.lan
     - redpanda.lan
     - sonarqube.lan
+    - pyroscope.lan

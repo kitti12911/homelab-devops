@@ -1,0 +1,71 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pyroscope
+  namespace: argocd
+spec:
+  project: observability
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: pyroscope
+      targetRevision: "2.0.0"
+      helm:
+        valuesObject:
+          pyroscope:
+            replicaCount: 1
+
+            extraArgs:
+              log.level: warn
+              pyroscopedb.max-block-duration: 30m
+              compactor.blocks-retention-period: 168h
+
+            extraEnvVars:
+              GOMEMLIMIT: "920MiB"
+
+            persistence:
+              enabled: true
+              storageClassName: longhorn
+              accessModes:
+                - ReadWriteOnce
+              size: 15Gi
+
+            resources:
+              requests:
+                cpu: 100m
+                memory: 384Mi
+              limits:
+                memory: 1Gi
+
+            podDisruptionBudget:
+              enabled: false
+
+            nodeSelector:
+              node-role.kubernetes.io/object-storage: "true"
+
+            tolerations:
+              - key: dedicated
+                operator: Equal
+                value: object-storage
+                effect: NoSchedule
+
+          alloy:
+            enabled: false
+
+          minio:
+            enabled: false
+
+          serviceMonitor:
+            enabled: true
+
+    - repoURL: git@github.com:kitti12911/homelab-devops.git
+      targetRevision: main
+      path: infrastructure/kubernetes/app/pyroscope-manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        gateway-access: "true"
+    syncOptions:
+      - CreateNamespace=true
