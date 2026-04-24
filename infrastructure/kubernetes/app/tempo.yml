@@ -35,6 +35,10 @@ spec:
               limits:
                 memory: 1Gi
 
+            queryFrontend:
+              metrics:
+                max_duration: 24h
+
             overrides:
               defaults:
                 metrics_generator:
