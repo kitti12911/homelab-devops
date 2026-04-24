@@ -170,6 +170,7 @@ spec:
 
             plugins:
               - grafana-pyroscope-app
+              - grafana-llm-app
 
             extraEnvVars:
               - name: GOMEMLIMIT
