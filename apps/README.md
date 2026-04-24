@@ -6,8 +6,10 @@ This document covers the CI/CD pipeline standards for applications in this repos
 
 | Language | Linting | Type Check | Tests | Security | Deps |
 | --- | --- | --- | --- | --- | --- |
-| Go | golangci-lint | go vet | go test -race | govulncheck, gitleaks, semgrep | renovate |
-| TypeScript | eslint / biome | tsc --noEmit | vitest / jest | npm audit, gitleaks, semgrep | renovate |
+| Go | golangci-lint | go vet | go test -race | govulncheck, trivy fs, gitleaks, semgrep | renovate |
+| TypeScript | eslint / oxlint | tsc --noEmit | vitest / jest | osv-scanner, trivy fs, socket, gitleaks, semgrep | renovate |
+
+> **Why not `npm audit`?** It only reports CVEs already published to the npm advisory DB — reactive, days-to-weeks late, and blind to malicious packages (typosquats, compromised maintainers, install-time payloads). Incidents like the axios supply-chain attacks are exactly what it misses. Use **OSV-Scanner** (broader CVE DB) and **Trivy fs** as the free baseline, and **Socket.dev** for actual supply-chain behavior analysis. See the TypeScript security job below.
 
 ---
 
@@ -88,6 +90,16 @@ jobs:
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
           govulncheck ./...
+
+      - name: Trivy filesystem scan (deps + secrets + misconfig)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          exit-code: 1
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
 
       - name: Gitleaks (secret detection)
         uses: gitleaks/gitleaks-action@v2
@@ -217,7 +229,7 @@ issues:
 ## TypeScript Pipeline
 
 > Note: TypeScript tooling varies by project setup. This covers the most common patterns.
-> Your coworker may already have ESLint/Biome configured — check for `.eslintrc.*`, `biome.json`, or `eslint.config.*` before adding new config.
+> Your coworker may already have a linter configured — check for `.eslintrc.*`, `eslint.config.*`, or `.oxlintrc.json` before adding new config.
 
 ### Full example: `.github/workflows/ts-ci.yml`
 
@@ -250,13 +262,15 @@ jobs:
 
       # Choose ONE of the two options below based on your project setup:
 
-      # Option A: ESLint (most common)
+      # Option A: ESLint (most common, richest plugin ecosystem)
       - name: ESLint
         run: npx eslint . --ext .ts,.tsx
 
-      # Option B: Biome (if your project uses it instead of ESLint+Prettier)
-      # - name: Biome
-      #   run: npx biome ci .
+      # Option B: oxlint (Rust-based, 50–100x faster than ESLint; subset of rules)
+      # Good as a fast pre-push / pre-commit check, or as a full replacement if
+      # the rule coverage is sufficient for your project.
+      # - name: oxlint
+      #   run: npx oxlint@latest --deny-warnings
 
   test:
     name: Test
@@ -297,9 +311,45 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: npm audit
-        # --audit-level=high ignores low/moderate findings to reduce noise
-        run: npm audit --audit-level=high
+      # --- Dependency vulnerability scanning ---
+      # We deliberately do NOT use `npm audit`:
+      #   - It only checks the npm advisory DB (reactive, CVE-only).
+      #   - It cannot detect malicious packages, install-script payloads, or
+      #     compromised maintainers — exactly the vectors used in real
+      #     supply-chain incidents (axios typosquats, event-stream, etc.).
+      # Instead we layer three complementary tools below.
+
+      # 1. OSV-Scanner — aggregated vuln DB (GHSA + NVD + ecosystem sources).
+      #    Broader and usually earlier than `npm audit`. Free.
+      - name: OSV-Scanner
+        uses: google/osv-scanner-action/osv-scanner-action@v1
+        with:
+          scan-args: |-
+            --lockfile=package-lock.json
+            --recursive
+            ./
+
+      # 2. Trivy filesystem scan — independent vuln DB + secrets + misconfig
+      #    in a single pass. Defense-in-depth against OSV.
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          exit-code: 1
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+
+      # 3. Socket.dev — the only tool here that addresses supply-chain risk,
+      #    not just CVEs. Flags packages with install scripts, network calls,
+      #    shell access, obfuscated code, typosquat similarity, etc. This is
+      #    what would have caught axios-style incidents before publish.
+      #    Requires a free Socket account + SOCKET_SECURITY_API_KEY.
+      - name: Socket Security
+        uses: SocketDev/socket-security-action@v1
+        with:
+          api-token: ${{ secrets.SOCKET_SECURITY_API_KEY }}
 
       - name: Gitleaks (secret detection)
         uses: gitleaks/gitleaks-action@v2
@@ -370,6 +420,7 @@ Enable Renovate via the [Renovate GitHub App](https://github.com/apps/renovate).
 | --- | --- | --- |
 | `CODECOV_TOKEN` | codecov-action | [codecov.io](https://codecov.io) → project settings |
 | `SEMGREP_APP_TOKEN` | semgrep-action | [semgrep.dev](https://semgrep.dev) → Settings → Tokens (optional for public rules) |
+| `SOCKET_SECURITY_API_KEY` | socket-security-action (TS only) | [socket.dev](https://socket.dev) → Settings → API Tokens |
 
 > `GITHUB_TOKEN` is provided automatically by GitHub Actions — no setup needed.
 
@@ -388,7 +439,7 @@ Create `.github/CODEOWNERS` in your repo:
 
 # Lint and tool config — only repo owner can approve changes
 .golangci.yml           @your-github-username
-biome.json              @your-github-username
+.oxlintrc.json          @your-github-username
 .eslintrc.*             @your-github-username
 eslint.config.*         @your-github-username
 renovate.json           @your-github-username
@@ -426,7 +477,8 @@ govulncheck ./...
 
 # TypeScript — run locally before pushing
 npx tsc --noEmit
-npx eslint . --ext .ts,.tsx     # or: npx biome ci .
-npm audit
+npx eslint . --ext .ts,.tsx     # or: npx oxlint@latest --deny-warnings
+npx osv-scanner --lockfile=package-lock.json
+trivy fs --severity CRITICAL,HIGH --ignore-unfixed .
 npm run test
 ```
