@@ -4,3 +4,15 @@ hw_storage_primary: "64GB MicroSD"
 hw_storage_type: "sd"
 # USB Ethernet adapter used instead of onboard WiFi for reliability
 hw_network: "1Gbps Ethernet via USB adapter"
+hw_note: |
+  sudo rpi-eeprom-config --edit
+  # add this to eeprom
+  USB_MSD_QUIRKS=0bda:9201:u
+  USB_MSD_STARTUP_DELAY=2000
+
+  # add this to /boot/firmware/cmdline.txt
+  usb-storage.quirks=0bda:9201:u
+
+  # add this to /boot/firmware/config.txt
+  [all]
+  usb_max_current_enable=1

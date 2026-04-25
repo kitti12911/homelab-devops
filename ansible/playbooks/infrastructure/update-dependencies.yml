@@ -1,6 +1,7 @@
 - name: Update system packages
   hosts: all
   become: true
+  strategy: free
 
   tasks:
     - name: Update apt cache
