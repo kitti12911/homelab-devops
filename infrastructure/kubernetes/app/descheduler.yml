@@ -43,12 +43,12 @@ spec:
                   - name: LowNodeUtilization
                     args:
                       thresholds:
-                        cpu: 25
-                        memory: 20
+                        cpu: 20
+                        memory: 15
                         pods: 20
                       targetThresholds:
-                        cpu: 35
-                        memory: 25
+                        cpu: 45
+                        memory: 40
                         pods: 50
                   - name: RemovePodsViolatingTopologySpreadConstraint
                 plugins:
