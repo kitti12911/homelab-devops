@@ -88,7 +88,7 @@
         state: absent
       when: "'cluster' in group_names"
 
-    # --- GPU / CMA memory reclaim ---
+    # --- GPU memory reclaim ---
     - name: Set minimum GPU memory for headless operation
       ansible.builtin.lineinfile:
         path: /boot/firmware/config.txt
@@ -96,31 +96,12 @@
         line: 'gpu_mem=16'
       when: "'cluster' in group_names"
 
-    - name: Check if CMA already configured
-      ansible.builtin.command:
-        cmd: grep -q 'cma=' {{ cmdline_path }}
-      register: cma_check
-      failed_when: false
-      changed_when: false
+    - name: Remove custom CMA reservation
+      ansible.builtin.replace:
+        path: "{{ cmdline_path }}"
+        regexp: '\s*cma=\S+'
+        replace: ''
       when: "'cluster' in group_names"
-
-    - name: Update existing CMA value
-      ansible.builtin.replace:
-        path: "{{ cmdline_path }}"
-        regexp: 'cma=\S+'
-        replace: 'cma=16M'
-      when:
-        - "'cluster' in group_names"
-        - cma_check.rc == 0
-
-    - name: Add CMA parameter if not present
-      ansible.builtin.replace:
-        path: "{{ cmdline_path }}"
-        regexp: '^(.+)$'
-        replace: '\1 cma=16M'
-      when:
-        - "'cluster' in group_names"
-        - cma_check.rc != 0
 
     # --- Disable unused wireless hardware ---
     - name: Disable WiFi
