@@ -34,16 +34,21 @@ spec:
             profiles:
               - name: default
                 pluginConfig:
+                  - name: DefaultEvictor
+                    args:
+                      ignorePvcPods: false
+                      evictLocalStoragePods: false
+                      nodeFit: true
                   - name: RemoveDuplicates
                   - name: LowNodeUtilization
                     args:
                       thresholds:
-                        cpu: 20
+                        cpu: 25
                         memory: 20
                         pods: 20
                       targetThresholds:
-                        cpu: 50
-                        memory: 50
+                        cpu: 35
+                        memory: 25
                         pods: 50
                   - name: RemovePodsViolatingTopologySpreadConstraint
                 plugins:
