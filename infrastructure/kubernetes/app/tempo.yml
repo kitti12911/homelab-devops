@@ -59,14 +59,6 @@ spec:
               traces_storage:
                 path: /var/tempo/generator/traces
 
-          nodeSelector:
-            node-role.kubernetes.io/object-storage: "true"
-          tolerations:
-            - key: dedicated
-              operator: Equal
-              value: object-storage
-              effect: NoSchedule
-
           persistence:
             enabled: true
             storageClassName: longhorn

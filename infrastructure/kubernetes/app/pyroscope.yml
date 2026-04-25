@@ -39,15 +39,6 @@ spec:
             podDisruptionBudget:
               enabled: false
 
-            nodeSelector:
-              node-role.kubernetes.io/object-storage: "true"
-
-            tolerations:
-              - key: dedicated
-                operator: Equal
-                value: object-storage
-                effect: NoSchedule
-
           alloy:
             enabled: false
 
