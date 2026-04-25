@@ -30,7 +30,7 @@ spec:
           container:
             env:
               GOMEMLIMIT:
-                value: "691MiB"
+                value: "920MiB"
               NATS_USER:
                 valueFrom:
                   secretKeyRef:
@@ -43,10 +43,10 @@ spec:
                     key: password
             resources:
               requests:
-                cpu: 100m
-                memory: 256Mi
+                cpu: 200m
+                memory: 384Mi
               limits:
-                memory: 768Mi
+                memory: 1024Mi
 
           podTemplate:
             merge:
