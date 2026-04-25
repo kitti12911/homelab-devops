@@ -38,12 +38,8 @@ spec:
       memory: 1536Mi
 
   additionalOptions:
-    - name: tracing-enabled
-      value: "true"
-    - name: tracing-endpoint
-      value: "http://alloy.observability.svc.cluster.local:4317"
-    - name: tracing-service-name
-      value: "keycloak"
+    - name: cache
+      value: "local"
   unsupported:
     podTemplate:
       spec:
