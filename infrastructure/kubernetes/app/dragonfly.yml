@@ -15,7 +15,7 @@ spec:
 
           storage:
             enabled: true
-            storageClassName: longhorn-local
+            storageClassName: longhorn
             requests: 1Gi
 
           service:
