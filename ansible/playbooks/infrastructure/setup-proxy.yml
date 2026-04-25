@@ -15,6 +15,7 @@
     # redpanda_kafka_nodeport: 31092
     envoy_log_level: "warning"
     envoy_apt_suite: "{{ 'bookworm' if ansible_facts.distribution_release == 'trixie' else ansible_facts.distribution_release }}"
+    node_exporter_args: "--web.listen-address=:9100 --log.level=warn"
 
   tasks:
     - name: Create Envoy config directory
@@ -61,6 +62,37 @@
         name: envoy
         state: present
 
+    - name: Install node exporter
+      ansible.builtin.apt:
+        name: prometheus-node-exporter
+        state: present
+
+    - name: Configure node exporter with quiet logging
+      ansible.builtin.copy:
+        content: |
+          ARGS="{{ node_exporter_args }}"
+        dest: /etc/default/prometheus-node-exporter
+        mode: "0644"
+      notify: Restart Node Exporter
+
+    - name: Create node exporter systemd override directory
+      ansible.builtin.file:
+        path: /etc/systemd/system/prometheus-node-exporter.service.d
+        state: directory
+        mode: "0755"
+
+    - name: Limit node exporter journal noise
+      ansible.builtin.copy:
+        content: |
+          [Service]
+          StandardOutput=journal
+          StandardError=journal
+          LogRateLimitIntervalSec=30s
+          LogRateLimitBurst=5
+        dest: /etc/systemd/system/prometheus-node-exporter.service.d/logging.conf
+        mode: "0644"
+      notify: Restart Node Exporter
+
     - name: Remove existing Envoy config
       ansible.builtin.file:
         path: "{{ envoy_config_path }}"
@@ -87,9 +119,22 @@
         enabled: true
         daemon_reload: true
 
+    - name: Enable and start node exporter
+      ansible.builtin.systemd:
+        name: prometheus-node-exporter
+        state: started
+        enabled: true
+        daemon_reload: true
+
   handlers:
     - name: Restart Envoy
       ansible.builtin.systemd:
         name: "{{ envoy_service_name }}"
+        state: restarted
+        daemon_reload: true
+
+    - name: Restart Node Exporter
+      ansible.builtin.systemd:
+        name: prometheus-node-exporter
         state: restarted
         daemon_reload: true

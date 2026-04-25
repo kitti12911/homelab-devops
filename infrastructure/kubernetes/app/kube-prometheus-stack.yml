@@ -65,6 +65,17 @@ spec:
               probeSelectorNilUsesHelmValues: false
               scrapeConfigSelectorNilUsesHelmValues: false
 
+              additionalScrapeConfigs:
+                - job_name: node-exporter-external
+                  static_configs:
+                    - targets:
+                        - 192.168.88.208:9100
+                      labels:
+                        nodename: hotel
+                  relabel_configs:
+                    - target_label: job
+                      replacement: node-exporter
+
               enableRemoteWriteReceiver: true
 
           alertmanager:
