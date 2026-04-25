@@ -76,7 +76,7 @@ spec:
             dataDirs:
               - name: data
                 type: "persistentVolumeClaim"
-                size: "100Gi"
+                size: "75Gi"
                 storageClass: "local-path"
                 maxVolumes: 0
 
