@@ -176,12 +176,110 @@
             },
             "editorMode": "code",
             "exemplar": false,
-            "expr": "up{instance=~\"$node\",job=~\"$job\"} and (up{instance=~\"$node\",job=~\"$job\"} or on() vector(0))",
+            "expr": "up{instance=\"192.168.88.201:9100\",instance=~\"$node\",job=~\"$job\"}",
             "hide": false,
             "instant": true,
-            "legendFormat": "{{instance}}",
+            "legendFormat": "192.168.88.201",
             "range": false,
             "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "up{instance=\"192.168.88.202:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "hide": false,
+            "instant": true,
+            "legendFormat": "192.168.88.202",
+            "range": false,
+            "refId": "B"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "up{instance=\"192.168.88.203:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "hide": false,
+            "instant": true,
+            "legendFormat": "192.168.88.203",
+            "range": false,
+            "refId": "C"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "up{instance=\"192.168.88.204:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "hide": false,
+            "instant": true,
+            "legendFormat": "192.168.88.204",
+            "range": false,
+            "refId": "D"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "up{instance=\"192.168.88.205:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "hide": false,
+            "instant": true,
+            "legendFormat": "192.168.88.205",
+            "range": false,
+            "refId": "E"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "up{instance=\"192.168.88.206:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "hide": false,
+            "instant": true,
+            "legendFormat": "192.168.88.206",
+            "range": false,
+            "refId": "F"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "up{instance=\"192.168.88.208:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "hide": false,
+            "instant": true,
+            "legendFormat": "192.168.88.208",
+            "range": false,
+            "refId": "G"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "up{instance=\"192.168.88.209:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "hide": false,
+            "instant": true,
+            "legendFormat": "192.168.88.209",
+            "range": false,
+            "refId": "H"
           }
         ],
         "title": "Node Status",
@@ -243,8 +341,8 @@
           "overrides": []
         },
         "gridPos": {
-          "h": 4,
-          "w": 5,
+          "h": 5,
+          "w": 6,
           "x": 9,
           "y": 1
         },
@@ -273,11 +371,95 @@
               "uid": "${DS_PROMETHEUS}"
             },
             "editorMode": "code",
-            "expr": "up{instance=~\"$node\",job=~\"$job\"} and (up{instance=~\"$node\",job=~\"$job\"} or on() vector(0))",
+            "expr": "up{instance=\"192.168.88.201:9100\",instance=~\"$node\",job=~\"$job\"}",
             "hide": false,
-            "legendFormat": "{{instance}}",
+            "legendFormat": "192.168.88.201",
             "range": true,
             "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "expr": "up{instance=\"192.168.88.202:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "hide": false,
+            "legendFormat": "192.168.88.202",
+            "range": true,
+            "refId": "B"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "expr": "up{instance=\"192.168.88.203:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "hide": false,
+            "legendFormat": "192.168.88.203",
+            "range": true,
+            "refId": "C"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "expr": "up{instance=\"192.168.88.204:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "hide": false,
+            "legendFormat": "192.168.88.204",
+            "range": true,
+            "refId": "D"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "expr": "up{instance=\"192.168.88.205:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "hide": false,
+            "legendFormat": "192.168.88.205",
+            "range": true,
+            "refId": "E"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "expr": "up{instance=\"192.168.88.206:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "hide": false,
+            "legendFormat": "192.168.88.206",
+            "range": true,
+            "refId": "F"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "expr": "up{instance=\"192.168.88.208:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "hide": false,
+            "legendFormat": "192.168.88.208",
+            "range": true,
+            "refId": "G"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "expr": "up{instance=\"192.168.88.209:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "hide": false,
+            "legendFormat": "192.168.88.209",
+            "range": true,
+            "refId": "H"
           }
         ],
         "title": "Status Trace",
@@ -338,9 +520,9 @@
           "overrides": []
         },
         "gridPos": {
-          "h": 9,
-          "w": 10,
-          "x": 14,
+          "h": 10,
+          "w": 9,
+          "x": 15,
           "y": 1
         },
         "id": 312,
@@ -376,12 +558,117 @@
             },
             "editorMode": "code",
             "exemplar": false,
-            "expr": "(sum by(instance)(node_network_transmit_bytes_total{instance=~\"$node\",job=~\"$job\"}) + sum by(instance)(node_network_receive_bytes_total{instance=~\"$node\",job=~\"$job\"})) / 1024 / 1024",
+            "expr": "(sum(node_network_transmit_bytes_total{instance=\"192.168.88.201:9100\",instance=~\"$node\",job=~\"$job\"}) + sum(node_network_receive_bytes_total{instance=\"192.168.88.201:9100\",instance=~\"$node\",job=~\"$job\"})) / 1024 / 1024",
             "instant": true,
             "intervalFactor": 1,
-            "legendFormat": "{{instance}}",
+            "legendFormat": "192.168.88.201",
             "range": false,
             "refId": "A",
+            "step": 900
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "(sum(node_network_transmit_bytes_total{instance=\"192.168.88.202:9100\",instance=~\"$node\",job=~\"$job\"}) + sum(node_network_receive_bytes_total{instance=\"192.168.88.202:9100\",instance=~\"$node\",job=~\"$job\"})) / 1024 / 1024",
+            "instant": true,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.202",
+            "range": false,
+            "refId": "B",
+            "step": 900
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "(sum(node_network_transmit_bytes_total{instance=\"192.168.88.203:9100\",instance=~\"$node\",job=~\"$job\"}) + sum(node_network_receive_bytes_total{instance=\"192.168.88.203:9100\",instance=~\"$node\",job=~\"$job\"})) / 1024 / 1024",
+            "instant": true,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.203",
+            "range": false,
+            "refId": "C",
+            "step": 900
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "(sum(node_network_transmit_bytes_total{instance=\"192.168.88.204:9100\",instance=~\"$node\",job=~\"$job\"}) + sum(node_network_receive_bytes_total{instance=\"192.168.88.204:9100\",instance=~\"$node\",job=~\"$job\"})) / 1024 / 1024",
+            "instant": true,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.204",
+            "range": false,
+            "refId": "D",
+            "step": 900
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "(sum(node_network_transmit_bytes_total{instance=\"192.168.88.205:9100\",instance=~\"$node\",job=~\"$job\"}) + sum(node_network_receive_bytes_total{instance=\"192.168.88.205:9100\",instance=~\"$node\",job=~\"$job\"})) / 1024 / 1024",
+            "instant": true,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.205",
+            "range": false,
+            "refId": "E",
+            "step": 900
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "(sum(node_network_transmit_bytes_total{instance=\"192.168.88.206:9100\",instance=~\"$node\",job=~\"$job\"}) + sum(node_network_receive_bytes_total{instance=\"192.168.88.206:9100\",instance=~\"$node\",job=~\"$job\"})) / 1024 / 1024",
+            "instant": true,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.206",
+            "range": false,
+            "refId": "F",
+            "step": 900
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "(sum(node_network_transmit_bytes_total{instance=\"192.168.88.208:9100\",instance=~\"$node\",job=~\"$job\"}) + sum(node_network_receive_bytes_total{instance=\"192.168.88.208:9100\",instance=~\"$node\",job=~\"$job\"})) / 1024 / 1024",
+            "instant": true,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.208",
+            "range": false,
+            "refId": "G",
+            "step": 900
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "(sum(node_network_transmit_bytes_total{instance=\"192.168.88.209:9100\",instance=~\"$node\",job=~\"$job\"}) + sum(node_network_receive_bytes_total{instance=\"192.168.88.209:9100\",instance=~\"$node\",job=~\"$job\"})) / 1024 / 1024",
+            "instant": true,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.209",
+            "range": false,
+            "refId": "H",
             "step": 900
           }
         ],
@@ -447,7 +734,7 @@
           },
           "showPercentChange": false,
           "text": {
-            "valueSize": 30
+            "valueSize": 26
           },
           "textMode": "value",
           "wideLayout": true
@@ -461,12 +748,117 @@
             },
             "editorMode": "code",
             "exemplar": false,
-            "expr": "node_time_seconds{instance=~\"$node\",job=~\"$job\"} - node_boot_time_seconds{instance=~\"$node\",job=~\"$job\"}",
+            "expr": "node_time_seconds{instance=\"192.168.88.201:9100\",instance=~\"$node\",job=~\"$job\"} - node_boot_time_seconds{instance=\"192.168.88.201:9100\",instance=~\"$node\",job=~\"$job\"}",
             "instant": false,
             "intervalFactor": 1,
-            "legendFormat": "{{instance}}",
+            "legendFormat": "192.168.88.201",
             "range": true,
             "refId": "A",
+            "step": 1800
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_time_seconds{instance=\"192.168.88.202:9100\",instance=~\"$node\",job=~\"$job\"} - node_boot_time_seconds{instance=\"192.168.88.202:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": false,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.202",
+            "range": true,
+            "refId": "B",
+            "step": 1800
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_time_seconds{instance=\"192.168.88.203:9100\",instance=~\"$node\",job=~\"$job\"} - node_boot_time_seconds{instance=\"192.168.88.203:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": false,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.203",
+            "range": true,
+            "refId": "C",
+            "step": 1800
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_time_seconds{instance=\"192.168.88.204:9100\",instance=~\"$node\",job=~\"$job\"} - node_boot_time_seconds{instance=\"192.168.88.204:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": false,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.204",
+            "range": true,
+            "refId": "D",
+            "step": 1800
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_time_seconds{instance=\"192.168.88.205:9100\",instance=~\"$node\",job=~\"$job\"} - node_boot_time_seconds{instance=\"192.168.88.205:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": false,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.205",
+            "range": true,
+            "refId": "E",
+            "step": 1800
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_time_seconds{instance=\"192.168.88.206:9100\",instance=~\"$node\",job=~\"$job\"} - node_boot_time_seconds{instance=\"192.168.88.206:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": false,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.206",
+            "range": true,
+            "refId": "F",
+            "step": 1800
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_time_seconds{instance=\"192.168.88.208:9100\",instance=~\"$node\",job=~\"$job\"} - node_boot_time_seconds{instance=\"192.168.88.208:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": false,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.208",
+            "range": true,
+            "refId": "G",
+            "step": 1800
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_time_seconds{instance=\"192.168.88.209:9100\",instance=~\"$node\",job=~\"$job\"} - node_boot_time_seconds{instance=\"192.168.88.209:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": false,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.209",
+            "range": true,
+            "refId": "H",
             "step": 1800
           }
         ],
@@ -511,9 +903,9 @@
         },
         "gridPos": {
           "h": 5,
-          "w": 5,
+          "w": 6,
           "x": 9,
-          "y": 5
+          "y": 6
         },
         "id": 428,
         "maxDataPoints": 100,
@@ -550,14 +942,133 @@
             },
             "editorMode": "code",
             "exemplar": false,
-            "expr": "100 - ((node_memory_MemAvailable_bytes{instance=~\"$node\",job=~\"$job\"} * 100) / node_memory_MemTotal_bytes{instance=~\"$node\",job=~\"$job\"})",
+            "expr": "100 - ((node_memory_MemAvailable_bytes{instance=\"192.168.88.201:9100\",instance=~\"$node\",job=~\"$job\"} * 100) / node_memory_MemTotal_bytes{instance=\"192.168.88.201:9100\",instance=~\"$node\",job=~\"$job\"})",
             "format": "time_series",
             "hide": false,
             "instant": true,
             "intervalFactor": 1,
-            "legendFormat": "{{instance}}",
+            "legendFormat": "192.168.88.201",
             "range": false,
             "refId": "A",
+            "step": 900
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "100 - ((node_memory_MemAvailable_bytes{instance=\"192.168.88.202:9100\",instance=~\"$node\",job=~\"$job\"} * 100) / node_memory_MemTotal_bytes{instance=\"192.168.88.202:9100\",instance=~\"$node\",job=~\"$job\"})",
+            "format": "time_series",
+            "hide": false,
+            "instant": true,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.202",
+            "range": false,
+            "refId": "B",
+            "step": 900
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "100 - ((node_memory_MemAvailable_bytes{instance=\"192.168.88.203:9100\",instance=~\"$node\",job=~\"$job\"} * 100) / node_memory_MemTotal_bytes{instance=\"192.168.88.203:9100\",instance=~\"$node\",job=~\"$job\"})",
+            "format": "time_series",
+            "hide": false,
+            "instant": true,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.203",
+            "range": false,
+            "refId": "C",
+            "step": 900
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "100 - ((node_memory_MemAvailable_bytes{instance=\"192.168.88.204:9100\",instance=~\"$node\",job=~\"$job\"} * 100) / node_memory_MemTotal_bytes{instance=\"192.168.88.204:9100\",instance=~\"$node\",job=~\"$job\"})",
+            "format": "time_series",
+            "hide": false,
+            "instant": true,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.204",
+            "range": false,
+            "refId": "D",
+            "step": 900
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "100 - ((node_memory_MemAvailable_bytes{instance=\"192.168.88.205:9100\",instance=~\"$node\",job=~\"$job\"} * 100) / node_memory_MemTotal_bytes{instance=\"192.168.88.205:9100\",instance=~\"$node\",job=~\"$job\"})",
+            "format": "time_series",
+            "hide": false,
+            "instant": true,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.205",
+            "range": false,
+            "refId": "E",
+            "step": 900
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "100 - ((node_memory_MemAvailable_bytes{instance=\"192.168.88.206:9100\",instance=~\"$node\",job=~\"$job\"} * 100) / node_memory_MemTotal_bytes{instance=\"192.168.88.206:9100\",instance=~\"$node\",job=~\"$job\"})",
+            "format": "time_series",
+            "hide": false,
+            "instant": true,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.206",
+            "range": false,
+            "refId": "F",
+            "step": 900
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "100 - ((node_memory_MemAvailable_bytes{instance=\"192.168.88.208:9100\",instance=~\"$node\",job=~\"$job\"} * 100) / node_memory_MemTotal_bytes{instance=\"192.168.88.208:9100\",instance=~\"$node\",job=~\"$job\"})",
+            "format": "time_series",
+            "hide": false,
+            "instant": true,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.208",
+            "range": false,
+            "refId": "G",
+            "step": 900
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "100 - ((node_memory_MemAvailable_bytes{instance=\"192.168.88.209:9100\",instance=~\"$node\",job=~\"$job\"} * 100) / node_memory_MemTotal_bytes{instance=\"192.168.88.209:9100\",instance=~\"$node\",job=~\"$job\"})",
+            "format": "time_series",
+            "hide": false,
+            "instant": true,
+            "intervalFactor": 1,
+            "legendFormat": "192.168.88.209",
+            "range": false,
+            "refId": "H",
             "step": 900
           }
         ],
@@ -641,11 +1152,11 @@
               "uid": "${DS_PROMETHEUS}"
             },
             "editorMode": "code",
-            "expr": "100 * avg by (instance)(rate(node_cpu_seconds_total{mode!~\"idle|iowait\",instance=~\"$node\",job=~\"$job\"}[5m]))",
+            "expr": "label_replace(avg by (instance)(sum without (mode)(irate(node_cpu_seconds_total{mode!~\"idle|iowait\",instance=~\"$node\",job=~\"$job\"}[5m]))) * 100, \"host\", \"$1\", \"instance\", \"([^:]+):.*\")",
             "hide": false,
             "interval": "",
             "intervalFactor": 1,
-            "legendFormat": "{{instance}}",
+            "legendFormat": "{{host}}",
             "range": true,
             "refId": "A",
             "step": 900
@@ -700,7 +1211,7 @@
           },
           "showPercentChange": false,
           "text": {
-            "valueSize": 30
+            "valueSize": 26
           },
           "textMode": "value",
           "wideLayout": true
@@ -714,12 +1225,110 @@
             },
             "editorMode": "code",
             "exemplar": false,
-            "expr": "count by (instance)(count by(cpu,instance)(node_cpu_seconds_total{instance=~\"$node\",job=~\"$job\"}))",
+            "expr": "count by (instance)(count by(cpu,instance)(node_cpu_seconds_total{instance=\"192.168.88.201:9100\",instance=~\"$node\",job=~\"$job\"}))",
             "format": "time_series",
             "instant": true,
-            "legendFormat": "{{instance}}",
+            "legendFormat": "192.168.88.201",
             "range": false,
             "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "count by (instance)(count by(cpu,instance)(node_cpu_seconds_total{instance=\"192.168.88.202:9100\",instance=~\"$node\",job=~\"$job\"}))",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "192.168.88.202",
+            "range": false,
+            "refId": "B"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "count by (instance)(count by(cpu,instance)(node_cpu_seconds_total{instance=\"192.168.88.203:9100\",instance=~\"$node\",job=~\"$job\"}))",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "192.168.88.203",
+            "range": false,
+            "refId": "C"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "count by (instance)(count by(cpu,instance)(node_cpu_seconds_total{instance=\"192.168.88.204:9100\",instance=~\"$node\",job=~\"$job\"}))",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "192.168.88.204",
+            "range": false,
+            "refId": "D"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "count by (instance)(count by(cpu,instance)(node_cpu_seconds_total{instance=\"192.168.88.205:9100\",instance=~\"$node\",job=~\"$job\"}))",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "192.168.88.205",
+            "range": false,
+            "refId": "E"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "count by (instance)(count by(cpu,instance)(node_cpu_seconds_total{instance=\"192.168.88.206:9100\",instance=~\"$node\",job=~\"$job\"}))",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "192.168.88.206",
+            "range": false,
+            "refId": "F"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "count by (instance)(count by(cpu,instance)(node_cpu_seconds_total{instance=\"192.168.88.208:9100\",instance=~\"$node\",job=~\"$job\"}))",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "192.168.88.208",
+            "range": false,
+            "refId": "G"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "count by (instance)(count by(cpu,instance)(node_cpu_seconds_total{instance=\"192.168.88.209:9100\",instance=~\"$node\",job=~\"$job\"}))",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "192.168.88.209",
+            "range": false,
+            "refId": "H"
           }
         ],
         "title": "CPU Cores",
@@ -767,7 +1376,7 @@
           "h": 5,
           "w": 15,
           "x": 9,
-          "y": 10
+          "y": 11
         },
         "id": 602,
         "options": {
@@ -794,8 +1403,8 @@
               "uid": "${DS_PROMETHEUS}"
             },
             "editorMode": "code",
-            "expr": "(sum by (instance)(irate(node_network_transmit_bytes_total{instance=~\"$node\",job=~\"$job\",device!~\"lo|bond[0-9]|cbr[0-9]|veth.*\"}[5m])) + sum by(instance)(irate(node_network_receive_bytes_total{instance=~\"$node\",job=~\"$job\",device!~\"lo|bond[0-9]|cbr[0-9]|veth.*\"}[5m]))) / 1024 / 1024",
-            "legendFormat": "{{instance}}",
+            "expr": "label_replace((sum by (instance)(irate(node_network_transmit_bytes_total{instance=~\"$node\",job=~\"$job\",device!~\"lo|bond[0-9]|cbr[0-9]|veth.*\"}[5m])) + sum by(instance)(irate(node_network_receive_bytes_total{instance=~\"$node\",job=~\"$job\",device!~\"lo|bond[0-9]|cbr[0-9]|veth.*\"}[5m]))) / 1024 / 1024, \"host\", \"$1\", \"instance\", \"([^:]+):.*\")",
+            "legendFormat": "{{host}}",
             "range": true,
             "refId": "A"
           }
@@ -828,7 +1437,7 @@
           "overrides": []
         },
         "gridPos": {
-          "h": 3,
+          "h": 4,
           "w": 9,
           "x": 0,
           "y": 16
@@ -849,7 +1458,7 @@
           },
           "showPercentChange": false,
           "text": {
-            "valueSize": 30
+            "valueSize": 24
           },
           "textMode": "value_and_name",
           "wideLayout": true
@@ -863,11 +1472,102 @@
             },
             "editorMode": "code",
             "exemplar": false,
-            "expr": "node_memory_MemTotal_bytes{instance=~\"$node\", job=~\"$job\"}\n-\nnode_memory_MemAvailable_bytes{instance=~\"$node\", job=~\"$job\"}",
+            "expr": "node_memory_MemTotal_bytes{instance=\"192.168.88.201:9100\",instance=~\"$node\",job=~\"$job\"}\n-\nnode_memory_MemAvailable_bytes{instance=\"192.168.88.201:9100\",instance=~\"$node\",job=~\"$job\"}",
             "instant": true,
-            "legendFormat": "{{instance}}",
+            "legendFormat": "192.168.88.201",
             "range": false,
             "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_memory_MemTotal_bytes{instance=\"192.168.88.202:9100\",instance=~\"$node\",job=~\"$job\"}\n-\nnode_memory_MemAvailable_bytes{instance=\"192.168.88.202:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": true,
+            "legendFormat": "192.168.88.202",
+            "range": false,
+            "refId": "B"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_memory_MemTotal_bytes{instance=\"192.168.88.203:9100\",instance=~\"$node\",job=~\"$job\"}\n-\nnode_memory_MemAvailable_bytes{instance=\"192.168.88.203:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": true,
+            "legendFormat": "192.168.88.203",
+            "range": false,
+            "refId": "C"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_memory_MemTotal_bytes{instance=\"192.168.88.204:9100\",instance=~\"$node\",job=~\"$job\"}\n-\nnode_memory_MemAvailable_bytes{instance=\"192.168.88.204:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": true,
+            "legendFormat": "192.168.88.204",
+            "range": false,
+            "refId": "D"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_memory_MemTotal_bytes{instance=\"192.168.88.205:9100\",instance=~\"$node\",job=~\"$job\"}\n-\nnode_memory_MemAvailable_bytes{instance=\"192.168.88.205:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": true,
+            "legendFormat": "192.168.88.205",
+            "range": false,
+            "refId": "E"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_memory_MemTotal_bytes{instance=\"192.168.88.206:9100\",instance=~\"$node\",job=~\"$job\"}\n-\nnode_memory_MemAvailable_bytes{instance=\"192.168.88.206:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": true,
+            "legendFormat": "192.168.88.206",
+            "range": false,
+            "refId": "F"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_memory_MemTotal_bytes{instance=\"192.168.88.208:9100\",instance=~\"$node\",job=~\"$job\"}\n-\nnode_memory_MemAvailable_bytes{instance=\"192.168.88.208:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": true,
+            "legendFormat": "192.168.88.208",
+            "range": false,
+            "refId": "G"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_memory_MemTotal_bytes{instance=\"192.168.88.209:9100\",instance=~\"$node\",job=~\"$job\"}\n-\nnode_memory_MemAvailable_bytes{instance=\"192.168.88.209:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": true,
+            "legendFormat": "192.168.88.209",
+            "range": false,
+            "refId": "H"
           }
         ],
         "title": "RAM Used",
@@ -898,10 +1598,10 @@
           "overrides": []
         },
         "gridPos": {
-          "h": 3,
+          "h": 4,
           "w": 9,
           "x": 0,
-          "y": 19
+          "y": 20
         },
         "id": 731,
         "options": {
@@ -919,7 +1619,7 @@
           },
           "showPercentChange": false,
           "text": {
-            "valueSize": 30
+            "valueSize": 24
           },
           "textMode": "value_and_name",
           "wideLayout": true
@@ -933,11 +1633,102 @@
             },
             "editorMode": "code",
             "exemplar": false,
-            "expr": "node_memory_MemTotal_bytes{instance=~\"$node\",job=~\"$job\"}",
+            "expr": "node_memory_MemTotal_bytes{instance=\"192.168.88.201:9100\",instance=~\"$node\",job=~\"$job\"}",
             "instant": true,
-            "legendFormat": "{{instance}}",
+            "legendFormat": "192.168.88.201",
             "range": false,
             "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_memory_MemTotal_bytes{instance=\"192.168.88.202:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": true,
+            "legendFormat": "192.168.88.202",
+            "range": false,
+            "refId": "B"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_memory_MemTotal_bytes{instance=\"192.168.88.203:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": true,
+            "legendFormat": "192.168.88.203",
+            "range": false,
+            "refId": "C"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_memory_MemTotal_bytes{instance=\"192.168.88.204:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": true,
+            "legendFormat": "192.168.88.204",
+            "range": false,
+            "refId": "D"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_memory_MemTotal_bytes{instance=\"192.168.88.205:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": true,
+            "legendFormat": "192.168.88.205",
+            "range": false,
+            "refId": "E"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_memory_MemTotal_bytes{instance=\"192.168.88.206:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": true,
+            "legendFormat": "192.168.88.206",
+            "range": false,
+            "refId": "F"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_memory_MemTotal_bytes{instance=\"192.168.88.208:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": true,
+            "legendFormat": "192.168.88.208",
+            "range": false,
+            "refId": "G"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "node_memory_MemTotal_bytes{instance=\"192.168.88.209:9100\",instance=~\"$node\",job=~\"$job\"}",
+            "instant": true,
+            "legendFormat": "192.168.88.209",
+            "range": false,
+            "refId": "H"
           }
         ],
         "title": "Total RAM",
@@ -975,10 +1766,10 @@
           "overrides": []
         },
         "gridPos": {
-          "h": 7,
+          "h": 8,
           "w": 15,
           "x": 9,
-          "y": 15
+          "y": 16
         },
         "id": 728,
         "options": {
@@ -1010,12 +1801,110 @@
           {
             "editorMode": "code",
             "exemplar": false,
-            "expr": "max by (instance) (\n  node_hwmon_temp_celsius{\n    chip=\"thermal_thermal_zone0\",\n    instance=~\"$node\",job=~\"$job\"\n  }\n)",
+            "expr": "max by (instance) (node_hwmon_temp_celsius{chip=\"thermal_thermal_zone0\",instance=\"192.168.88.201:9100\",instance=~\"$node\",job=~\"$job\"})",
             "format": "time_series",
             "instant": false,
-            "legendFormat": "__auto",
+            "legendFormat": "192.168.88.201",
             "range": true,
             "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            }
+          },
+          {
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "max by (instance) (node_hwmon_temp_celsius{chip=\"thermal_thermal_zone0\",instance=\"192.168.88.202:9100\",instance=~\"$node\",job=~\"$job\"})",
+            "format": "time_series",
+            "instant": false,
+            "legendFormat": "192.168.88.202",
+            "range": true,
+            "refId": "B",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            }
+          },
+          {
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "max by (instance) (node_hwmon_temp_celsius{chip=\"thermal_thermal_zone0\",instance=\"192.168.88.203:9100\",instance=~\"$node\",job=~\"$job\"})",
+            "format": "time_series",
+            "instant": false,
+            "legendFormat": "192.168.88.203",
+            "range": true,
+            "refId": "C",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            }
+          },
+          {
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "max by (instance) (node_hwmon_temp_celsius{chip=\"thermal_thermal_zone0\",instance=\"192.168.88.204:9100\",instance=~\"$node\",job=~\"$job\"})",
+            "format": "time_series",
+            "instant": false,
+            "legendFormat": "192.168.88.204",
+            "range": true,
+            "refId": "D",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            }
+          },
+          {
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "max by (instance) (node_hwmon_temp_celsius{chip=\"thermal_thermal_zone0\",instance=\"192.168.88.205:9100\",instance=~\"$node\",job=~\"$job\"})",
+            "format": "time_series",
+            "instant": false,
+            "legendFormat": "192.168.88.205",
+            "range": true,
+            "refId": "E",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            }
+          },
+          {
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "max by (instance) (node_hwmon_temp_celsius{chip=\"thermal_thermal_zone0\",instance=\"192.168.88.206:9100\",instance=~\"$node\",job=~\"$job\"})",
+            "format": "time_series",
+            "instant": false,
+            "legendFormat": "192.168.88.206",
+            "range": true,
+            "refId": "F",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            }
+          },
+          {
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "max by (instance) (node_hwmon_temp_celsius{chip=\"thermal_thermal_zone0\",instance=\"192.168.88.208:9100\",instance=~\"$node\",job=~\"$job\"})",
+            "format": "time_series",
+            "instant": false,
+            "legendFormat": "192.168.88.208",
+            "range": true,
+            "refId": "G",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            }
+          },
+          {
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "max by (instance) (node_hwmon_temp_celsius{chip=\"thermal_thermal_zone0\",instance=\"192.168.88.209:9100\",instance=~\"$node\",job=~\"$job\"})",
+            "format": "time_series",
+            "instant": false,
+            "legendFormat": "192.168.88.209",
+            "range": true,
+            "refId": "H",
             "datasource": {
               "type": "prometheus",
               "uid": "${DS_PROMETHEUS}"
@@ -1084,7 +1973,9 @@
                 }
               ]
             },
-            "unit": "short"
+            "max": 100,
+            "min": 0,
+            "unit": "percent"
           },
           "overrides": []
         },
@@ -1092,7 +1983,7 @@
           "h": 9,
           "w": 24,
           "x": 0,
-          "y": 23
+          "y": 24
         },
         "id": 77,
         "options": {
@@ -1118,7 +2009,7 @@
               "uid": "${DS_PROMETHEUS}"
             },
             "editorMode": "code",
-            "expr": "sum by (instance)(irate(node_cpu_seconds_total{mode=\"system\",instance=~\"$node\",job=~\"$job\"}[5m])) * 100",
+            "expr": "avg by (instance)(irate(node_cpu_seconds_total{mode=\"system\",instance=~\"$node\",job=~\"$job\"}[5m])) * 100",
             "format": "time_series",
             "hide": false,
             "intervalFactor": 2,
@@ -1132,7 +2023,7 @@
               "type": "prometheus",
               "uid": "${DS_PROMETHEUS}"
             },
-            "expr": "sum by (instance)(irate(node_cpu_seconds_total{mode='user',instance=~\"$node\",job=~\"$job\"}[5m])) * 100",
+            "expr": "avg by (instance)(irate(node_cpu_seconds_total{mode='user',instance=~\"$node\",job=~\"$job\"}[5m])) * 100",
             "format": "time_series",
             "hide": false,
             "intervalFactor": 2,
@@ -1145,7 +2036,7 @@
               "type": "prometheus",
               "uid": "${DS_PROMETHEUS}"
             },
-            "expr": "sum by (instance)(irate(node_cpu_seconds_total{mode='iowait',instance=~\"$node\",job=~\"$job\"}[5m])) * 100",
+            "expr": "avg by (instance)(irate(node_cpu_seconds_total{mode='iowait',instance=~\"$node\",job=~\"$job\"}[5m])) * 100",
             "format": "time_series",
             "hide": false,
             "intervalFactor": 2,
@@ -1158,7 +2049,7 @@
               "type": "prometheus",
               "uid": "${DS_PROMETHEUS}"
             },
-            "expr": "sum by (instance)(irate(node_cpu_seconds_total{mode=~\".*irq\",instance=~\"$node\",job=~\"$job\"}[5m])) * 100",
+            "expr": "avg by (instance)(sum without (mode)(irate(node_cpu_seconds_total{mode=~\".*irq\",instance=~\"$node\",job=~\"$job\"}[5m]))) * 100",
             "format": "time_series",
             "hide": false,
             "intervalFactor": 2,
@@ -1171,7 +2062,7 @@
               "type": "prometheus",
               "uid": "${DS_PROMETHEUS}"
             },
-            "expr": "sum (irate(node_cpu_seconds_total{mode!='idle',mode!='user',mode!='system',mode!='iowait',mode!='irq',mode!='softirq',instance=~\"$node\",job=~\"$job\"}[5m])) * 100",
+            "expr": "avg by (instance)(sum without (mode)(irate(node_cpu_seconds_total{mode!='idle',mode!='user',mode!='system',mode!='iowait',mode!='irq',mode!='softirq',instance=~\"$node\",job=~\"$job\"}[5m]))) * 100",
             "format": "time_series",
             "hide": false,
             "intervalFactor": 2,
@@ -1184,7 +2075,7 @@
               "type": "prometheus",
               "uid": "${DS_PROMETHEUS}"
             },
-            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode='idle',instance=~\"$node\",job=~\"$job\"}[5m])) * 100",
+            "expr": "avg by (instance)(irate(node_cpu_seconds_total{mode='idle',instance=~\"$node\",job=~\"$job\"}[5m])) * 100",
             "format": "time_series",
             "hide": false,
             "intervalFactor": 2,
