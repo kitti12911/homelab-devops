@@ -139,10 +139,18 @@ repoServer:
     limits:
       memory: 256Mi
 
+# if switching backends, delete the existing secret first:
+# kubectl delete secret argocd-redis -n argocd
+# then comment 'password' in argocd-secrets.enc.yml
 redis:
-  resources:
-    requests:
-      cpu: 50m
-      memory: 64Mi
-    limits:
-      memory: 128Mi
+  enabled: false
+  # resources:
+  #   requests:
+  #     cpu: 50m
+  #     memory: 64Mi
+  #   limits:
+  #     memory: 128Mi
+
+externalRedis:
+  host: dragonfly.database.svc.cluster.local
+  port: 6379
