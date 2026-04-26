@@ -15,7 +15,11 @@
     # redpanda_kafka_nodeport: 31092
     envoy_log_level: "warning"
     envoy_apt_suite: "{{ 'bookworm' if ansible_facts.distribution_release == 'trixie' else ansible_facts.distribution_release }}"
-    node_exporter_args: "--web.listen-address=:9100 --log.level=warn"
+    node_exporter_systemd_unit_exclude: '^(openipmi|smartmontools)\.service$'
+    node_exporter_args: >-
+      --web.listen-address=:9100
+      --log.level=warn
+      --collector.systemd.unit-exclude={{ node_exporter_systemd_unit_exclude }}
 
   tasks:
     - name: Create Envoy config directory
