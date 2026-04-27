@@ -77,6 +77,7 @@ spec:
                       replacement: node-exporter
 
               enableRemoteWriteReceiver: true
+              enableOTLPReceiver: true
 
           alertmanager:
             config:
