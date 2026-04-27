@@ -24,6 +24,7 @@ for full bootstrap and setup instructions, see [kubernetes/README.md](kubernetes
 | alertmanager.lan     | alert management             |
 | loki.lan             | log aggregation              |
 | tempo.lan            | distributed tracing          |
+| pyroscope.lan        | continuous profiling         |
 | alloy.lan            | observability agent          |
 <!-- | redpanda.lan         | kafka streaming console      | -->
 

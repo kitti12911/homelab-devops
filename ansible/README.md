@@ -122,6 +122,7 @@ ansible all -m ping
 | `initial-setup-node.yml`    | prepare node for k3s               |
 | `setup-master.yml`          | install k3s master                 |
 | `setup-worker.yml`          | install k3s worker and join cluster|
+| `setup-zot-trust.yml`       | trust homelab CA for zot.lan pulls |
 
 ### utility
 

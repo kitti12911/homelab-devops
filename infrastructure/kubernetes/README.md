@@ -32,6 +32,7 @@ bootstrap and manage kubernetes applications via argocd. all apps are deployed a
 | kube-prometheus-stack     | observability      | grafana.lan, prometheus.lan, alertmanager.lan | monitoring                      |
 | loki                      | observability      | loki.lan                                      | log aggregation                 |
 | tempo                     | observability      | tempo.lan                                     | distributed tracing             |
+| pyroscope                 | observability      | pyroscope.lan                                 | continuous profiling            |
 | alloy                     | observability      | alloy.lan                                     | observability agent             |
 | sonarqube                 | sonarqube          | sonarqube.lan                                 | code quality analysis           |
 | reloader                  | reloader           | -                                             | auto-reload on config changes   |
@@ -43,12 +44,12 @@ bootstrap and manage kubernetes applications via argocd. all apps are deployed a
 
 sync apps in this order after argocd is running. each wave depends on the previous being healthy.
 
-| wave | apps                                                                                                  | reason                                                                                             |
-|------|-------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
-| 1    | cert-manager, cloudnative-pg, keycloak-operator, longhorn                                             | operators and storage - no dependencies                                                            |
-| 2    | trust-manager, postgresql, dragonfly, nats, seaweedfs                                                 | trust-manager needs cert-manager; dbs need cnpg + longhorn                                         |
-| 3    | keycloak, kube-prometheus-stack                                                                       | keycloak needs keycloak-operator + postgresql                                                      |
-| 4    | oauth2-proxy, zot, sonarqube, loki, tempo, alloy, reloader, system-upgrade-controller, trivy-operator | oauth2-proxy + zot need keycloak; sonarqube needs postgresql; observability stack needs prometheus |
+| wave | apps                                                                                                             | reason                                                                                             |
+|------|------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| 1    | cert-manager, cloudnative-pg, keycloak-operator, longhorn                                                        | operators and storage - no dependencies                                                            |
+| 2    | trust-manager, postgresql, dragonfly, nats, seaweedfs                                                            | trust-manager needs cert-manager; dbs need cnpg + longhorn                                         |
+| 3    | keycloak, kube-prometheus-stack                                                                                  | keycloak needs keycloak-operator + postgresql                                                      |
+| 4    | oauth2-proxy, zot, sonarqube, loki, tempo, pyroscope, alloy, reloader, system-upgrade-controller, trivy-operator | oauth2-proxy + zot need keycloak; sonarqube needs postgresql; observability stack needs prometheus |
 
 ## bootstrap order
 
@@ -174,6 +175,10 @@ kubectl get secret homelab-ca-secret -n cert-manager -o jsonpath='{.data.tls\.cr
 # macos
 sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain homelab-ca.crt
 rm homelab-ca.crt
+
+# debian based linux
+sudo cp homelab-ca.crt /usr/local/share/ca-certificates/homelab-ca.crt
+sudo update-ca-certificates
 ```
 
 ### 6. keycloak configuration
@@ -373,6 +378,16 @@ kubectl apply -f kubernetes/bootstrap/coredns-warning-suppressed.yml
 kubectl rollout restart deployment coredns -n kube-system
 ```
 
+### zot.lan image pull tls trust
+
+if a pod fails to pull from `zot.lan` with `x509: certificate signed by unknown authority`, containerd on the node doesn't trust the homelab CA. fix on every cluster node by running the ansible playbook (idempotent, only restarts k3s if config changes):
+
+```bash
+ansible-playbook playbooks/kubernetes/setup-zot-trust.yml
+```
+
+it pulls the CA from `homelab-ca-secret` in `cert-manager`, drops it at `/etc/rancher/k3s/homelab-ca.crt`, and writes `/etc/rancher/k3s/registries.yaml` pointing containerd at it.
+
 ## reloader
 
 ### enabling auto-reload
@@ -565,3 +580,27 @@ cosign verify --key kubernetes/secrets/cosign/cosign.pub zot.lan/<app>@sha256:<d
 ```
 
 zot does not support logout url, use: [keycloak logout for zot](https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fzot.lan&client_id=zot)
+
+## grafana drilldown demo
+
+a tiny self-contained go service in [`demo/grafana-demo`](./demo/grafana-demo) that emits logs, traces, metrics, and profiles for ~60s then exits. endpoints (tempo / loki / prometheus / pyroscope) are hardcoded to in-cluster service dns.
+
+build, push, run:
+
+```bash
+docker build -t zot.lan/grafana-demo:1 kubernetes/demo/grafana-demo --push
+kubectl apply -f kubernetes/demo/grafana-demo/deploy.yml
+```
+
+watch it run, then explore drilldowns at [grafana.lan](https://grafana.lan) (filter `service_name="grafana-demo"`):
+
+```bash
+kubectl logs -n demo -l app=grafana-demo -f
+```
+
+re-run later by deleting the job and re-applying:
+
+```bash
+kubectl delete job grafana-demo -n demo --ignore-not-found
+kubectl apply -f kubernetes/demo/grafana-demo/deploy.yml
+```

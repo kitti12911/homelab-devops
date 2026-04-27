@@ -1,0 +1,68 @@
+- name: Fetch homelab CA from cert-manager
+  hosts: master
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Read and decode homelab-ca-secret from cert-manager
+      ansible.builtin.shell:
+        cmd: |
+          set -euo pipefail
+          k3s kubectl get secret homelab-ca-secret -n cert-manager \
+            -o jsonpath='{.data.tls\.crt}' | base64 -d
+      register: homelab_ca
+      changed_when: false
+
+    - name: Fail if homelab CA cert is empty
+      ansible.builtin.fail:
+        msg: "homelab-ca-secret returned an empty cert. Is cert-manager healthy?"
+      when: homelab_ca.stdout | length < 100
+
+    - name: Set homelab CA fact
+      ansible.builtin.set_fact:
+        homelab_ca_cert: "{{ homelab_ca.stdout }}"
+      run_once: true
+
+- name: Trust homelab CA on cluster nodes for zot.lan image pulls
+  hosts: cluster
+  become: true
+  gather_facts: false
+
+  vars:
+    homelab_ca_cert: "{{ hostvars[groups['master'][0]].homelab_ca_cert }}"
+    k3s_service: "{{ 'k3s' if 'master' in group_names else 'k3s-agent' }}"
+
+  handlers:
+    - name: Restart k3s
+      ansible.builtin.systemd:
+        name: "{{ k3s_service }}"
+        state: restarted
+
+  tasks:
+    - name: Ensure /etc/rancher/k3s exists
+      ansible.builtin.file:
+        path: /etc/rancher/k3s
+        state: directory
+        mode: "0755"
+
+    - name: Install homelab CA cert
+      ansible.builtin.copy:
+        content: "{{ homelab_ca_cert }}"
+        dest: /etc/rancher/k3s/homelab-ca.crt
+        mode: "0644"
+      notify: Restart k3s
+
+    - name: Configure containerd registry trust for zot.lan
+      ansible.builtin.copy:
+        dest: /etc/rancher/k3s/registries.yaml
+        mode: "0644"
+        content: |
+          mirrors:
+            zot.lan:
+              endpoint:
+                - https://zot.lan
+          configs:
+            zot.lan:
+              tls:
+                ca_file: /etc/rancher/k3s/homelab-ca.crt
+      notify: Restart k3s
