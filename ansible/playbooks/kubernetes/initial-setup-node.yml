@@ -16,6 +16,11 @@
         name: sshd
         state: restarted
 
+    - name: restart systemd-journald
+      ansible.builtin.systemd:
+        name: systemd-journald
+        state: restarted
+
   tasks:
     # --- Tuning variables derived from host hardware ---
     # Memory tiers: >=7GB (8GB Pi), >=3GB (4GB Pi), <3GB (small Pi/proxy)
@@ -137,6 +142,40 @@
     - name: Set timezone to Asia/Bangkok
       community.general.timezone:
         name: Asia/Bangkok
+
+    - name: Ensure persistent journal directory exists
+      ansible.builtin.file:
+        path: /var/log/journal
+        state: directory
+        mode: "2755"
+      when: "'cluster' in group_names"
+
+    - name: Ensure journald configuration directory exists
+      ansible.builtin.file:
+        path: /etc/systemd/journald.conf.d
+        state: directory
+        mode: "0755"
+      when: "'cluster' in group_names"
+
+    - name: Enable persistent journald storage with 500MiB retention
+      ansible.builtin.copy:
+        dest: /etc/systemd/journald.conf.d/99-persistent.conf
+        mode: "0644"
+        content: |
+          [Journal]
+          Storage=persistent
+          SystemMaxUse=500M
+      notify: restart systemd-journald
+      when: "'cluster' in group_names"
+
+    - name: Install storage health diagnostic utilities
+      ansible.builtin.apt:
+        name:
+          - smartmontools
+          - nvme-cli
+        state: present
+        update_cache: true
+      when: "'cluster' in group_names"
 
     - name: Set hostname
       ansible.builtin.copy:
