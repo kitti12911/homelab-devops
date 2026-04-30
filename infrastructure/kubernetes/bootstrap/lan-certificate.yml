@@ -33,3 +33,4 @@ spec:
     - redpanda.lan
     - sonarqube.lan
     - pyroscope.lan
+    - pyroscope-ingest.lan
