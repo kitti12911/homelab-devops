@@ -43,7 +43,7 @@ spec:
     roles:
       - name: admin
         login: true
-        superuser: false
+        superuser: true
         createdb: true
         createrole: true
         passwordSecret:
