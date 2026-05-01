@@ -6,7 +6,7 @@ infrastructure and configuration for the homelab. manages kubernetes cluster set
 
 - **ansible/** - playbooks for provisioning nodes (raspberry pi, proxy, k3s cluster)
 - **infrastructure/** - kubernetes manifests, helm charts, and argocd applications
-- **scripts/** - utility scripts (docker compose for local db, etc.)
+- **scripts/** - utility scripts and benchmark helpers
 
 ## requirements
 
@@ -70,9 +70,7 @@ homelab-devops/
 │   └── kubernetes/
 │       ├── app/                # argocd applications + manifests
 │       └── bootstrap/          # initial cluster setup resources
-├── scripts/
-│   └── compose/
-│       └── db.compose.yml      # local database for development
+├── scripts/                    # benchmark and utility scripts
 └── .sops.yaml                  # sops encryption rules
 ```
 

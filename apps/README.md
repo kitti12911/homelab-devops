@@ -4,9 +4,9 @@ This document covers the CI/CD pipeline standards for applications in this repos
 
 ## Stack Coverage
 
-| Language | Linting | Type Check | Tests | Security | Deps |
-| --- | --- | --- | --- | --- | --- |
-| Go | golangci-lint | go vet | go test -race | govulncheck, trivy fs, gitleaks, semgrep | renovate |
+| Language   | Linting         | Type Check   | Tests         | Security                                         | Deps     |
+| ---------- | --------------- | ------------ | ------------- | ------------------------------------------------ | -------- |
+| Go         | golangci-lint   | go vet       | go test -race | govulncheck, trivy fs, gitleaks, semgrep         | renovate |
 | TypeScript | eslint / oxlint | tsc --noEmit | vitest / jest | osv-scanner, trivy fs, socket, gitleaks, semgrep | renovate |
 
 > **Why not `npm audit`?** It only reports CVEs already published to the npm advisory DB — reactive, days-to-weeks late, and blind to malicious packages (typosquats, compromised maintainers, install-time payloads). Incidents like the axios supply-chain attacks are exactly what it misses. Use **OSV-Scanner** (broader CVE DB) and **Trivy fs** as the free baseline, and **Socket.dev** for actual supply-chain behavior analysis. See the TypeScript security job below.
@@ -216,13 +216,13 @@ issues:
 
 #### Linter tiers explained
 
-| Tier | Linters | Why |
-| --- | --- | --- |
-| Non-negotiable | govet, errcheck, staticcheck, gosec | Catches real bugs and security issues. Never disable. |
-| Highly recommended | bodyclose, nilerr, errorlint, wrapcheck | Prevents subtle resource leaks and error handling mistakes. |
-| Quality of life | gocritic, revive, unused, gosimple, misspell | Keeps code clean and idiomatic. Low noise. |
-| Formatting | gofmt, goimports | Consistency. Never argue about style again. |
-| Nice to have | prealloc, unconvert, unparam | Micro-optimizations. Can disable if too noisy for your taste. |
+| Tier               | Linters                                      | Why                                                           |
+| ------------------ | -------------------------------------------- | ------------------------------------------------------------- |
+| Non-negotiable     | govet, errcheck, staticcheck, gosec          | Catches real bugs and security issues. Never disable.         |
+| Highly recommended | bodyclose, nilerr, errorlint, wrapcheck      | Prevents subtle resource leaks and error handling mistakes.   |
+| Quality of life    | gocritic, revive, unused, gosimple, misspell | Keeps code clean and idiomatic. Low noise.                    |
+| Formatting         | gofmt, goimports                             | Consistency. Never argue about style again.                   |
+| Nice to have       | prealloc, unconvert, unparam                 | Micro-optimizations. Can disable if too noisy for your taste. |
 
 ---
 
@@ -389,7 +389,7 @@ jobs:
 
 ## Shared: Renovate (dependency updates)
 
-Add a `renovate.json` at the repo root to enable automatic dependency update PRs for both Go and TypeScript.
+Add `.github/renovate.json` to enable automatic dependency update PRs for both Go and TypeScript.
 
 ```json
 {
@@ -416,11 +416,11 @@ Enable Renovate via the [Renovate GitHub App](https://github.com/apps/renovate).
 
 ## Required GitHub Secrets
 
-| Secret | Used by | How to get |
-| --- | --- | --- |
-| `CODECOV_TOKEN` | codecov-action | [codecov.io](https://codecov.io) → project settings |
-| `SEMGREP_APP_TOKEN` | semgrep-action | [semgrep.dev](https://semgrep.dev) → Settings → Tokens (optional for public rules) |
-| `SOCKET_SECURITY_API_KEY` | socket-security-action (TS only) | [socket.dev](https://socket.dev) → Settings → API Tokens |
+| Secret                    | Used by                          | How to get                                                                         |
+| ------------------------- | -------------------------------- | ---------------------------------------------------------------------------------- |
+| `CODECOV_TOKEN`           | codecov-action                   | [codecov.io](https://codecov.io) → project settings                                |
+| `SEMGREP_APP_TOKEN`       | semgrep-action                   | [semgrep.dev](https://semgrep.dev) → Settings → Tokens (optional for public rules) |
+| `SOCKET_SECURITY_API_KEY` | socket-security-action (TS only) | [socket.dev](https://socket.dev) → Settings → API Tokens                           |
 
 > `GITHUB_TOKEN` is provided automatically by GitHub Actions — no setup needed.
 
@@ -435,21 +435,21 @@ Create `.github/CODEOWNERS` in your repo:
 
 ```text
 # CI/CD workflows — only repo owner can approve changes
-.github/                @your-github-username
+.github/                @kitti12911
 
 # Lint and tool config — only repo owner can approve changes
-.golangci.yml           @your-github-username
-.oxlintrc.json          @your-github-username
-.eslintrc.*             @your-github-username
-eslint.config.*         @your-github-username
-renovate.json           @your-github-username
+.golangci.yml           @kitti12911
+.oxlintrc.json          @kitti12911
+.eslintrc.*             @kitti12911
+eslint.config.*         @kitti12911
+.github/renovate.json   @kitti12911
 ```
 
 Then enable this branch protection rule:
 
 - [x] **Require review from Code Owners** (Settings → Branches → Branch protection)
 
-This means anyone can submit a PR that touches these files, but only `@your-github-username` (or a team you specify) can approve and merge it.
+This means anyone can submit a PR that touches these files, but only `@kitti12911` (or a team you specify) can approve and merge it.
 
 ---
 

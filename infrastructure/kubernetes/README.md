@@ -277,7 +277,7 @@ sonarqube uses SAML instead of OIDC. create a SAML client in keycloak:
 | User Property      | email   | email       | email                     | email         |
 | User Property      | login   | username    | login                     | login         |
 | User Property      | name    | firstName   | name                      | name          |
-| Group list         | groups  | -           | group attribute: `groups` | groups        |  
+| Group list         | groups  | -           | group attribute: `groups` | groups        |
 
 for the group list mapper, set `single group attribute` to `on` and `full group path` to `off`.
 
