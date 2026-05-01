@@ -1,74 +1,136 @@
 # Application CI/CD Guidelines
 
-This document covers the CI/CD pipeline standards for applications in this repository using GitHub Actions.
+This document defines the default CI/CD standard for application repositories in
+this homelab. Start from these examples, then trim jobs that do not apply to the
+project.
+
+## Core Rules
+
+- Pin every third-party GitHub Action by full commit SHA.
+- Add a readable comment above each pinned action with the resolved version.
+- Use `paths` filters so workflows run only when relevant files change.
+- Pin tool versions in CI. Avoid `latest`, `master`, and floating major tags.
+- Keep security checks fast enough for pull requests.
+- Use Renovate to update pinned actions and dependency lockfiles.
+- Put workflow and tool config files under CODEOWNERS review.
 
 ## Stack Coverage
 
-| Language   | Linting         | Type Check   | Tests         | Security                                         | Deps     |
-| ---------- | --------------- | ------------ | ------------- | ------------------------------------------------ | -------- |
-| Go         | golangci-lint   | go vet       | go test -race | govulncheck, trivy fs, gitleaks, semgrep         | renovate |
-| TypeScript | eslint / oxlint | tsc --noEmit | vitest / jest | osv-scanner, trivy fs, socket, gitleaks, semgrep | renovate |
+| Stack      | Lint              | Type Check | Tests           | Security              |
+| ---------- | ----------------- | ---------- | --------------- | --------------------- |
+| Go         | golangci-lint     | go vet     | go test -race   | govulncheck, Trivy    |
+| TypeScript | ESLint or oxlint  | tsc        | Vitest or Jest  | OSV, Trivy, Socket    |
+| Markdown   | markdownlint-cli2 | n/a        | n/a             | CODEOWNERS            |
+| Shared     | Gitleaks, Semgrep | n/a        | optional smoke  | Renovate              |
 
-> **Why not `npm audit`?** It only reports CVEs already published to the npm advisory DB — reactive, days-to-weeks late, and blind to malicious packages (typosquats, compromised maintainers, install-time payloads). Incidents like the axios supply-chain attacks are exactly what it misses. Use **OSV-Scanner** (broader CVE DB) and **Trivy fs** as the free baseline, and **Socket.dev** for actual supply-chain behavior analysis. See the TypeScript security job below.
+## Action Pins
 
----
+Resolve action SHAs again when creating a real workflow. These were current when
+this document was written.
+
+- `actions/checkout` v6.0.2:
+  `de0fac2e4500dabe0009e67214ff5f5447ce83dd`
+- `actions/setup-go` v6.4.0:
+  `4a3601121dd01d1626a1e23e37211e3254c1c06c`
+- `actions/setup-node` v6.4.0:
+  `48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e`
+- `golangci/golangci-lint-action` v9.2.0:
+  `1e7e51e771db61008b38414a730f564565cf7c20`
+- `codecov/codecov-action` v6.0.0:
+  `57e3a136b779b570ffcdbf80b3bdc90e7fab3de2`
+- `aquasecurity/trivy-action` v0.36.0:
+  `ed142fd0673e97e23eac54620cfb913e5ce36c25`
+- `gitleaks/gitleaks-action` v2.3.9:
+  `ff98106e4c7b2bc287b24eaf42907196329070c7`
+- `google/osv-scanner-action` v2.3.5:
+  `c51854704019a247608d928f370c98740469d4b5`
+- `DavidAnson/markdownlint-cli2-action` v23.1.0:
+  `6b51ade7a9e4a75a7ad929842dd298a3804ebe8b`
 
 ## Pipeline Stages
 
 ```text
-PR opened     → lint → test → security scan   (blocking, fast feedback)
-Merge to main → build → container scan → push (blocking)
-Scheduled     → renovate dep updates          (async)
+Pull request  -> lint -> test -> security
+Main branch   -> build -> container scan -> release/deploy
+Scheduled     -> Renovate dependency updates
 ```
-
----
 
 ## Go Pipeline
 
-### Full example: `.github/workflows/go-ci.yml`
+### Go Workflow
+
+Use this for Go services and libraries. Remove the Docker build job for pure
+libraries.
 
 ```yaml
 name: Go CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+    paths:
+      - ".github/workflows/go-ci.yml"
+      - ".golangci.yml"
+      - "Dockerfile"
+      - "Makefile"
+      - "go.mod"
+      - "go.sum"
+      - "**/*.go"
   pull_request:
-    branches: [main]
+    paths:
+      - ".github/workflows/go-ci.yml"
+      - ".golangci.yml"
+      - "Dockerfile"
+      - "Makefile"
+      - "go.mod"
+      - "go.sum"
+      - "**/*.go"
+
+permissions:
+  contents: read
 
 jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # actions/checkout v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - uses: actions/setup-go@v5
+      # actions/setup-go v6.4.0
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
         with:
           go-version-file: go.mod
           cache: true
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+      - name: Go vet
+        run: go vet ./...
+
+      # golangci/golangci-lint-action v9.2.0
+      - uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20
         with:
-          version: latest
+          version: v2.12.1
+          args: --timeout=5m
 
   test:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # actions/checkout v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - uses: actions/setup-go@v5
+      # actions/setup-go v6.4.0
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
         with:
           go-version-file: go.mod
           cache: true
 
-      - name: Run tests with race detector and coverage
+      - name: Test with race detector and coverage
         run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+      # codecov/codecov-action v6.0.0
+      - uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2
         with:
           files: coverage.out
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -77,22 +139,24 @@ jobs:
     name: Security
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # actions/checkout v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          fetch-depth: 0  # required for gitleaks history scan
+          fetch-depth: 0
 
-      - uses: actions/setup-go@v5
+      # actions/setup-go v6.4.0
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
         with:
           go-version-file: go.mod
           cache: true
 
       - name: govulncheck
         run: |
-          go install golang.org/x/vuln/cmd/govulncheck@latest
+          go install golang.org/x/vuln/cmd/govulncheck@v1.3.0
           govulncheck ./...
 
-      - name: Trivy filesystem scan (deps + secrets + misconfig)
-        uses: aquasecurity/trivy-action@master
+      # aquasecurity/trivy-action v0.36.0
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
           scan-type: fs
           scan-ref: .
@@ -101,33 +165,33 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
 
-      - name: Gitleaks (secret detection)
-        uses: gitleaks/gitleaks-action@v2
+      # gitleaks/gitleaks-action v2.3.9
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Semgrep
-        uses: semgrep/semgrep-action@v1
-        with:
-          config: >-
-            p/golang
-            p/secrets
-        env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+        run: |
+          python3 -m pip install --user semgrep==1.161.0
+          ~/.local/bin/semgrep scan --config=p/golang --config=p/secrets --error
 
   build:
-    name: Build & Container Scan
+    name: Build and Container Scan
     runs-on: ubuntu-latest
-    needs: [lint, test, security]
+    needs:
+      - lint
+      - test
+      - security
     if: github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      # actions/checkout v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - name: Build Docker image
         run: docker build -t ${{ github.repository }}:${{ github.sha }} .
 
-      - name: Trivy container scan
-        uses: aquasecurity/trivy-action@master
+      # aquasecurity/trivy-action v0.36.0
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
           image-ref: ${{ github.repository }}:${{ github.sha }}
           format: table
@@ -137,148 +201,208 @@ jobs:
 
 ### Recommended `.golangci.yml`
 
+This uses golangci-lint v2 config format.
+
 ```yaml
+version: "2"
+
 run:
   timeout: 5m
 
 linters:
   enable:
-    # --- correctness (these catch real bugs) ---
-    - govet          # reports suspicious constructs (shadow, printf args, struct tags)
-    - errcheck       # ensures error return values are checked
-    - staticcheck    # the most comprehensive Go static analyzer
-    - bodyclose      # checks HTTP response bodies are closed
-    - nilerr         # catches returning nil when err is not nil
-    - sqlclosecheck  # checks sql.Rows and sql.Stmt are closed
+    - bodyclose
+    - cyclop
+    - errcheck
+    - errorlint
+    - exhaustive
+    - gocritic
+    - godot
+    - gosec
+    - govet
+    - ineffassign
+    - misspell
+    - nilerr
+    - noctx
+    - prealloc
+    - revive
+    - sqlclosecheck
+    - staticcheck
+    - unconvert
+    - unparam
+    - unused
+    - wrapcheck
 
-    # --- security ---
-    - gosec          # security-oriented linter (hardcoded creds, weak crypto, injections)
+  settings:
+    cyclop:
+      max-complexity: 15
+      skip-tests: true
 
-    # --- code quality ---
-    - unused         # finds unused code
-    - gosimple       # suggests simpler code
-    - ineffassign    # detects assignments to variables that are never read
-    - gocritic       # opinionated but catches many real issues
-    - revive         # fast, extensible replacement for golint
-    - unconvert      # removes unnecessary type conversions
-    - unparam        # finds unused function parameters
-    - prealloc       # suggests slice pre-allocation where possible
-    - misspell       # catches common English typos in comments and strings
+    exhaustive:
+      default-signifies-exhaustive: true
 
-    # --- formatting (keeps code consistent) ---
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - performance
+        - style
+      disabled-checks:
+        - hugeParam
+        - rangeValCopy
+
+    gosec:
+      excludes:
+        - G404
+
+    govet:
+      enable-all: true
+
+    misspell:
+      locale: US
+
+    revive:
+      rules:
+        - name: exported
+          arguments:
+            - disableStutteringCheck
+        - name: var-naming
+        - name: blank-imports
+        - name: context-as-argument
+        - name: error-return
+        - name: error-strings
+        - name: increment-decrement
+        - name: range
+        - name: receiver-naming
+        - name: unused-parameter
+          disabled: true
+
+    unparam:
+      check-exported: false
+
+    wrapcheck:
+      ignore-package-globs:
+        - google.golang.org/grpc/status
+      ignore-sigs:
+        - .Errorf(
+        - errors.New(
+        - errors.Unwrap(
+        - errors.Join(
+        - .Wrap(
+        - .Wrapf(
+        - .WithMessage(
+        - .WithMessagef(
+        - .WithStack(
+
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - path: \.pb\.go$
+        linters:
+          - cyclop
+          - exhaustive
+          - gocritic
+          - godot
+          - revive
+          - wrapcheck
+      - path: graph/generated/.*\.go$
+        linters:
+          - cyclop
+          - gocritic
+          - godot
+          - wrapcheck
+      - path: _test\.go$
+        linters:
+          - errcheck
+          - godot
+          - wrapcheck
+
+formatters:
+  enable:
     - gofmt
     - goimports
-
-    # --- error handling ---
-    - errorlint      # checks for incorrect error wrapping (Go 1.13+ errors.Is/As)
-    - wrapcheck      # ensures errors from external packages are wrapped
-
-linters-settings:
-  govet:
-    enable-all: true
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - style
-      - performance
-  revive:
-    rules:
-      - name: exported
-      - name: var-naming
-      - name: blank-imports
-      - name: context-as-argument
-      - name: error-return
-      - name: error-strings
-      - name: increment-decrement
-      - name: range
-      - name: receiver-naming
-  errorlint:
-    errorf: true
-    asserts: true
-    comparison: true
-  wrapcheck:
-    ignoreSigs:
-      - .Errorf(
-      - errors.New(
-      - errors.Unwrap(
-      - errors.Join(
-      - .Wrap(
-      - .Wrapf(
-      - .WithMessage(
-      - .WithMessagef(
-      - .WithStack(
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/kitti12911
 
 issues:
-  exclude-use-default: false
   max-issues-per-linter: 0
   max-same-issues: 0
 ```
 
-#### Linter tiers explained
+### Go Linter Tiers
 
-| Tier               | Linters                                      | Why                                                           |
-| ------------------ | -------------------------------------------- | ------------------------------------------------------------- |
-| Non-negotiable     | govet, errcheck, staticcheck, gosec          | Catches real bugs and security issues. Never disable.         |
-| Highly recommended | bodyclose, nilerr, errorlint, wrapcheck      | Prevents subtle resource leaks and error handling mistakes.   |
-| Quality of life    | gocritic, revive, unused, gosimple, misspell | Keeps code clean and idiomatic. Low noise.                    |
-| Formatting         | gofmt, goimports                             | Consistency. Never argue about style again.                   |
-| Nice to have       | prealloc, unconvert, unparam                 | Micro-optimizations. Can disable if too noisy for your taste. |
+| Tier       | Linters                                      |
+| ---------- | -------------------------------------------- |
+| Required   | govet, errcheck, staticcheck, gosec          |
+| Strong     | bodyclose, nilerr, errorlint, wrapcheck      |
+| Quality    | gocritic, revive, unused, misspell           |
+| Optional   | cyclop, exhaustive, prealloc, unconvert      |
 
----
+Keep `gochecknoglobals` out of the default app profile. It is useful for strict
+library packages, but it is noisy for real services with config, metrics,
+registries, and generated code.
 
 ## TypeScript Pipeline
 
-> Note: TypeScript tooling varies by project setup. This covers the most common patterns.
-> Your coworker may already have a linter configured — check for `.eslintrc.*`, `eslint.config.*`, or `.oxlintrc.json` before adding new config.
+Prefer the package manager already used by the project. The example below uses
+`npm`; replace with `pnpm` or `yarn` when the lockfile says so.
 
-### Full example: `.github/workflows/ts-ci.yml`
+### TypeScript Workflow
 
 ```yaml
 name: TypeScript CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+    paths:
+      - ".github/workflows/ts-ci.yml"
+      - "Dockerfile"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig*.json"
+      - "vite.config.*"
+      - "vitest.config.*"
+      - "eslint.config.*"
+      - ".oxlintrc*"
+      - "src/**"
+      - "test/**"
+      - "tests/**"
   pull_request:
-    branches: [main]
+    paths:
+      - ".github/workflows/ts-ci.yml"
+      - "Dockerfile"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig*.json"
+      - "vite.config.*"
+      - "vitest.config.*"
+      - "eslint.config.*"
+      - ".oxlintrc*"
+      - "src/**"
+      - "test/**"
+      - "tests/**"
+
+permissions:
+  contents: read
 
 jobs:
   lint-and-typecheck:
-    name: Lint & Type Check
+    name: Lint and Type Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # actions/checkout v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc       # or pin: node-version: '22'
-          cache: npm                       # or pnpm / yarn
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Type check
-        run: npx tsc --noEmit
-
-      # Choose ONE of the two options below based on your project setup:
-
-      # Option A: ESLint (most common, richest plugin ecosystem)
-      - name: ESLint
-        run: npx eslint . --ext .ts,.tsx
-
-      # Option B: oxlint (Rust-based, 50–100x faster than ESLint; subset of rules)
-      # Good as a fast pre-push / pre-commit check, or as a full replacement if
-      # the rule coverage is sufficient for your project.
-      # - name: oxlint
-      #   run: npx oxlint@latest --deny-warnings
-
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      # actions/setup-node v6.4.0
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -286,12 +410,36 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Adjust the test command to match your test runner (vitest / jest)
-      - name: Run tests with coverage
-        run: npm run test -- --coverage
+      - name: Type check
+        run: npm run typecheck --if-present
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+      - name: ESLint
+        run: npm run lint --if-present
+
+      - name: oxlint
+        run: npm run lint:ox --if-present
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # actions/setup-node v6.4.0
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm run test --if-present -- --coverage
+
+      # codecov/codecov-action v6.0.0
+      - uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
@@ -299,11 +447,13 @@ jobs:
     name: Security
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # actions/checkout v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      # actions/setup-node v6.4.0
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -311,28 +461,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # --- Dependency vulnerability scanning ---
-      # We deliberately do NOT use `npm audit`:
-      #   - It only checks the npm advisory DB (reactive, CVE-only).
-      #   - It cannot detect malicious packages, install-script payloads, or
-      #     compromised maintainers — exactly the vectors used in real
-      #     supply-chain incidents (axios typosquats, event-stream, etc.).
-      # Instead we layer three complementary tools below.
-
-      # 1. OSV-Scanner — aggregated vuln DB (GHSA + NVD + ecosystem sources).
-      #    Broader and usually earlier than `npm audit`. Free.
-      - name: OSV-Scanner
-        uses: google/osv-scanner-action/osv-scanner-action@v1
+      # google/osv-scanner-action v2.3.5
+      - uses: google/osv-scanner-action/osv-scanner-action@c51854704019a247608d928f370c98740469d4b5
         with:
           scan-args: |-
             --lockfile=package-lock.json
             --recursive
             ./
 
-      # 2. Trivy filesystem scan — independent vuln DB + secrets + misconfig
-      #    in a single pass. Defense-in-depth against OSV.
-      - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@master
+      # aquasecurity/trivy-action v0.36.0
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
           scan-type: fs
           scan-ref: .
@@ -341,43 +479,45 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
 
-      # 3. Socket.dev — the only tool here that addresses supply-chain risk,
-      #    not just CVEs. Flags packages with install scripts, network calls,
-      #    shell access, obfuscated code, typosquat similarity, etc. This is
-      #    what would have caught axios-style incidents before publish.
-      #    Requires a free Socket account + SOCKET_SECURITY_API_KEY.
-      - name: Socket Security
-        uses: SocketDev/socket-security-action@v1
-        with:
-          api-token: ${{ secrets.SOCKET_SECURITY_API_KEY }}
-
-      - name: Gitleaks (secret detection)
-        uses: gitleaks/gitleaks-action@v2
+      # gitleaks/gitleaks-action v2.3.9
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Semgrep
-        uses: semgrep/semgrep-action@v1
-        with:
-          config: >-
-            p/typescript
-            p/secrets
-        env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+        run: |
+          python3 -m pip install --user semgrep==1.161.0
+          ~/.local/bin/semgrep scan --config=p/typescript --config=p/secrets --error
 
   build:
-    name: Build & Container Scan
+    name: Build and Container Scan
     runs-on: ubuntu-latest
-    needs: [lint-and-typecheck, test, security]
+    needs:
+      - lint-and-typecheck
+      - test
+      - security
     if: github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      # actions/checkout v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # actions/setup-node v6.4.0
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app
+        run: npm run build --if-present
 
       - name: Build Docker image
         run: docker build -t ${{ github.repository }}:${{ github.sha }} .
 
-      - name: Trivy container scan
-        uses: aquasecurity/trivy-action@master
+      # aquasecurity/trivy-action v0.36.0
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
           image-ref: ${{ github.repository }}:${{ github.sha }}
           format: table
@@ -385,100 +525,159 @@ jobs:
           severity: CRITICAL,HIGH
 ```
 
----
+### TypeScript Notes
 
-## Shared: Renovate (dependency updates)
+- Prefer project scripts: `lint`, `lint:ox`, `typecheck`, `test`, and `build`.
+- Use ESLint when the project needs framework-specific rules.
+- Use oxlint when speed matters and the supported rule set is enough.
+- Use Socket's GitHub App for npm supply-chain behavior analysis. It is better
+  than `npm audit` for malicious package behavior and runs directly on PRs.
+- Do not use `npm audit` as the blocking security baseline. It is reactive and
+  misses many malicious-package behaviors.
 
-Add `.github/renovate.json` to enable automatic dependency update PRs for both Go and TypeScript.
+## Renovate
+
+Add `.github/renovate.json`:
 
 ```json
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
-  "schedule": ["before 9am on Monday"],
-  "labels": ["dependencies"],
-  "packageRules": [
-    {
-      "matchUpdateTypes": ["minor", "patch"],
-      "automerge": true
-    },
-    {
-      "matchUpdateTypes": ["major"],
-      "automerge": false
-    }
+  "timezone": "Asia/Bangkok",
+  "schedule": ["* 0-4 1 * *"],
+  "updateNotScheduled": false,
+  "enabledManagers": ["gomod", "npm", "github-actions"],
+  "reviewersFromCodeOwners": true,
+  "assigneesFromCodeOwners": true,
+  "assignAutomerge": true
+}
+```
+
+For pure Go libraries, add:
+
+```json
+"postUpdateOptions": ["gomodTidy"]
+```
+
+## Markdownlint
+
+Use `markdownlint-cli2` locally and in CI. It is the same engine used by the
+VS Code `DavidAnson.vscode-markdownlint` extension.
+
+Add `.markdownlint-cli2.jsonc`:
+
+```jsonc
+{
+  "config": {
+    "MD013": false
+  },
+  "globs": [
+    "**/*.{md,markdown}"
+  ],
+  "ignores": [
+    ".cursor/**"
   ]
 }
 ```
 
-Enable Renovate via the [Renovate GitHub App](https://github.com/apps/renovate).
+Add `.github/workflows/markdownlint.yml`:
 
----
+```yaml
+name: Markdownlint
 
-## Required GitHub Secrets
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/markdownlint.yml"
+      - ".markdownlint-cli2.*"
+      - ".markdownlint.*"
+      - "**/*.md"
+      - "**/*.markdown"
+  pull_request:
+    paths:
+      - ".github/workflows/markdownlint.yml"
+      - ".markdownlint-cli2.*"
+      - ".markdownlint.*"
+      - "**/*.md"
+      - "**/*.markdown"
 
-| Secret                    | Used by                          | How to get                                                                         |
-| ------------------------- | -------------------------------- | ---------------------------------------------------------------------------------- |
-| `CODECOV_TOKEN`           | codecov-action                   | [codecov.io](https://codecov.io) → project settings                                |
-| `SEMGREP_APP_TOKEN`       | semgrep-action                   | [semgrep.dev](https://semgrep.dev) → Settings → Tokens (optional for public rules) |
-| `SOCKET_SECURITY_API_KEY` | socket-security-action (TS only) | [socket.dev](https://socket.dev) → Settings → API Tokens                           |
+permissions:
+  contents: read
 
-> `GITHUB_TOKEN` is provided automatically by GitHub Actions — no setup needed.
+jobs:
+  markdownlint:
+    name: Markdownlint
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
----
-
-## Protecting CI/CD Config Files (CODEOWNERS)
-
-> **Do NOT gitignore workflow or lint config files** — that would remove them from git entirely and CI would stop working.
-> Instead, use GitHub's CODEOWNERS to require approval from trusted people before these files can be changed.
-
-Create `.github/CODEOWNERS` in your repo:
-
-```text
-# CI/CD workflows — only repo owner can approve changes
-.github/                @kitti12911
-
-# Lint and tool config — only repo owner can approve changes
-.golangci.yml           @kitti12911
-.oxlintrc.json          @kitti12911
-.eslintrc.*             @kitti12911
-eslint.config.*         @kitti12911
-.github/renovate.json   @kitti12911
+      # DavidAnson/markdownlint-cli2-action v23.1.0
+      - uses: DavidAnson/markdownlint-cli2-action@6b51ade7a9e4a75a7ad929842dd298a3804ebe8b
 ```
 
-Then enable this branch protection rule:
+## CODEOWNERS
 
-- [x] **Require review from Code Owners** (Settings → Branches → Branch protection)
+Add `.github/CODEOWNERS`:
 
-This means anyone can submit a PR that touches these files, but only `@kitti12911` (or a team you specify) can approve and merge it.
+```text
+* @kitti12911
 
----
+/.github/ @kitti12911
+/.markdownlint-cli2.jsonc @kitti12911
+/.golangci.yml @kitti12911
+/eslint.config.* @kitti12911
+/.oxlintrc* @kitti12911
+/package.json @kitti12911
+/package-lock.json @kitti12911
+/go.mod @kitti12911
+/go.sum @kitti12911
+```
 
-## Branch Protection Recommendations
+Then enable "Require review from Code Owners" in branch protection.
 
-In GitHub → Settings → Branches → Add rule for `main`:
+## Required Secrets
 
-- [x] Require status checks to pass before merging
-  - Add: `Lint`, `Test`, `Security` (all jobs above)
-- [x] Require a pull request before merging
-- [x] Require review from Code Owners
-- [x] Require branches to be up to date before merging
-- [x] Do not allow bypassing the above settings
+| Secret                    | Used By                  | Required |
+| ------------------------- | ------------------------ | -------- |
+| `CODECOV_TOKEN`           | Codecov uploads          | Yes      |
+| `SOCKET_SECURITY_API_KEY` | Socket CLI/firewall only | Optional |
 
----
+`GITHUB_TOKEN` is provided automatically by GitHub Actions.
 
-## Quick Reference
+## Branch Protection
+
+For `main`, require:
+
+- Pull request before merge
+- Status checks: `Lint`, `Test`, and `Security`
+- Code owner review
+- Branch up to date before merge
+- No bypass for administrators unless there is a specific operational reason
+
+## Local Commands
+
+Go:
 
 ```bash
-# Go — run locally before pushing
 go vet ./...
 go test -race ./...
 golangci-lint run
 govulncheck ./...
-
-# TypeScript — run locally before pushing
-npx tsc --noEmit
-npx eslint . --ext .ts,.tsx     # or: npx oxlint@latest --deny-warnings
-npx osv-scanner --lockfile=package-lock.json
 trivy fs --severity CRITICAL,HIGH --ignore-unfixed .
-npm run test
+markdownlint-cli2
+```
+
+TypeScript:
+
+```bash
+npm ci
+npm run typecheck --if-present
+npm run lint --if-present
+npm run lint:ox --if-present
+npm run test --if-present
+npx osv-scanner --lockfile=package-lock.json --recursive ./
+trivy fs --severity CRITICAL,HIGH --ignore-unfixed .
 ```
