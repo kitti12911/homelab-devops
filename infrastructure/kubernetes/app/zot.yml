@@ -11,7 +11,7 @@ spec:
   sources:
     - repoURL: https://project-zot.github.io/helm-charts
       chart: zot
-      targetRevision: "0.1.104"
+      targetRevision: "0.1.109"
       helm:
         valuesObject:
           replicaCount: 1
