@@ -55,20 +55,6 @@ spec:
         createrole: false
         passwordSecret:
           name: postgresql-keycloak-secret
-      - name: example_user
-        login: true
-        superuser: false
-        createdb: false
-        createrole: false
-        passwordSecret:
-          name: postgresql-example-secret
-      - name: sonarqube
-        login: true
-        superuser: false
-        createdb: false
-        createrole: false
-        passwordSecret:
-          name: postgresql-sonarqube-secret
     services:
       additional:
         - selectorType: rw

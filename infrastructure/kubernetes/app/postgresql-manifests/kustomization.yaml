@@ -3,7 +3,5 @@ kind: Kustomization
 resources:
   - cluster.yml
   - keycloak-database.yml
-  - example-database.yml
-  - sonarqube-database.yml
 generators:
   - secret-generator.yml
