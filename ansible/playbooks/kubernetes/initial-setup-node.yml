@@ -262,12 +262,12 @@
             # Scaled to available RAM: 8GB=524288, 4GB=262144, <4GB=131072
             - {
                   key: net.netfilter.nf_conntrack_max,
-                  value: "{{ sysctl_conntrack_max }}",
+                  value: "{{ sysctl_conntrack_max }}"
               }
             # Hash table size (rule: buckets = max / 4) - prevents CPU spikes from long hash chains
             - {
                   key: net.netfilter.nf_conntrack_buckets,
-                  value: "{{ sysctl_conntrack_buckets }}",
+                  value: "{{ sysctl_conntrack_buckets }}"
               }
 
             # --- Network - connection lifecycle ---
@@ -330,7 +330,7 @@
             - { key: vm.dirty_ratio, value: "{{ sysctl_dirty_ratio }}" }
             - {
                   key: vm.dirty_background_ratio,
-                  value: "{{ sysctl_dirty_background_ratio }}",
+                  value: "{{ sysctl_dirty_background_ratio }}"
               }
 
             # --- Kernel ---

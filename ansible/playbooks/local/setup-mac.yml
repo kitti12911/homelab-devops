@@ -42,7 +42,7 @@
             - { key: kern.maxfilesperproc, value: "{{ mac_maxfiles }}" }
             - {
                   key: net.inet.ip.portrange.first,
-                  value: "{{ mac_portrange_first }}",
+                  value: "{{ mac_portrange_first }}"
               }
             - { key: net.inet.tcp.msl, value: "{{ mac_tcp_msl }}" }
             - { key: kern.ipc.somaxconn, value: "{{ mac_somaxconn }}" }

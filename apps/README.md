@@ -569,10 +569,10 @@ Add `.markdownlint-cli2.jsonc`:
 ```jsonc
 {
     "config": {
-        "MD013": false,
+        "MD013": false
     },
     "globs": ["**/*.{md,markdown}"],
-    "ignores": [".cursor/**"],
+    "ignores": [".cursor/**"]
 }
 ```
 
