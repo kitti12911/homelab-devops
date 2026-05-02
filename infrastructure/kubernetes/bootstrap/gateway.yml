@@ -1,37 +1,37 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: traefik
-  namespace: default
+    name: traefik
+    namespace: default
 spec:
-  gatewayClassName: traefik
-  listeners:
-    - name: http
-      port: 8000
-      protocol: HTTP
-      allowedRoutes:
-        namespaces:
-          from: Same
-    - name: https
-      port: 8443
-      protocol: HTTPS
-      tls:
-        mode: Terminate
-        certificateRefs:
-          - kind: Secret
-            name: lan-tls
-      allowedRoutes:
-        namespaces:
-          from: Selector
-          selector:
-            matchLabels:
-              gateway-access: "true"
-    - name: otlp-grpc
-      port: 4317
-      protocol: HTTP
-      allowedRoutes:
-        namespaces:
-          from: Selector
-          selector:
-            matchLabels:
-              gateway-access: "true"
+    gatewayClassName: traefik
+    listeners:
+        - name: http
+          port: 8000
+          protocol: HTTP
+          allowedRoutes:
+              namespaces:
+                  from: Same
+        - name: https
+          port: 8443
+          protocol: HTTPS
+          tls:
+              mode: Terminate
+              certificateRefs:
+                  - kind: Secret
+                    name: lan-tls
+          allowedRoutes:
+              namespaces:
+                  from: Selector
+                  selector:
+                      matchLabels:
+                          gateway-access: "true"
+        - name: otlp-grpc
+          port: 4317
+          protocol: HTTP
+          allowedRoutes:
+              namespaces:
+                  from: Selector
+                  selector:
+                      matchLabels:
+                          gateway-access: "true"

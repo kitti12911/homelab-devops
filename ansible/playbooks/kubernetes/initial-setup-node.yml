@@ -4,346 +4,355 @@
   strategy: free
   gather_facts: true
   gather_subset:
-    - hardware   # provides ansible_facts['memtotal_mb']
-    - min        # hostname, OS, platform basics
+      - hardware # provides ansible_facts['memtotal_mb']
+      - min # hostname, OS, platform basics
 
   vars:
-    cmdline_path: "/boot/firmware/cmdline.txt"
+      cmdline_path: "/boot/firmware/cmdline.txt"
 
   handlers:
-    - name: restart sshd
-      ansible.builtin.systemd:
-        name: sshd
-        state: restarted
+      - name: restart sshd
+        ansible.builtin.systemd:
+            name: sshd
+            state: restarted
 
-    - name: restart systemd-journald
-      ansible.builtin.systemd:
-        name: systemd-journald
-        state: restarted
+      - name: restart systemd-journald
+        ansible.builtin.systemd:
+            name: systemd-journald
+            state: restarted
 
   tasks:
-    # --- Tuning variables derived from host hardware ---
-    # Memory tiers: >=7GB (8GB Pi), >=3GB (4GB Pi), <3GB (small Pi/proxy)
-    # Storage dirty ratios sourced from hw_storage_type in host_vars:
-    #   nvme: high thresholds (fast writes, can buffer more)
-    #   usb_ssd / sata_ssd: mid thresholds (SSD speed limited by bus)
-    #   sd: low thresholds (flush early to avoid I/O bursts on slow media)
-    - name: Set hardware-derived tuning variables
-      ansible.builtin.set_fact:
-        sysctl_min_free_kbytes: "{{ '131072' if ansible_facts['memtotal_mb'] >= 7000 else '65536' if ansible_facts['memtotal_mb'] >= 3000 else '32768' }}"
-        sysctl_conntrack_max: "{{ '524288' if ansible_facts['memtotal_mb'] >= 7000 else '262144' if ansible_facts['memtotal_mb'] >= 3000 else '131072' }}"
-        sysctl_conntrack_buckets: "{{ '131072' if ansible_facts['memtotal_mb'] >= 7000 else '65536' if ansible_facts['memtotal_mb'] >= 3000 else '32768' }}"
-        sysctl_dirty_ratio: "{{ {'nvme': '30', 'usb_ssd': '20', 'sata_ssd': '20', 'sd': '10'}[hw_storage_type] }}"
-        sysctl_dirty_background_ratio: "{{ {'nvme': '15', 'usb_ssd': '10', 'sata_ssd': '10', 'sd': '5'}[hw_storage_type] }}"
+      # --- Tuning variables derived from host hardware ---
+      # Memory tiers: >=7GB (8GB Pi), >=3GB (4GB Pi), <3GB (small Pi/proxy)
+      # Storage dirty ratios sourced from hw_storage_type in host_vars:
+      #   nvme: high thresholds (fast writes, can buffer more)
+      #   usb_ssd / sata_ssd: mid thresholds (SSD speed limited by bus)
+      #   sd: low thresholds (flush early to avoid I/O bursts on slow media)
+      - name: Set hardware-derived tuning variables
+        ansible.builtin.set_fact:
+            sysctl_min_free_kbytes: "{{ '131072' if ansible_facts['memtotal_mb'] >= 7000 else '65536' if ansible_facts['memtotal_mb'] >= 3000 else '32768' }}"
+            sysctl_conntrack_max: "{{ '524288' if ansible_facts['memtotal_mb'] >= 7000 else '262144' if ansible_facts['memtotal_mb'] >= 3000 else '131072' }}"
+            sysctl_conntrack_buckets: "{{ '131072' if ansible_facts['memtotal_mb'] >= 7000 else '65536' if ansible_facts['memtotal_mb'] >= 3000 else '32768' }}"
+            sysctl_dirty_ratio: "{{ {'nvme': '30', 'usb_ssd': '20', 'sata_ssd': '20', 'sd': '10'}[hw_storage_type] }}"
+            sysctl_dirty_background_ratio: "{{ {'nvme': '15', 'usb_ssd': '10', 'sata_ssd': '10', 'sd': '5'}[hw_storage_type] }}"
 
-    # --- Swap ---
-    - name: Turn off dphys swap
-      ansible.builtin.command:
-        cmd: dphys-swapfile swapoff
-      changed_when: false
-      failed_when: false
-      when: "'cluster' in group_names"
+      # --- Swap ---
+      - name: Turn off dphys swap
+        ansible.builtin.command:
+            cmd: dphys-swapfile swapoff
+        changed_when: false
+        failed_when: false
+        when: "'cluster' in group_names"
 
-    - name: Uninstall dphys swap file
-      ansible.builtin.command:
-        cmd: dphys-swapfile uninstall
-      changed_when: false
-      failed_when: false
-      when: "'cluster' in group_names"
+      - name: Uninstall dphys swap file
+        ansible.builtin.command:
+            cmd: dphys-swapfile uninstall
+        changed_when: false
+        failed_when: false
+        when: "'cluster' in group_names"
 
-    - name: Disable dphys-swapfile service
-      ansible.builtin.systemd:
-        name: dphys-swapfile
-        enabled: false
-        masked: true
-        state: stopped
-      failed_when: false
-      when: "'cluster' in group_names"
+      - name: Disable dphys-swapfile service
+        ansible.builtin.systemd:
+            name: dphys-swapfile
+            enabled: false
+            masked: true
+            state: stopped
+        failed_when: false
+        when: "'cluster' in group_names"
 
-    - name: Set swap size to 0 in dphys config
-      ansible.builtin.lineinfile:
-        path: /etc/dphys-swapfile
-        regexp: '^CONF_SWAPSIZE='
-        line: 'CONF_SWAPSIZE=0'
-      failed_when: false
-      when: "'cluster' in group_names"
+      - name: Set swap size to 0 in dphys config
+        ansible.builtin.lineinfile:
+            path: /etc/dphys-swapfile
+            regexp: "^CONF_SWAPSIZE="
+            line: "CONF_SWAPSIZE=0"
+        failed_when: false
+        when: "'cluster' in group_names"
 
-    - name: Disable zram swap
-      ansible.builtin.systemd:
-        name: "{{ item }}"
-        enabled: false
-        masked: true
-        state: stopped
-      failed_when: false
-      loop:
-        - zramswap
-        - "systemd-zram-setup@zram0"
-      when: "'cluster' in group_names"
+      - name: Disable zram swap
+        ansible.builtin.systemd:
+            name: "{{ item }}"
+            enabled: false
+            masked: true
+            state: stopped
+        failed_when: false
+        loop:
+            - zramswap
+            - "systemd-zram-setup@zram0"
+        when: "'cluster' in group_names"
 
-    - name: Disable all remaining swap
-      ansible.builtin.command:
-        cmd: swapoff -a
-      changed_when: false
-      when: "'cluster' in group_names"
+      - name: Disable all remaining swap
+        ansible.builtin.command:
+            cmd: swapoff -a
+        changed_when: false
+        when: "'cluster' in group_names"
 
-    - name: Remove swap entries from fstab
-      ansible.builtin.lineinfile:
-        path: /etc/fstab
-        regexp: '\sswap\s'
-        state: absent
-      when: "'cluster' in group_names"
+      - name: Remove swap entries from fstab
+        ansible.builtin.lineinfile:
+            path: /etc/fstab
+            regexp: '\sswap\s'
+            state: absent
+        when: "'cluster' in group_names"
 
-    # --- GPU memory reclaim ---
-    - name: Set minimum GPU memory for headless operation
-      ansible.builtin.lineinfile:
-        path: /boot/firmware/config.txt
-        regexp: '^gpu_mem='
-        line: 'gpu_mem=16'
-      when: "'cluster' in group_names"
+      # --- GPU memory reclaim ---
+      - name: Set minimum GPU memory for headless operation
+        ansible.builtin.lineinfile:
+            path: /boot/firmware/config.txt
+            regexp: "^gpu_mem="
+            line: "gpu_mem=16"
+        when: "'cluster' in group_names"
 
-    - name: Remove custom CMA reservation
-      ansible.builtin.replace:
-        path: "{{ cmdline_path }}"
-        regexp: '\s*cma=\S+'
-        replace: ''
-      when: "'cluster' in group_names"
+      - name: Remove custom CMA reservation
+        ansible.builtin.replace:
+            path: "{{ cmdline_path }}"
+            regexp: '\s*cma=\S+'
+            replace: ""
+        when: "'cluster' in group_names"
 
-    # --- Disable unused wireless hardware ---
-    - name: Disable WiFi
-      ansible.builtin.lineinfile:
-        path: /boot/firmware/config.txt
-        line: 'dtoverlay=disable-wifi'
-      when: "'cluster' in group_names"
+      # --- Disable unused wireless hardware ---
+      - name: Disable WiFi
+        ansible.builtin.lineinfile:
+            path: /boot/firmware/config.txt
+            line: "dtoverlay=disable-wifi"
+        when: "'cluster' in group_names"
 
-    - name: Disable Bluetooth
-      ansible.builtin.lineinfile:
-        path: /boot/firmware/config.txt
-        line: 'dtoverlay=disable-bt'
-      when: "'cluster' in group_names"
+      - name: Disable Bluetooth
+        ansible.builtin.lineinfile:
+            path: /boot/firmware/config.txt
+            line: "dtoverlay=disable-bt"
+        when: "'cluster' in group_names"
 
-    # --- Cgroups ---
-    - name: Check if cgroups already enabled
-      ansible.builtin.command:
-        cmd: grep -q 'cgroup_memory=1' {{ cmdline_path }}
-      register: cgroups_check
-      failed_when: false
-      changed_when: false
-      when: "'cluster' in group_names"
+      # --- Cgroups ---
+      - name: Check if cgroups already enabled
+        ansible.builtin.command:
+            cmd: grep -q 'cgroup_memory=1' {{ cmdline_path }}
+        register: cgroups_check
+        failed_when: false
+        changed_when: false
+        when: "'cluster' in group_names"
 
-    - name: Enable cgroups in cmdline.txt
-      ansible.builtin.replace:
-        path: "{{ cmdline_path }}"
-        regexp: '^(.+)$'
-        replace: '\1 cgroup_memory=1 cgroup_enable=memory'
-      when:
-        - "'cluster' in group_names"
-        - cgroups_check.rc != 0
+      - name: Enable cgroups in cmdline.txt
+        ansible.builtin.replace:
+            path: "{{ cmdline_path }}"
+            regexp: "^(.+)$"
+            replace: '\1 cgroup_memory=1 cgroup_enable=memory'
+        when:
+            - "'cluster' in group_names"
+            - cgroups_check.rc != 0
 
-    - name: Set timezone to Asia/Bangkok
-      community.general.timezone:
-        name: Asia/Bangkok
+      - name: Set timezone to Asia/Bangkok
+        community.general.timezone:
+            name: Asia/Bangkok
 
-    - name: Ensure persistent journal directory exists
-      ansible.builtin.file:
-        path: /var/log/journal
-        state: directory
-        mode: "2755"
-      when: "'cluster' in group_names"
+      - name: Ensure persistent journal directory exists
+        ansible.builtin.file:
+            path: /var/log/journal
+            state: directory
+            mode: "2755"
+        when: "'cluster' in group_names"
 
-    - name: Ensure journald configuration directory exists
-      ansible.builtin.file:
-        path: /etc/systemd/journald.conf.d
-        state: directory
-        mode: "0755"
-      when: "'cluster' in group_names"
+      - name: Ensure journald configuration directory exists
+        ansible.builtin.file:
+            path: /etc/systemd/journald.conf.d
+            state: directory
+            mode: "0755"
+        when: "'cluster' in group_names"
 
-    - name: Enable persistent journald storage with 500MiB retention
-      ansible.builtin.copy:
-        dest: /etc/systemd/journald.conf.d/99-persistent.conf
-        mode: "0644"
-        content: |
-          [Journal]
-          Storage=persistent
-          SystemMaxUse=500M
-      notify: restart systemd-journald
-      when: "'cluster' in group_names"
+      - name: Enable persistent journald storage with 500MiB retention
+        ansible.builtin.copy:
+            dest: /etc/systemd/journald.conf.d/99-persistent.conf
+            mode: "0644"
+            content: |
+                [Journal]
+                Storage=persistent
+                SystemMaxUse=500M
+        notify: restart systemd-journald
+        when: "'cluster' in group_names"
 
-    - name: Install storage health diagnostic utilities
-      ansible.builtin.apt:
-        name:
-          - smartmontools
-          - nvme-cli
-        state: present
-        update_cache: true
-      when: "'cluster' in group_names"
+      - name: Install storage health diagnostic utilities
+        ansible.builtin.apt:
+            name:
+                - smartmontools
+                - nvme-cli
+            state: present
+            update_cache: true
+        when: "'cluster' in group_names"
 
-    - name: Set hostname
-      ansible.builtin.copy:
-        content: "{{ inventory_hostname }}\n"
-        dest: "/etc/hostname"
-        mode: "0644"
+      - name: Set hostname
+        ansible.builtin.copy:
+            content: "{{ inventory_hostname }}\n"
+            dest: "/etc/hostname"
+            mode: "0644"
 
-    - name: Update /etc/hosts with hostname
-      ansible.builtin.lineinfile:
-        path: "/etc/hosts"
-        regexp: '^127\.0\.1\.1'
-        line: "127.0.1.1\t{{ inventory_hostname }}"
+      - name: Update /etc/hosts with hostname
+        ansible.builtin.lineinfile:
+            path: "/etc/hosts"
+            regexp: '^127\.0\.1\.1'
+            line: "127.0.1.1\t{{ inventory_hostname }}"
 
-    - name: Disable SSH password authentication
-      ansible.builtin.lineinfile:
-        path: "/etc/ssh/sshd_config"
-        regexp: '^#?PasswordAuthentication'
-        line: "PasswordAuthentication no"
-      notify: restart sshd
+      - name: Disable SSH password authentication
+        ansible.builtin.lineinfile:
+            path: "/etc/ssh/sshd_config"
+            regexp: "^#?PasswordAuthentication"
+            line: "PasswordAuthentication no"
+        notify: restart sshd
 
-    - name: Disable SSH challenge-response authentication
-      ansible.builtin.lineinfile:
-        path: "/etc/ssh/sshd_config"
-        regexp: '^#?KbdInteractiveAuthentication'
-        line: "KbdInteractiveAuthentication no"
-      notify: restart sshd
+      - name: Disable SSH challenge-response authentication
+        ansible.builtin.lineinfile:
+            path: "/etc/ssh/sshd_config"
+            regexp: "^#?KbdInteractiveAuthentication"
+            line: "KbdInteractiveAuthentication no"
+        notify: restart sshd
 
-    # --- Kernel modules ---
-    - name: Load nf_conntrack module (required before setting conntrack sysctls)
-      ansible.builtin.modprobe:
-        name: nf_conntrack
-        state: present
+      # --- Kernel modules ---
+      - name: Load nf_conntrack module (required before setting conntrack sysctls)
+        ansible.builtin.modprobe:
+            name: nf_conntrack
+            state: present
 
-    - name: Load kernel modules required by Kubernetes networking
-      ansible.builtin.modprobe:
-        name: "{{ item }}"
-        state: present
-      loop:
-        - br_netfilter
-        - overlay
-      when: "'cluster' in group_names"
+      - name: Load kernel modules required by Kubernetes networking
+        ansible.builtin.modprobe:
+            name: "{{ item }}"
+            state: present
+        loop:
+            - br_netfilter
+            - overlay
+        when: "'cluster' in group_names"
 
-    - name: Ensure nf_conntrack loads at boot
-      ansible.builtin.lineinfile:
-        path: /etc/modules
-        line: nf_conntrack
-        create: true
-        mode: "0644"
+      - name: Ensure nf_conntrack loads at boot
+        ansible.builtin.lineinfile:
+            path: /etc/modules
+            line: nf_conntrack
+            create: true
+            mode: "0644"
 
-    - name: Ensure Kubernetes networking modules load at boot
-      ansible.builtin.lineinfile:
-        path: /etc/modules
-        line: "{{ item }}"
-        create: true
-        mode: "0644"
-      loop:
-        - br_netfilter
-        - overlay
-      when: "'cluster' in group_names"
+      - name: Ensure Kubernetes networking modules load at boot
+        ansible.builtin.lineinfile:
+            path: /etc/modules
+            line: "{{ item }}"
+            create: true
+            mode: "0644"
+        loop:
+            - br_netfilter
+            - overlay
+        when: "'cluster' in group_names"
 
-    - name: Tune kernel parameters
-      ansible.posix.sysctl:
-        name: "{{ item.key }}"
-        value: "{{ item.value }}"
-        sysctl_file: /etc/sysctl.d/99-kubernetes-tuning.conf
-        sysctl_set: true
-        state: present
-        reload: true
-      loop:
-        # --- File system ---
-        # inotify - fix "too many open files" for fsnotify watchers
-        - { key: fs.inotify.max_user_watches, value: "524288" }
-        - { key: fs.inotify.max_user_instances, value: "1024" }
-        # Raised to handle Longhorn's iSCSI and replica fd usage
-        - { key: fs.file-max, value: "524288" }
+      - name: Tune kernel parameters
+        ansible.posix.sysctl:
+            name: "{{ item.key }}"
+            value: "{{ item.value }}"
+            sysctl_file: /etc/sysctl.d/99-kubernetes-tuning.conf
+            sysctl_set: true
+            state: present
+            reload: true
+        loop:
+            # --- File system ---
+            # inotify - fix "too many open files" for fsnotify watchers
+            - { key: fs.inotify.max_user_watches, value: "524288" }
+            - { key: fs.inotify.max_user_instances, value: "1024" }
+            # Raised to handle Longhorn's iSCSI and replica fd usage
+            - { key: fs.file-max, value: "524288" }
 
-        # --- Network - backlog and queues ---
-        - { key: net.ipv4.tcp_max_syn_backlog, value: "8192" }
-        - { key: net.core.somaxconn, value: "8192" }
-        # Incoming packet queue per CPU - prevents drops on bursty traffic (Pi has slow CPUs)
-        - { key: net.core.netdev_max_backlog, value: "4096" }
+            # --- Network - backlog and queues ---
+            - { key: net.ipv4.tcp_max_syn_backlog, value: "8192" }
+            - { key: net.core.somaxconn, value: "8192" }
+            # Incoming packet queue per CPU - prevents drops on bursty traffic (Pi has slow CPUs)
+            - { key: net.core.netdev_max_backlog, value: "4096" }
 
-        # --- Network - connection tracking ---
-        # Scaled to available RAM: 8GB=524288, 4GB=262144, <4GB=131072
-        - { key: net.netfilter.nf_conntrack_max, value: "{{ sysctl_conntrack_max }}" }
-        # Hash table size (rule: buckets = max / 4) - prevents CPU spikes from long hash chains
-        - { key: net.netfilter.nf_conntrack_buckets, value: "{{ sysctl_conntrack_buckets }}" }
+            # --- Network - connection tracking ---
+            # Scaled to available RAM: 8GB=524288, 4GB=262144, <4GB=131072
+            - {
+                  key: net.netfilter.nf_conntrack_max,
+                  value: "{{ sysctl_conntrack_max }}",
+              }
+            # Hash table size (rule: buckets = max / 4) - prevents CPU spikes from long hash chains
+            - {
+                  key: net.netfilter.nf_conntrack_buckets,
+                  value: "{{ sysctl_conntrack_buckets }}",
+              }
 
-        # --- Network - connection lifecycle ---
-        # Faster cleanup of closing/time-wait connections
-        - { key: net.ipv4.tcp_fin_timeout, value: "30" }
-        - { key: net.ipv4.tcp_max_tw_buckets, value: "400000" }
-        # Reuse TIME_WAIT sockets for new outbound connections (safe for NAT)
-        - { key: net.ipv4.tcp_tw_reuse, value: "1" }
-        # Faster keepalive detection - find dead connections in 3min instead of 2h
-        - { key: net.ipv4.tcp_keepalive_time, value: "120" }
-        - { key: net.ipv4.tcp_keepalive_intvl, value: "15" }
-        - { key: net.ipv4.tcp_keepalive_probes, value: "5" }
+            # --- Network - connection lifecycle ---
+            # Faster cleanup of closing/time-wait connections
+            - { key: net.ipv4.tcp_fin_timeout, value: "30" }
+            - { key: net.ipv4.tcp_max_tw_buckets, value: "400000" }
+            # Reuse TIME_WAIT sockets for new outbound connections (safe for NAT)
+            - { key: net.ipv4.tcp_tw_reuse, value: "1" }
+            # Faster keepalive detection - find dead connections in 3min instead of 2h
+            - { key: net.ipv4.tcp_keepalive_time, value: "120" }
+            - { key: net.ipv4.tcp_keepalive_intvl, value: "15" }
+            - { key: net.ipv4.tcp_keepalive_probes, value: "5" }
 
-        # --- Network - memory and buffers ---
-        # Widen the port range for outbound connections (relevant for many services)
-        - { key: net.ipv4.ip_local_port_range, value: "1024 65535" }
-        # Orphaned socket limit - prevent memory leak from half-closed connections
-        - { key: net.ipv4.tcp_max_orphans, value: "16384" }
-        # Raise socket buffer ceilings so apps (Envoy, databases) can use larger windows
-        - { key: net.core.rmem_max, value: "4194304" }
-        - { key: net.core.wmem_max, value: "4194304" }
-        # TCP buffer auto-tuning ranges: min / pressure / max (conservative for Pi RAM)
-        - { key: net.ipv4.tcp_rmem, value: "4096 87380 4194304" }
-        - { key: net.ipv4.tcp_wmem, value: "4096 65536 4194304" }
+            # --- Network - memory and buffers ---
+            # Widen the port range for outbound connections (relevant for many services)
+            - { key: net.ipv4.ip_local_port_range, value: "1024 65535" }
+            # Orphaned socket limit - prevent memory leak from half-closed connections
+            - { key: net.ipv4.tcp_max_orphans, value: "16384" }
+            # Raise socket buffer ceilings so apps (Envoy, databases) can use larger windows
+            - { key: net.core.rmem_max, value: "4194304" }
+            - { key: net.core.wmem_max, value: "4194304" }
+            # TCP buffer auto-tuning ranges: min / pressure / max (conservative for Pi RAM)
+            - { key: net.ipv4.tcp_rmem, value: "4096 87380 4194304" }
+            - { key: net.ipv4.tcp_wmem, value: "4096 65536 4194304" }
 
-        # --- Network - throughput ---
-        # TCP Fast Open server-side only - client-side (value 3) can fail through some NATs
-        - { key: net.ipv4.tcp_fastopen, value: "1" }
-        # Keep congestion window warm after idle instead of resetting to slow-start
-        - { key: net.ipv4.tcp_slow_start_after_idle, value: "0" }
-        # Probe for path MTU to avoid silent black holes in overlay networks
-        - { key: net.ipv4.tcp_mtu_probing, value: "1" }
+            # --- Network - throughput ---
+            # TCP Fast Open server-side only - client-side (value 3) can fail through some NATs
+            - { key: net.ipv4.tcp_fastopen, value: "1" }
+            # Keep congestion window warm after idle instead of resetting to slow-start
+            - { key: net.ipv4.tcp_slow_start_after_idle, value: "0" }
+            # Probe for path MTU to avoid silent black holes in overlay networks
+            - { key: net.ipv4.tcp_mtu_probing, value: "1" }
 
-        # --- Network - security hardening ---
-        # SYN flood protection
-        - { key: net.ipv4.tcp_syncookies, value: "1" }
-        # Ignore ICMP redirects - prevents MITM route poisoning
-        - { key: net.ipv4.conf.all.accept_redirects, value: "0" }
-        - { key: net.ipv4.conf.default.accept_redirects, value: "0" }
-        - { key: net.ipv4.conf.all.send_redirects, value: "0" }
-        # Reject source-routed packets
-        - { key: net.ipv4.conf.all.accept_source_route, value: "0" }
-        - { key: net.ipv4.conf.default.accept_source_route, value: "0" }
-        # Log packets with impossible source addresses
-        - { key: net.ipv4.conf.all.log_martians, value: "1" }
-        # Ignore broadcast pings (smurf attack protection)
-        - { key: net.ipv4.icmp_echo_ignore_broadcasts, value: "1" }
+            # --- Network - security hardening ---
+            # SYN flood protection
+            - { key: net.ipv4.tcp_syncookies, value: "1" }
+            # Ignore ICMP redirects - prevents MITM route poisoning
+            - { key: net.ipv4.conf.all.accept_redirects, value: "0" }
+            - { key: net.ipv4.conf.default.accept_redirects, value: "0" }
+            - { key: net.ipv4.conf.all.send_redirects, value: "0" }
+            # Reject source-routed packets
+            - { key: net.ipv4.conf.all.accept_source_route, value: "0" }
+            - { key: net.ipv4.conf.default.accept_source_route, value: "0" }
+            # Log packets with impossible source addresses
+            - { key: net.ipv4.conf.all.log_martians, value: "1" }
+            # Ignore broadcast pings (smurf attack protection)
+            - { key: net.ipv4.icmp_echo_ignore_broadcasts, value: "1" }
 
-        # --- VM / memory ---
-        # Lower swappiness - Pi has limited RAM, prefer keeping app pages in memory
-        - { key: vm.swappiness, value: "10" }
-        # Don't panic on OOM, let the OOM killer do its job (killed pod < crashed node)
-        - { key: vm.panic_on_oom, value: "0" }
-        # Allow overcommit - Kubernetes memory requests/limits rely on this behavior
-        - { key: vm.overcommit_memory, value: "1" }
-        # Reserve a floor of free RAM to prevent allocation stalls under memory pressure
-        # Scaled to RAM: 8GB=128MB, 4GB=64MB, <4GB=32MB
-        - { key: vm.min_free_kbytes, value: "{{ sysctl_min_free_kbytes }}" }
-        # Flush dirty pages - tuned per storage type via group_vars
-        - { key: vm.dirty_ratio, value: "{{ sysctl_dirty_ratio }}" }
-        - { key: vm.dirty_background_ratio, value: "{{ sysctl_dirty_background_ratio }}" }
+            # --- VM / memory ---
+            # Lower swappiness - Pi has limited RAM, prefer keeping app pages in memory
+            - { key: vm.swappiness, value: "10" }
+            # Don't panic on OOM, let the OOM killer do its job (killed pod < crashed node)
+            - { key: vm.panic_on_oom, value: "0" }
+            # Allow overcommit - Kubernetes memory requests/limits rely on this behavior
+            - { key: vm.overcommit_memory, value: "1" }
+            # Reserve a floor of free RAM to prevent allocation stalls under memory pressure
+            # Scaled to RAM: 8GB=128MB, 4GB=64MB, <4GB=32MB
+            - { key: vm.min_free_kbytes, value: "{{ sysctl_min_free_kbytes }}" }
+            # Flush dirty pages - tuned per storage type via group_vars
+            - { key: vm.dirty_ratio, value: "{{ sysctl_dirty_ratio }}" }
+            - {
+                  key: vm.dirty_background_ratio,
+                  value: "{{ sysctl_dirty_background_ratio }}",
+              }
 
-        # --- Kernel ---
-        # Raise PID limit - many containers + threads can exhaust the default (32768)
-        - { key: kernel.pid_max, value: "4194304" }
-        # Prevent non-root pods from reading kernel ring buffer via dmesg
-        - { key: kernel.dmesg_restrict, value: "1" }
+            # --- Kernel ---
+            # Raise PID limit - many containers + threads can exhaust the default (32768)
+            - { key: kernel.pid_max, value: "4194304" }
+            # Prevent non-root pods from reading kernel ring buffer via dmesg
+            - { key: kernel.dmesg_restrict, value: "1" }
 
-    - name: Tune Kubernetes networking parameters
-      ansible.posix.sysctl:
-        name: "{{ item.key }}"
-        value: "{{ item.value }}"
-        sysctl_file: /etc/sysctl.d/99-kubernetes-tuning.conf
-        sysctl_set: true
-        state: present
-        reload: true
-      loop:
-        # Required by kubeadm preflight - must load br_netfilter before these take effect
-        - { key: net.ipv4.ip_forward, value: "1" }
-        - { key: net.bridge.bridge-nf-call-iptables, value: "1" }
-        - { key: net.bridge.bridge-nf-call-ip6tables, value: "1" }
-      when: "'cluster' in group_names"
+      - name: Tune Kubernetes networking parameters
+        ansible.posix.sysctl:
+            name: "{{ item.key }}"
+            value: "{{ item.value }}"
+            sysctl_file: /etc/sysctl.d/99-kubernetes-tuning.conf
+            sysctl_set: true
+            state: present
+            reload: true
+        loop:
+            # Required by kubeadm preflight - must load br_netfilter before these take effect
+            - { key: net.ipv4.ip_forward, value: "1" }
+            - { key: net.bridge.bridge-nf-call-iptables, value: "1" }
+            - { key: net.bridge.bridge-nf-call-ip6tables, value: "1" }
+        when: "'cluster' in group_names"
 
 - name: Longhorn prerequisites (worker computer nodes)
   hosts: computer
@@ -352,50 +361,50 @@
   gather_facts: false
 
   tasks:
-    - name: Install iSCSI and NFS utilities
-      ansible.builtin.apt:
-        name:
-          - open-iscsi
-          - nfs-common
-        state: present
-        update_cache: true
+      - name: Install iSCSI and NFS utilities
+        ansible.builtin.apt:
+            name:
+                - open-iscsi
+                - nfs-common
+            state: present
+            update_cache: true
 
-    - name: Enable and start iSCSI daemon
-      ansible.builtin.systemd:
-        name: iscsid
-        enabled: true
-        state: started
+      - name: Enable and start iSCSI daemon
+        ansible.builtin.systemd:
+            name: iscsid
+            enabled: true
+            state: started
 
-    - name: Load iSCSI and configfs kernel modules
-      ansible.builtin.modprobe:
-        name: "{{ item }}"
-        state: present
-      loop:
-        - iscsi_tcp
-        - configfs
+      - name: Load iSCSI and configfs kernel modules
+        ansible.builtin.modprobe:
+            name: "{{ item }}"
+            state: present
+        loop:
+            - iscsi_tcp
+            - configfs
 
-    - name: Ensure iSCSI modules load at boot
-      ansible.builtin.lineinfile:
-        path: /etc/modules
-        line: "{{ item }}"
-        create: true
-      loop:
-        - iscsi_tcp
-        - configfs
+      - name: Ensure iSCSI modules load at boot
+        ansible.builtin.lineinfile:
+            path: /etc/modules
+            line: "{{ item }}"
+            create: true
+        loop:
+            - iscsi_tcp
+            - configfs
 
-    - name: Install cryptographic utilities
-      ansible.builtin.apt:
-        name: cryptsetup
-        state: present
-        update_cache: true
+      - name: Install cryptographic utilities
+        ansible.builtin.apt:
+            name: cryptsetup
+            state: present
+            update_cache: true
 
-    - name: Load dm_crypt kernel module
-      ansible.builtin.modprobe:
-        name: dm_crypt
-        state: present
+      - name: Load dm_crypt kernel module
+        ansible.builtin.modprobe:
+            name: dm_crypt
+            state: present
 
-    - name: Ensure dm_crypt loads at boot
-      ansible.builtin.lineinfile:
-        path: /etc/modules
-        line: dm_crypt
-        create: true
+      - name: Ensure dm_crypt loads at boot
+        ansible.builtin.lineinfile:
+            path: /etc/modules
+            line: dm_crypt
+            create: true

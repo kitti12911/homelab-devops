@@ -1,321 +1,322 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kube-prometheus-stack
-  namespace: argocd
+    name: kube-prometheus-stack
+    namespace: argocd
 spec:
-  project: observability
-  sources:
-    - repoURL: https://prometheus-community.github.io/helm-charts
-      chart: kube-prometheus-stack
-      targetRevision: "84.4.0"
-      helm:
-        valuesObject:
-          crds:
-            enabled: false
+    project: observability
+    sources:
+        - repoURL: https://prometheus-community.github.io/helm-charts
+          chart: kube-prometheus-stack
+          targetRevision: "84.4.0"
+          helm:
+              valuesObject:
+                  crds:
+                      enabled: false
 
-          cleanPrometheusOperatorObjectNames: true
+                  cleanPrometheusOperatorObjectNames: true
 
-          prometheusOperator:
-            resources:
-              requests:
-                cpu: 100m
-                memory: 128Mi
-              limits:
-                memory: 256Mi
+                  prometheusOperator:
+                      resources:
+                          requests:
+                              cpu: 100m
+                              memory: 128Mi
+                          limits:
+                              memory: 256Mi
 
-          prometheus:
-            prometheusSpec:
-              retention: 7d
-              retentionSize: 14GB
+                  prometheus:
+                      prometheusSpec:
+                          retention: 7d
+                          retentionSize: 14GB
 
-              scrapeInterval: 60s
-              evaluationInterval: 60s
+                          scrapeInterval: 60s
+                          evaluationInterval: 60s
 
-              additionalArgs:
-                - name: storage.tsdb.wal-segment-size
-                  value: 32MB
+                          additionalArgs:
+                              - name: storage.tsdb.wal-segment-size
+                                value: 32MB
 
-              storageSpec:
-                volumeClaimTemplate:
-                  spec:
-                    storageClassName: longhorn
-                    accessModes:
-                      - ReadWriteOnce
-                    resources:
-                      requests:
-                        storage: 20Gi
+                          storageSpec:
+                              volumeClaimTemplate:
+                                  spec:
+                                      storageClassName: longhorn
+                                      accessModes:
+                                          - ReadWriteOnce
+                                      resources:
+                                          requests:
+                                              storage: 20Gi
 
-              containers:
-                - name: prometheus
-                  env:
-                    - name: GOMEMLIMIT
-                      value: "1382MiB"
+                          containers:
+                              - name: prometheus
+                                env:
+                                    - name: GOMEMLIMIT
+                                      value: "1382MiB"
 
-              resources:
-                requests:
-                  cpu: 200m
-                  memory: 512Mi
-                limits:
-                  memory: 1536Mi
+                          resources:
+                              requests:
+                                  cpu: 200m
+                                  memory: 512Mi
+                              limits:
+                                  memory: 1536Mi
 
-              serviceMonitorSelectorNilUsesHelmValues: false
-              podMonitorSelectorNilUsesHelmValues: false
-              ruleSelectorNilUsesHelmValues: false
-              probeSelectorNilUsesHelmValues: false
-              scrapeConfigSelectorNilUsesHelmValues: false
+                          serviceMonitorSelectorNilUsesHelmValues: false
+                          podMonitorSelectorNilUsesHelmValues: false
+                          ruleSelectorNilUsesHelmValues: false
+                          probeSelectorNilUsesHelmValues: false
+                          scrapeConfigSelectorNilUsesHelmValues: false
 
-              additionalScrapeConfigs:
-                - job_name: node-exporter-external
-                  static_configs:
-                    - targets:
-                        - 192.168.88.208:9100
-                      labels:
-                        nodename: hotel
-                  relabel_configs:
-                    - target_label: job
-                      replacement: node-exporter
+                          additionalScrapeConfigs:
+                              - job_name: node-exporter-external
+                                static_configs:
+                                    - targets:
+                                          - 192.168.88.208:9100
+                                      labels:
+                                          nodename: hotel
+                                relabel_configs:
+                                    - target_label: job
+                                      replacement: node-exporter
 
-              enableRemoteWriteReceiver: true
-              enableOTLPReceiver: true
+                          enableRemoteWriteReceiver: true
+                          enableOTLPReceiver: true
 
-          alertmanager:
-            config:
-              global:
-                resolve_timeout: 5m
-              route:
-                group_by: ['alertname', 'namespace', 'severity']
-                group_wait: 30s
-                group_interval: 5m
-                repeat_interval: 12h
-                receiver: 'null'
-                routes:
-                  - receiver: 'null'
-                    matchers:
-                      - alertname =~ "Watchdog|InfoInhibitor"
-                  - receiver: 'null'
-                    matchers:
-                      # disabled components — no scrape targets exist
-                      - alertname =~ "KubeControllerManagerDown|KubeSchedulerDown|KubeProxyDown|KubeEtcdDown"
-                  - receiver: 'null'
-                    matchers:
-                      # default Longhorn alerts are info/noise at homelab scale
-                      - alertname =~ "LonghornVolumeStatusWarning"
-                      - severity = "warning"
-                      - issue =~ ".*Degraded.*"
-                  - receiver: telegram
-                    matchers:
-                      - severity =~ "warning|critical"
-              receivers:
-                - name: 'null'
-                - name: telegram
-                  telegram_configs:
-                    - bot_token_file: /etc/alertmanager/secrets/telegram/bot_token
-                      chat_id: 7395056934
-                      parse_mode: HTML
-                      send_resolved: true
-                      message: |-
-                        {{ range .Alerts -}}
-                        {{ if eq .Status "firing" }}🔥{{ else }}✅{{ end }} <b>{{ .Labels.alertname }}</b>
-                        {{- if .Labels.namespace }} — <code>{{ .Labels.namespace }}</code>{{ end }}
-                        {{- if .Labels.severity }} [{{ .Labels.severity }}]{{ end }}
-                        {{- if .Annotations.summary }}
-                        {{ .Annotations.summary }}{{ end }}
-                        {{- if .Annotations.description }}
-                        {{ .Annotations.description }}{{ end }}
-                        {{ end }}
-              inhibit_rules:
-                - source_matchers:
-                    - severity = critical
-                  target_matchers:
-                    - severity = warning
-                  equal: ['namespace', 'alertname']
+                  alertmanager:
+                      config:
+                          global:
+                              resolve_timeout: 5m
+                          route:
+                              group_by: ["alertname", "namespace", "severity"]
+                              group_wait: 30s
+                              group_interval: 5m
+                              repeat_interval: 12h
+                              receiver: "null"
+                              routes:
+                                  - receiver: "null"
+                                    matchers:
+                                        - alertname =~ "Watchdog|InfoInhibitor"
+                                  - receiver: "null"
+                                    matchers:
+                                        # disabled components — no scrape targets exist
+                                        - alertname =~ "KubeControllerManagerDown|KubeSchedulerDown|KubeProxyDown|KubeEtcdDown"
+                                  - receiver: "null"
+                                    matchers:
+                                        # default Longhorn alerts are info/noise at homelab scale
+                                        - alertname =~ "LonghornVolumeStatusWarning"
+                                        - severity = "warning"
+                                        - issue =~ ".*Degraded.*"
+                                  - receiver: telegram
+                                    matchers:
+                                        - severity =~ "warning|critical"
+                          receivers:
+                              - name: "null"
+                              - name: telegram
+                                telegram_configs:
+                                    - bot_token_file: /etc/alertmanager/secrets/telegram/bot_token
+                                      chat_id: 7395056934
+                                      parse_mode: HTML
+                                      send_resolved: true
+                                      message: |-
+                                          {{ range .Alerts -}}
+                                          {{ if eq .Status "firing" }}🔥{{ else }}✅{{ end }} <b>{{ .Labels.alertname }}</b>
+                                          {{- if .Labels.namespace }} — <code>{{ .Labels.namespace }}</code>{{ end }}
+                                          {{- if .Labels.severity }} [{{ .Labels.severity }}]{{ end }}
+                                          {{- if .Annotations.summary }}
+                                          {{ .Annotations.summary }}{{ end }}
+                                          {{- if .Annotations.description }}
+                                          {{ .Annotations.description }}{{ end }}
+                                          {{ end }}
+                          inhibit_rules:
+                              - source_matchers:
+                                    - severity = critical
+                                target_matchers:
+                                    - severity = warning
+                                equal: ["namespace", "alertname"]
 
-            alertmanagerSpec:
-              volumes:
-                - name: telegram-secret
-                  secret:
-                    secretName: alertmanager-telegram
-              volumeMounts:
-                - name: telegram-secret
-                  mountPath: /etc/alertmanager/secrets/telegram
-                  readOnly: true
+                      alertmanagerSpec:
+                          volumes:
+                              - name: telegram-secret
+                                secret:
+                                    secretName: alertmanager-telegram
+                          volumeMounts:
+                              - name: telegram-secret
+                                mountPath: /etc/alertmanager/secrets/telegram
+                                readOnly: true
 
-              storage:
-                volumeClaimTemplate:
-                  spec:
-                    storageClassName: longhorn
-                    accessModes:
-                      - ReadWriteOnce
-                    resources:
-                      requests:
-                        storage: 1Gi
+                          storage:
+                              volumeClaimTemplate:
+                                  spec:
+                                      storageClassName: longhorn
+                                      accessModes:
+                                          - ReadWriteOnce
+                                      resources:
+                                          requests:
+                                              storage: 1Gi
 
-              resources:
-                requests:
-                  cpu: 50m
-                  memory: 64Mi
-                limits:
-                  memory: 128Mi
+                          resources:
+                              requests:
+                                  cpu: 50m
+                                  memory: 64Mi
+                              limits:
+                                  memory: 128Mi
 
-          grafana:
-            adminPassword: ""
-            admin:
-              existingSecret: grafana-admin-credentials
-              userKey: admin-user
-              passwordKey: admin-password
+                  grafana:
+                      adminPassword: ""
+                      admin:
+                          existingSecret: grafana-admin-credentials
+                          userKey: admin-user
+                          passwordKey: admin-password
 
-            defaultDashboardsEnabled: true
-            defaultDashboardsTimezone: utc
+                      defaultDashboardsEnabled: true
+                      defaultDashboardsTimezone: utc
 
-            deploymentStrategy:
-              type: Recreate
-              rollingUpdate: null
+                      deploymentStrategy:
+                          type: Recreate
+                          rollingUpdate: null
 
-            persistence:
-              enabled: true
-              type: pvc
-              storageClassName: longhorn
-              accessModes:
-                - ReadWriteOnce
-              size: 2Gi
+                      persistence:
+                          enabled: true
+                          type: pvc
+                          storageClassName: longhorn
+                          accessModes:
+                              - ReadWriteOnce
+                          size: 2Gi
 
-            plugins:
-              - grafana-pyroscope-app
-              - grafana-llm-app
+                      plugins:
+                          - grafana-pyroscope-app
+                          - grafana-llm-app
 
-            extraEnvVars:
-              - name: GOMEMLIMIT
-                value: "461MiB"
+                      extraEnvVars:
+                          - name: GOMEMLIMIT
+                            value: "461MiB"
 
-            resources:
-              requests:
-                cpu: 100m
-                memory: 256Mi
-              limits:
-                memory: 512Mi
+                      resources:
+                          requests:
+                              cpu: 100m
+                              memory: 256Mi
+                          limits:
+                              memory: 512Mi
 
-            envFromSecrets:
-              - name: grafana-oidc-secret
-                optional: false
+                      envFromSecrets:
+                          - name: grafana-oidc-secret
+                            optional: false
 
-            extraConfigmapMounts:
-              - name: homelab-ca
-                mountPath: /etc/ssl/certs/homelab-ca.crt
-                subPath: homelab-ca.crt
-                configMap: homelab-ca
-                readOnly: true
+                      extraConfigmapMounts:
+                          - name: homelab-ca
+                            mountPath: /etc/ssl/certs/homelab-ca.crt
+                            subPath: homelab-ca.crt
+                            configMap: homelab-ca
+                            readOnly: true
 
-            grafana.ini:
-              server:
-                root_url: https://grafana.lan
-              auth.generic_oauth:
-                enabled: true
-                name: Keycloak
-                allow_sign_up: true
-                auto_login: false
-                client_id: grafana
-                scopes: openid profile email grafana-groups
-                auth_url: https://keycloak.lan/realms/homelab/protocol/openid-connect/auth
-                token_url: https://keycloak.lan/realms/homelab/protocol/openid-connect/token
-                api_url: https://keycloak.lan/realms/homelab/protocol/openid-connect/userinfo
-                signout_redirect_url: https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fgrafana.lan&client_id=grafana
-                tls_client_ca: /etc/ssl/certs/homelab-ca.crt
-                role_attribute_path: "contains(groups[*], 'grafana-admins') && 'Admin' || contains(groups[*], 'grafana-editors') && 'Editor' || 'Viewer'"
+                      grafana.ini:
+                          server:
+                              root_url: https://grafana.lan
+                          auth.generic_oauth:
+                              enabled: true
+                              name: Keycloak
+                              allow_sign_up: true
+                              auto_login: false
+                              client_id: grafana
+                              scopes: openid profile email grafana-groups
+                              auth_url: https://keycloak.lan/realms/homelab/protocol/openid-connect/auth
+                              token_url: https://keycloak.lan/realms/homelab/protocol/openid-connect/token
+                              api_url: https://keycloak.lan/realms/homelab/protocol/openid-connect/userinfo
+                              signout_redirect_url: https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fgrafana.lan&client_id=grafana
+                              tls_client_ca: /etc/ssl/certs/homelab-ca.crt
+                              role_attribute_path: "contains(groups[*], 'grafana-admins') && 'Admin' || contains(groups[*], 'grafana-editors') && 'Editor' || 'Viewer'"
 
-            additionalDataSources:
-              - name: Pyroscope
-                type: grafana-pyroscope-datasource
-                uid: pyroscope
-                url: http://pyroscope.observability.svc.cluster.local:4040
-                access: proxy
-              - name: Loki
-                type: loki
-                uid: loki
-                url: http://loki-gateway.observability.svc.cluster.local:80
-                access: proxy
-                jsonData:
-                  maxLines: 1000
-                  derivedFields:
-                    - datasourceUid: tempo
-                      matcherRegex: '"traceID":"(\w+)"'
-                      name: TraceID
-                      url: '$${__value.raw}'
-              - name: Tempo
-                type: tempo
-                uid: tempo
-                url: http://tempo.observability.svc.cluster.local:3200
-                access: proxy
-                jsonData:
-                  tracesToLogsV2:
-                    datasourceUid: loki
-                    filterByTraceID: true
-                  tracesToMetrics:
-                    datasourceUid: prometheus
-                  lokiSearch:
-                    datasourceUid: loki
-                  serviceMap:
-                    datasourceUid: prometheus
+                      additionalDataSources:
+                          - name: Pyroscope
+                            type: grafana-pyroscope-datasource
+                            uid: pyroscope
+                            url: http://pyroscope.observability.svc.cluster.local:4040
+                            access: proxy
+                          - name: Loki
+                            type: loki
+                            uid: loki
+                            url: http://loki-gateway.observability.svc.cluster.local:80
+                            access: proxy
+                            jsonData:
+                                maxLines: 1000
+                                derivedFields:
+                                    - datasourceUid: tempo
+                                      matcherRegex: '"traceID":"(\w+)"'
+                                      name: TraceID
+                                      url: "$${__value.raw}"
+                          - name: Tempo
+                            type: tempo
+                            uid: tempo
+                            url: http://tempo.observability.svc.cluster.local:3200
+                            access: proxy
+                            jsonData:
+                                tracesToLogsV2:
+                                    datasourceUid: loki
+                                    filterByTraceID: true
+                                tracesToMetrics:
+                                    datasourceUid: prometheus
+                                lokiSearch:
+                                    datasourceUid: loki
+                                serviceMap:
+                                    datasourceUid: prometheus
 
-            sidecar:
-              dashboards:
-                enabled: true
-                searchNamespace: ALL
-                label: grafana_dashboard
-                labelValue: "1"
-                folderAnnotation: grafana_folder
-                provider:
-                  foldersFromFilesStructure: true
-              datasources:
-                enabled: true
+                      sidecar:
+                          dashboards:
+                              enabled: true
+                              searchNamespace: ALL
+                              label: grafana_dashboard
+                              labelValue: "1"
+                              folderAnnotation: grafana_folder
+                              provider:
+                                  foldersFromFilesStructure: true
+                          datasources:
+                              enabled: true
 
-          nodeExporter:
-            enabled: true
+                  nodeExporter:
+                      enabled: true
 
-          prometheus-node-exporter:
-            resources:
-              requests:
-                cpu: 10m
-                memory: 32Mi
-              limits:
-                memory: 64Mi
-            prometheus:
-              monitor:
-                relabelings:
-                  - action: replace
-                    sourceLabels: [__meta_kubernetes_pod_node_name]
-                    targetLabel: nodename
+                  prometheus-node-exporter:
+                      resources:
+                          requests:
+                              cpu: 10m
+                              memory: 32Mi
+                          limits:
+                              memory: 64Mi
+                      prometheus:
+                          monitor:
+                              relabelings:
+                                  - action: replace
+                                    sourceLabels:
+                                        [__meta_kubernetes_pod_node_name]
+                                    targetLabel: nodename
 
-          kube-state-metrics:
-            resources:
-              requests:
-                cpu: 10m
-                memory: 64Mi
-              limits:
-                memory: 128Mi
+                  kube-state-metrics:
+                      resources:
+                          requests:
+                              cpu: 10m
+                              memory: 64Mi
+                          limits:
+                              memory: 128Mi
 
-          kubeProxy:
-            enabled: false
+                  kubeProxy:
+                      enabled: false
 
-          kubeEtcd:
-            enabled: false
+                  kubeEtcd:
+                      enabled: false
 
-          kubeControllerManager:
-            enabled: false
+                  kubeControllerManager:
+                      enabled: false
 
-          kubeScheduler:
-            enabled: false
+                  kubeScheduler:
+                      enabled: false
 
-    - repoURL: git@github.com:kitti12911/homelab-devops.git
-      targetRevision: main
-      path: infrastructure/kubernetes/app/kube-prometheus-stack-manifests
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: observability
-  syncPolicy:
-    managedNamespaceMetadata:
-      labels:
-        gateway-access: "true"
-    syncOptions:
-      - CreateNamespace=true
-      - ServerSideApply=true
+        - repoURL: git@github.com:kitti12911/homelab-devops.git
+          targetRevision: main
+          path: infrastructure/kubernetes/app/kube-prometheus-stack-manifests
+    destination:
+        server: https://kubernetes.default.svc
+        namespace: observability
+    syncPolicy:
+        managedNamespaceMetadata:
+            labels:
+                gateway-access: "true"
+        syncOptions:
+            - CreateNamespace=true
+            - ServerSideApply=true

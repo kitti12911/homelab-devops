@@ -1,12 +1,7 @@
 {
-  "config": {
-    "MD013": false
-  },
-  "globs": [
-    "**/*.{md,markdown}"
-  ],
-  "ignores": [
-    ".cursor/**",
-    ".github/CODEOWNERS"
-  ]
+    "config": {
+        "MD013": false
+    },
+    "globs": ["**/*.{md,markdown}"],
+    "ignores": [".cursor/**", ".github/CODEOWNERS"]
 }

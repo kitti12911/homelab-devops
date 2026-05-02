@@ -81,15 +81,15 @@ inventory is defined in `inventory/hosts.yml`. the `ansible.cfg` already points 
 
 ### host groups
 
-| group          | hosts                        | description            |
-|----------------|------------------------------|------------------------|
-| master         | alpha-actual                 | k3s master node        |
-| computer       | bravo, charlie, delta        | k3s worker nodes       |
-| object_storage | kilo                         | object storage node    |
-| database       | november                     | database node          |
-| nas            | sierra                       | nas / file storage     |
-| builder        | romeo                        | build server           |
-| proxy          | hotel                        | reverse proxy          |
+| group          | hosts                 | description         |
+| -------------- | --------------------- | ------------------- |
+| master         | alpha-actual          | k3s master node     |
+| computer       | bravo, charlie, delta | k3s worker nodes    |
+| object_storage | kilo                  | object storage node |
+| database       | november              | database node       |
+| nas            | sierra                | nas / file storage  |
+| builder        | romeo                 | build server        |
+| proxy          | hotel                 | reverse proxy       |
 
 check current inventory:
 
@@ -107,29 +107,29 @@ ansible all -m ping
 
 ### infrastructure
 
-| playbook                    | description                        |
-|-----------------------------|------------------------------------|
-| `setup-raspberry-pi-os.yml` | initial raspberry pi os setup      |
-| `setup-cloudflared.yml`     | setup cloudflare tunnel            |
-| `setup-proxy.yml`           | setup envoy proxy node             |
-| `add-public-key.yml`        | add ssh public keys to nodes       |
-| `update-dependencies.yml`   | update system packages             |
+| playbook                    | description                   |
+| --------------------------- | ----------------------------- |
+| `setup-raspberry-pi-os.yml` | initial raspberry pi os setup |
+| `setup-cloudflared.yml`     | setup cloudflare tunnel       |
+| `setup-proxy.yml`           | setup envoy proxy node        |
+| `add-public-key.yml`        | add ssh public keys to nodes  |
+| `update-dependencies.yml`   | update system packages        |
 
 ### kubernetes
 
-| playbook                    | description                        |
-|-----------------------------|------------------------------------|
-| `initial-setup-node.yml`    | prepare node for k3s               |
-| `setup-master.yml`          | install k3s master                 |
-| `setup-worker.yml`          | install k3s worker and join cluster|
-| `setup-zot-trust.yml`       | trust homelab CA for zot.lan pulls |
+| playbook                 | description                         |
+| ------------------------ | ----------------------------------- |
+| `initial-setup-node.yml` | prepare node for k3s                |
+| `setup-master.yml`       | install k3s master                  |
+| `setup-worker.yml`       | install k3s worker and join cluster |
+| `setup-zot-trust.yml`    | trust homelab CA for zot.lan pulls  |
 
 ### utility
 
-| playbook        | description           |
-|-----------------|-----------------------|
-| `reboot.yml`    | reboot hosts          |
-| `poweroff.yml`  | power off hosts       |
+| playbook       | description     |
+| -------------- | --------------- |
+| `reboot.yml`   | reboot hosts    |
+| `poweroff.yml` | power off hosts |
 
 ## how to run
 

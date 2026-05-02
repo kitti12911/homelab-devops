@@ -4,17 +4,17 @@
   strategy: free
 
   tasks:
-    - name: Update apt cache
-      ansible.builtin.apt:
-        update_cache: true
-        cache_valid_time: 0
+      - name: Update apt cache
+        ansible.builtin.apt:
+            update_cache: true
+            cache_valid_time: 0
 
-    - name: Upgrade all packages
-      ansible.builtin.apt:
-        upgrade: dist
-        autoremove: false
+      - name: Upgrade all packages
+        ansible.builtin.apt:
+            upgrade: dist
+            autoremove: false
 
-    - name: Remove unused packages
-      ansible.builtin.apt:
-        autoremove: true
-        purge: false
+      - name: Remove unused packages
+        ansible.builtin.apt:
+            autoremove: true
+            purge: false

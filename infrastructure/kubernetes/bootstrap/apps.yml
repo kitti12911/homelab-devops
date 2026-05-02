@@ -1,17 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: apps
-  namespace: argocd
-spec:
-  project: default
-  source:
-    repoURL: https://github.com/kitti12911/homelab-devops.git
-    targetRevision: main
-    path: infrastructure/kubernetes/app
-  destination:
-    server: https://kubernetes.default.svc
+    name: apps
     namespace: argocd
-  syncPolicy:
-    automated:
-      selfHeal: true
+spec:
+    project: default
+    source:
+        repoURL: https://github.com/kitti12911/homelab-devops.git
+        targetRevision: main
+        path: infrastructure/kubernetes/app
+    destination:
+        server: https://kubernetes.default.svc
+        namespace: argocd
+    syncPolicy:
+        automated:
+            selfHeal: true

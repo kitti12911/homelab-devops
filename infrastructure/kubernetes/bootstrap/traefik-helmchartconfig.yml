@@ -1,34 +1,34 @@
 apiVersion: helm.cattle.io/v1
 kind: HelmChartConfig
 metadata:
-  name: traefik
-  namespace: kube-system
+    name: traefik
+    namespace: kube-system
 spec:
-  valuesContent: |
-    providers:
-      kubernetesGateway:
-        enabled: true
-    ports:
-      web:
-        port: 8000
-        expose:
-          default: true
-        exposedPort: 80
-        nodePort: 32755
-        redirectTo:
-          port: websecure
-      websecure:
-        port: 8443
-        expose:
-          default: true
-        exposedPort: 443
-        nodePort: 30880
-        middlewares:
-          - kube-system-security-headers@kubernetescrd
-      otlp-grpc:
-        port: 4317
-        expose:
-          default: true
-        exposedPort: 4317
-        nodePort: 32442
-        protocol: TCP
+    valuesContent: |
+        providers:
+          kubernetesGateway:
+            enabled: true
+        ports:
+          web:
+            port: 8000
+            expose:
+              default: true
+            exposedPort: 80
+            nodePort: 32755
+            redirectTo:
+              port: websecure
+          websecure:
+            port: 8443
+            expose:
+              default: true
+            exposedPort: 443
+            nodePort: 30880
+            middlewares:
+              - kube-system-security-headers@kubernetescrd
+          otlp-grpc:
+            port: 4317
+            expose:
+              default: true
+            exposedPort: 4317
+            nodePort: 32442
+            protocol: TCP

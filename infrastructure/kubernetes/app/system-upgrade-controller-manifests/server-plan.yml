@@ -1,32 +1,32 @@
 apiVersion: upgrade.cattle.io/v1
 kind: Plan
 metadata:
-  name: server-plan
-  namespace: system-upgrade
+    name: server-plan
+    namespace: system-upgrade
 spec:
-  concurrency: 1
-  cordon: true
-  nodeSelector:
-    matchExpressions:
-      - key: node-role.kubernetes.io/control-plane
-        operator: In
-        values:
-          - "true"
-  tolerations:
-    - key: node-role.kubernetes.io/control-plane
-      operator: Exists
-      effect: NoSchedule
-    - key: node-role.kubernetes.io/master
-      operator: Exists
-      effect: NoSchedule
-  serviceAccountName: system-upgrade
-  window:
-    days:
-      - saturday
-      - sunday
-    startTime: "02:00"
-    endTime: "06:00"
-    timeZone: Asia/Bangkok
-  upgrade:
-    image: rancher/k3s-upgrade
-  channel: https://update.k3s.io/v1-release/channels/stable
+    concurrency: 1
+    cordon: true
+    nodeSelector:
+        matchExpressions:
+            - key: node-role.kubernetes.io/control-plane
+              operator: In
+              values:
+                  - "true"
+    tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+    serviceAccountName: system-upgrade
+    window:
+        days:
+            - saturday
+            - sunday
+        startTime: "02:00"
+        endTime: "06:00"
+        timeZone: Asia/Bangkok
+    upgrade:
+        image: rancher/k3s-upgrade
+    channel: https://update.k3s.io/v1-release/channels/stable

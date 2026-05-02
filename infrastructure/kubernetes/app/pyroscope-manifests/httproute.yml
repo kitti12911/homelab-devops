@@ -1,31 +1,31 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: pyroscope
-  namespace: observability
+    name: pyroscope
+    namespace: observability
 spec:
-  parentRefs:
-    - name: traefik
-      namespace: default
-      group: gateway.networking.k8s.io
-      kind: Gateway
-      sectionName: https
-  hostnames:
-    - pyroscope.lan
-  rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /
-      filters:
-        - type: ExtensionRef
-          extensionRef:
-            group: traefik.io
-            kind: Middleware
-            name: oauth2-proxy-auth
-      backendRefs:
-        - name: pyroscope
-          port: 4040
-          group: ""
-          kind: Service
-          weight: 1
+    parentRefs:
+        - name: traefik
+          namespace: default
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          sectionName: https
+    hostnames:
+        - pyroscope.lan
+    rules:
+        - matches:
+              - path:
+                    type: PathPrefix
+                    value: /
+          filters:
+              - type: ExtensionRef
+                extensionRef:
+                    group: traefik.io
+                    kind: Middleware
+                    name: oauth2-proxy-auth
+          backendRefs:
+              - name: pyroscope
+                port: 4040
+                group: ""
+                kind: Service
+                weight: 1

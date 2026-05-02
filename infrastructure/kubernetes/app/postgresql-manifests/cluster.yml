@@ -1,76 +1,76 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: postgresql
-  namespace: database
+    name: postgresql
+    namespace: database
 spec:
-  instances: 1
-  imageName: ghcr.io/cloudnative-pg/postgresql:18
+    instances: 1
+    imageName: ghcr.io/cloudnative-pg/postgresql:18
 
-  postgresql:
-    parameters:
-      shared_buffers: "1536MB"
-      effective_cache_size: "2560MB"
-      work_mem: "32MB"
-      maintenance_work_mem: "256MB"
-      max_connections: "100"
+    postgresql:
+        parameters:
+            shared_buffers: "1536MB"
+            effective_cache_size: "2560MB"
+            work_mem: "32MB"
+            maintenance_work_mem: "256MB"
+            max_connections: "100"
 
-  bootstrap:
-    initdb:
-      database: app
-      owner: app
-      encoding: UTF8
-      localeCType: C
-      localeCollate: C
+    bootstrap:
+        initdb:
+            database: app
+            owner: app
+            encoding: UTF8
+            localeCType: C
+            localeCollate: C
 
-  superuserSecret:
-    name: postgresql-superuser-secret
+    superuserSecret:
+        name: postgresql-superuser-secret
 
-  storage:
-    size: 180Gi
-    storageClass: local-path
+    storage:
+        size: 180Gi
+        storageClass: local-path
 
-  affinity:
-    nodeSelector:
-      node-role.kubernetes.io/database: "true"
-    tolerations:
-      - key: dedicated
-        operator: Equal
-        value: database
-        effect: NoSchedule
+    affinity:
+        nodeSelector:
+            node-role.kubernetes.io/database: "true"
+        tolerations:
+            - key: dedicated
+              operator: Equal
+              value: database
+              effect: NoSchedule
 
-  managed:
-    roles:
-      - name: admin
-        login: true
-        superuser: true
-        createdb: true
-        createrole: true
-        passwordSecret:
-          name: postgresql-admin-secret
-      - name: keycloak
-        login: true
-        superuser: false
-        createdb: false
-        createrole: false
-        passwordSecret:
-          name: postgresql-keycloak-secret
-    services:
-      additional:
-        - selectorType: rw
-          serviceTemplate:
-            metadata:
-              name: postgresql-nodeport
-            spec:
-              type: NodePort
-              ports:
-                - port: 5432
-                  targetPort: 5432
-                  nodePort: 30432
+    managed:
+        roles:
+            - name: admin
+              login: true
+              superuser: true
+              createdb: true
+              createrole: true
+              passwordSecret:
+                  name: postgresql-admin-secret
+            - name: keycloak
+              login: true
+              superuser: false
+              createdb: false
+              createrole: false
+              passwordSecret:
+                  name: postgresql-keycloak-secret
+        services:
+            additional:
+                - selectorType: rw
+                  serviceTemplate:
+                      metadata:
+                          name: postgresql-nodeport
+                      spec:
+                          type: NodePort
+                          ports:
+                              - port: 5432
+                                targetPort: 5432
+                                nodePort: 30432
 
-  resources:
-    requests:
-      cpu: 500m
-      memory: 2750Mi
-    limits:
-      memory: 3072Mi
+    resources:
+        requests:
+            cpu: 500m
+            memory: 2750Mi
+        limits:
+            memory: 3072Mi

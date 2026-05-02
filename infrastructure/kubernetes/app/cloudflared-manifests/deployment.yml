@@ -4,43 +4,43 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cloudflared
-  namespace: cloudflare-system
+    name: cloudflared
+    namespace: cloudflare-system
 spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app: cloudflared
-  template:
-    metadata:
-      labels:
-        app: cloudflared
-    spec:
-      containers:
-        - name: cloudflared
-          image: cloudflare/cloudflared:2026.3.0
-          args:
-            - tunnel
-            - --no-autoupdate
-            - run
-          env:
-            - name: TUNNEL_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: cloudflared-tunnel-token
-                  key: token
-          resources:
-            requests:
-              cpu: 10m
-              memory: 64Mi
-            limits:
-              memory: 128Mi
-          securityContext:
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
+    replicas: 1
+    strategy:
+        type: Recreate
+    selector:
+        matchLabels:
+            app: cloudflared
+    template:
+        metadata:
+            labels:
+                app: cloudflared
+        spec:
+            containers:
+                - name: cloudflared
+                  image: cloudflare/cloudflared:2026.3.0
+                  args:
+                      - tunnel
+                      - --no-autoupdate
+                      - run
+                  env:
+                      - name: TUNNEL_TOKEN
+                        valueFrom:
+                            secretKeyRef:
+                                name: cloudflared-tunnel-token
+                                key: token
+                  resources:
+                      requests:
+                          cpu: 10m
+                          memory: 64Mi
+                      limits:
+                          memory: 128Mi
+                  securityContext:
+                      readOnlyRootFilesystem: true
+                      runAsNonRoot: true
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                          drop:
+                              - ALL

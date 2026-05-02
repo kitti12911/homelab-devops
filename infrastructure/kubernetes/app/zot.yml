@@ -4,147 +4,147 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: zot
-  namespace: argocd
+    name: zot
+    namespace: argocd
 spec:
-  project: registry
-  sources:
-    - repoURL: https://project-zot.github.io/helm-charts
-      chart: zot
-      targetRevision: "0.1.109"
-      helm:
-        valuesObject:
-          replicaCount: 1
+    project: registry
+    sources:
+        - repoURL: https://project-zot.github.io/helm-charts
+          chart: zot
+          targetRevision: "0.1.109"
+          helm:
+              valuesObject:
+                  replicaCount: 1
 
-          image:
-            repository: ghcr.io/project-zot/zot
-            pullPolicy: IfNotPresent
-            tag: "v2.1.16"
+                  image:
+                      repository: ghcr.io/project-zot/zot
+                      pullPolicy: IfNotPresent
+                      tag: "v2.1.16"
 
-          service:
-            type: ClusterIP
-            port: 5000
+                  service:
+                      type: ClusterIP
+                      port: 5000
 
-          httpGet:
-            scheme: HTTP
-            port: 5000
+                  httpGet:
+                      scheme: HTTP
+                      port: 5000
 
-          mountConfig: true
-          configFiles:
-            config.json: |-
-              {
-                "distSpecVersion": "1.1.1",
-                "storage": {
-                  "rootDirectory": "/var/lib/registry"
-                },
-                "http": {
-                  "address": "0.0.0.0",
-                  "port": "5000",
-                  "externalUrl": "https://zot.lan",
-                  "auth": {
-                    "apikey": true,
-                    "openid": {
-                      "providers": {
-                        "oidc": {
-                          "name": "Keycloak",
-                          "credentialsFile": "/etc/zot/oidc/oidc-credentials.json",
-                          "issuer": "https://keycloak.lan/realms/homelab",
-                          "scopes": ["openid", "profile", "email", "zot-groups"]
-                        }
-                      }
-                    }
-                  },
-                  "accessControl": {
-                    "adminPolicy": {
-                      "groups": ["zot-admins"],
-                      "actions": ["read", "create", "update", "delete"]
-                    },
-                    "repositories": {
-                      "**": {
-                        "defaultPolicy": ["read"]
-                      }
-                    }
-                  }
-                },
-                "log": {
-                  "level": "warn"
-                },
-                "extensions": {
-                  "search": {
-                    "enable": true,
-                    "cve": {
-                      "updateInterval": "2h"
-                    }
-                  },
-                  "ui": {
-                    "enable": true
-                  },
-                  "scrub": {
-                    "enable": true,
-                    "interval": "24h"
-                  },
-                  "trust": {
-                    "enable": true,
-                    "cosign": true
-                  }
-                }
-              }
+                  mountConfig: true
+                  configFiles:
+                      config.json: |-
+                          {
+                            "distSpecVersion": "1.1.1",
+                            "storage": {
+                              "rootDirectory": "/var/lib/registry"
+                            },
+                            "http": {
+                              "address": "0.0.0.0",
+                              "port": "5000",
+                              "externalUrl": "https://zot.lan",
+                              "auth": {
+                                "apikey": true,
+                                "openid": {
+                                  "providers": {
+                                    "oidc": {
+                                      "name": "Keycloak",
+                                      "credentialsFile": "/etc/zot/oidc/oidc-credentials.json",
+                                      "issuer": "https://keycloak.lan/realms/homelab",
+                                      "scopes": ["openid", "profile", "email", "zot-groups"]
+                                    }
+                                  }
+                                }
+                              },
+                              "accessControl": {
+                                "adminPolicy": {
+                                  "groups": ["zot-admins"],
+                                  "actions": ["read", "create", "update", "delete"]
+                                },
+                                "repositories": {
+                                  "**": {
+                                    "defaultPolicy": ["read"]
+                                  }
+                                }
+                              }
+                            },
+                            "log": {
+                              "level": "warn"
+                            },
+                            "extensions": {
+                              "search": {
+                                "enable": true,
+                                "cve": {
+                                  "updateInterval": "2h"
+                                }
+                              },
+                              "ui": {
+                                "enable": true
+                              },
+                              "scrub": {
+                                "enable": true,
+                                "interval": "24h"
+                              },
+                              "trust": {
+                                "enable": true,
+                                "cosign": true
+                              }
+                            }
+                          }
 
-          extraVolumes:
-            - name: homelab-ca
-              configMap:
-                name: homelab-ca
+                  extraVolumes:
+                      - name: homelab-ca
+                        configMap:
+                            name: homelab-ca
 
-          extraVolumeMounts:
-            - name: homelab-ca
-              mountPath: /etc/ssl/certs/homelab
-              readOnly: true
+                  extraVolumeMounts:
+                      - name: homelab-ca
+                        mountPath: /etc/ssl/certs/homelab
+                        readOnly: true
 
-          env:
-            - name: SSL_CERT_DIR
-              value: /etc/ssl/certs/homelab
-            - name: GOMEMLIMIT
-              value: "922MiB"
+                  env:
+                      - name: SSL_CERT_DIR
+                        value: /etc/ssl/certs/homelab
+                      - name: GOMEMLIMIT
+                        value: "922MiB"
 
-          externalSecrets:
-            - secretName: "zot-oidc-credentials"
-              mountPath: "/etc/zot/oidc"
+                  externalSecrets:
+                      - secretName: "zot-oidc-credentials"
+                        mountPath: "/etc/zot/oidc"
 
-          persistence: true
-          pvc:
-            create: true
-            accessModes:
-              - ReadWriteOnce
-            storage: 200Gi
-            storageClassName: local-path
+                  persistence: true
+                  pvc:
+                      create: true
+                      accessModes:
+                          - ReadWriteOnce
+                      storage: 200Gi
+                      storageClassName: local-path
 
-          nodeSelector:
-            node-role.kubernetes.io/control-plane: "true"
+                  nodeSelector:
+                      node-role.kubernetes.io/control-plane: "true"
 
-          tolerations:
-            - key: "node-role.kubernetes.io/control-plane"
-              operator: "Exists"
-              effect: "NoSchedule"
+                  tolerations:
+                      - key: "node-role.kubernetes.io/control-plane"
+                        operator: "Exists"
+                        effect: "NoSchedule"
 
-          strategy:
-            type: Recreate
+                  strategy:
+                      type: Recreate
 
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "512Mi"
-            limits:
-              memory: "1Gi"
+                  resources:
+                      requests:
+                          cpu: "100m"
+                          memory: "512Mi"
+                      limits:
+                          memory: "1Gi"
 
-    - repoURL: git@github.com:kitti12911/homelab-devops.git
-      targetRevision: main
-      path: infrastructure/kubernetes/app/zot-manifests
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: zot
-  syncPolicy:
-    managedNamespaceMetadata:
-      labels:
-        gateway-access: "true"
-    syncOptions:
-      - CreateNamespace=true
+        - repoURL: git@github.com:kitti12911/homelab-devops.git
+          targetRevision: main
+          path: infrastructure/kubernetes/app/zot-manifests
+    destination:
+        server: https://kubernetes.default.svc
+        namespace: zot
+    syncPolicy:
+        managedNamespaceMetadata:
+            labels:
+                gateway-access: "true"
+        syncOptions:
+            - CreateNamespace=true

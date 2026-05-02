@@ -1,76 +1,76 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: longhorn
-  namespace: argocd
+    name: longhorn
+    namespace: argocd
 spec:
-  project: platform
-  sources:
-    - repoURL: https://charts.longhorn.io
-      chart: longhorn
-      targetRevision: "1.11.1"
-      helm:
-        valuesObject:
-          preUpgradeChecker:
-            jobEnabled: false
-          defaultSettings:
-            defaultDataPath: "/var/lib/longhorn/"
-            storageMinimalAvailablePercentage: "5"
-            defaultReplicaCount: "2"
-            allowRecurringJobWhileVolumeDetached: false
-            replicaAutoBalance: "best-effort"
-            storageReservedPercentageForDefaultDisk: 10
-            guaranteedInstanceManagerCpu: "6"
-          ingress:
-            enabled: false
-          httproute:
-            enabled: false
-          persistence:
-            defaultClass: true
-            defaultClassReplicaCount: 2
-            defaultFsType: ext4
-            reclaimPolicy: Retain
-            volumeBindingMode: WaitForFirstConsumer
-            migratable: false
-    - repoURL: git@github.com:kitti12911/homelab-devops.git
-      targetRevision: main
-      path: infrastructure/kubernetes/app/longhorn-manifests
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: longhorn-system
-  ignoreDifferences:
-    - group: apiextensions.k8s.io
-      kind: CustomResourceDefinition
-      name: engineimages.longhorn.io
-      jsonPointers: ["/spec/preserveUnknownFields"]
-    - group: apiextensions.k8s.io
-      kind: CustomResourceDefinition
-      name: engines.longhorn.io
-      jsonPointers: ["/spec/preserveUnknownFields"]
-    - group: apiextensions.k8s.io
-      kind: CustomResourceDefinition
-      name: instancemanagers.longhorn.io
-      jsonPointers: ["/spec/preserveUnknownFields"]
-    - group: apiextensions.k8s.io
-      kind: CustomResourceDefinition
-      name: nodes.longhorn.io
-      jsonPointers: ["/spec/preserveUnknownFields"]
-    - group: apiextensions.k8s.io
-      kind: CustomResourceDefinition
-      name: replicas.longhorn.io
-      jsonPointers: ["/spec/preserveUnknownFields"]
-    - group: apiextensions.k8s.io
-      kind: CustomResourceDefinition
-      name: settings.longhorn.io
-      jsonPointers: ["/spec/preserveUnknownFields"]
-    - group: apiextensions.k8s.io
-      kind: CustomResourceDefinition
-      name: volumes.longhorn.io
-      jsonPointers: ["/spec/preserveUnknownFields"]
-  syncPolicy:
-    managedNamespaceMetadata:
-      labels:
-        gateway-access: "true"
-    syncOptions:
-      - CreateNamespace=true
-      - ServerSideApply=true
+    project: platform
+    sources:
+        - repoURL: https://charts.longhorn.io
+          chart: longhorn
+          targetRevision: "1.11.1"
+          helm:
+              valuesObject:
+                  preUpgradeChecker:
+                      jobEnabled: false
+                  defaultSettings:
+                      defaultDataPath: "/var/lib/longhorn/"
+                      storageMinimalAvailablePercentage: "5"
+                      defaultReplicaCount: "2"
+                      allowRecurringJobWhileVolumeDetached: false
+                      replicaAutoBalance: "best-effort"
+                      storageReservedPercentageForDefaultDisk: 10
+                      guaranteedInstanceManagerCpu: "6"
+                  ingress:
+                      enabled: false
+                  httproute:
+                      enabled: false
+                  persistence:
+                      defaultClass: true
+                      defaultClassReplicaCount: 2
+                      defaultFsType: ext4
+                      reclaimPolicy: Retain
+                      volumeBindingMode: WaitForFirstConsumer
+                      migratable: false
+        - repoURL: git@github.com:kitti12911/homelab-devops.git
+          targetRevision: main
+          path: infrastructure/kubernetes/app/longhorn-manifests
+    destination:
+        server: https://kubernetes.default.svc
+        namespace: longhorn-system
+    ignoreDifferences:
+        - group: apiextensions.k8s.io
+          kind: CustomResourceDefinition
+          name: engineimages.longhorn.io
+          jsonPointers: ["/spec/preserveUnknownFields"]
+        - group: apiextensions.k8s.io
+          kind: CustomResourceDefinition
+          name: engines.longhorn.io
+          jsonPointers: ["/spec/preserveUnknownFields"]
+        - group: apiextensions.k8s.io
+          kind: CustomResourceDefinition
+          name: instancemanagers.longhorn.io
+          jsonPointers: ["/spec/preserveUnknownFields"]
+        - group: apiextensions.k8s.io
+          kind: CustomResourceDefinition
+          name: nodes.longhorn.io
+          jsonPointers: ["/spec/preserveUnknownFields"]
+        - group: apiextensions.k8s.io
+          kind: CustomResourceDefinition
+          name: replicas.longhorn.io
+          jsonPointers: ["/spec/preserveUnknownFields"]
+        - group: apiextensions.k8s.io
+          kind: CustomResourceDefinition
+          name: settings.longhorn.io
+          jsonPointers: ["/spec/preserveUnknownFields"]
+        - group: apiextensions.k8s.io
+          kind: CustomResourceDefinition
+          name: volumes.longhorn.io
+          jsonPointers: ["/spec/preserveUnknownFields"]
+    syncPolicy:
+        managedNamespaceMetadata:
+            labels:
+                gateway-access: "true"
+        syncOptions:
+            - CreateNamespace=true
+            - ServerSideApply=true

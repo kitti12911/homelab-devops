@@ -1,189 +1,189 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: seaweedfs
-  namespace: argocd
+    name: seaweedfs
+    namespace: argocd
 spec:
-  project: registry
-  sources:
-    - repoURL: https://seaweedfs.github.io/seaweedfs/helm
-      chart: seaweedfs
-      targetRevision: "4.22.0"
-      helm:
-        valuesObject:
-          global:
-            replicationPlacement: "000"
-            monitoring:
-              enabled: true
-            enableReplication: false
+    project: registry
+    sources:
+        - repoURL: https://seaweedfs.github.io/seaweedfs/helm
+          chart: seaweedfs
+          targetRevision: "4.22.0"
+          helm:
+              valuesObject:
+                  global:
+                      replicationPlacement: "000"
+                      monitoring:
+                          enabled: true
+                      enableReplication: false
 
-          master:
-            enabled: true
-            replicas: 1
-            volumeSizeLimitMB: 1000
-            defaultReplication: "000"
+                  master:
+                      enabled: true
+                      replicas: 1
+                      volumeSizeLimitMB: 1000
+                      defaultReplication: "000"
 
-            affinity: ""
+                      affinity: ""
 
-            nodeSelector: |
-              node-role.kubernetes.io/object-storage: "true"
+                      nodeSelector: |
+                          node-role.kubernetes.io/object-storage: "true"
 
-            tolerations: |
-              - key: dedicated
-                operator: Equal
-                value: object-storage
-                effect: NoSchedule
+                      tolerations: |
+                          - key: dedicated
+                            operator: Equal
+                            value: object-storage
+                            effect: NoSchedule
 
-            data:
-              type: "persistentVolumeClaim"
-              size: "1Gi"
-              storageClass: "local-path"
+                      data:
+                          type: "persistentVolumeClaim"
+                          size: "1Gi"
+                          storageClass: "local-path"
 
-            logs:
-              type: "emptyDir"
+                      logs:
+                          type: "emptyDir"
 
-            resources:
-              requests:
-                cpu: "100m"
-                memory: "128Mi"
-              limits:
-                memory: "384Mi"
+                      resources:
+                          requests:
+                              cpu: "100m"
+                              memory: "128Mi"
+                          limits:
+                              memory: "384Mi"
 
-            extraEnvironmentVars:
-              GOMEMLIMIT: "345MiB"
-              WEED_MASTER_VOLUME_GROWTH_COPY_1: "7"
-              WEED_MASTER_VOLUME_GROWTH_COPY_2: "6"
-              WEED_MASTER_VOLUME_GROWTH_COPY_3: "3"
-              WEED_MASTER_VOLUME_GROWTH_COPY_OTHER: "1"
+                      extraEnvironmentVars:
+                          GOMEMLIMIT: "345MiB"
+                          WEED_MASTER_VOLUME_GROWTH_COPY_1: "7"
+                          WEED_MASTER_VOLUME_GROWTH_COPY_2: "6"
+                          WEED_MASTER_VOLUME_GROWTH_COPY_3: "3"
+                          WEED_MASTER_VOLUME_GROWTH_COPY_OTHER: "1"
 
-          volume:
-            enabled: true
-            replicas: 1
-            minFreeSpacePercent: 7
-            compactionMBps: "30"
+                  volume:
+                      enabled: true
+                      replicas: 1
+                      minFreeSpacePercent: 7
+                      compactionMBps: "30"
 
-            affinity: ""
+                      affinity: ""
 
-            nodeSelector: |
-              node-role.kubernetes.io/object-storage: "true"
+                      nodeSelector: |
+                          node-role.kubernetes.io/object-storage: "true"
 
-            tolerations: |
-              - key: dedicated
-                operator: Equal
-                value: object-storage
-                effect: NoSchedule
+                      tolerations: |
+                          - key: dedicated
+                            operator: Equal
+                            value: object-storage
+                            effect: NoSchedule
 
-            dataDirs:
-              - name: data
-                type: "persistentVolumeClaim"
-                size: "75Gi"
-                storageClass: "local-path"
-                maxVolumes: 0
+                      dataDirs:
+                          - name: data
+                            type: "persistentVolumeClaim"
+                            size: "75Gi"
+                            storageClass: "local-path"
+                            maxVolumes: 0
 
-            idx: {}
+                      idx: {}
 
-            logs:
-              type: "emptyDir"
+                      logs:
+                          type: "emptyDir"
 
-            resources:
-              requests:
-                cpu: "200m"
-                memory: "256Mi"
-              limits:
-                memory: "768Mi"
+                      resources:
+                          requests:
+                              cpu: "200m"
+                              memory: "256Mi"
+                          limits:
+                              memory: "768Mi"
 
-            extraEnvironmentVars:
-              GOMEMLIMIT: "690MiB"
+                      extraEnvironmentVars:
+                          GOMEMLIMIT: "690MiB"
 
-          filer:
-            enabled: true
-            replicas: 1
-            defaultReplicaPlacement: "000"
-            encryptVolumeData: true
+                  filer:
+                      enabled: true
+                      replicas: 1
+                      defaultReplicaPlacement: "000"
+                      encryptVolumeData: true
 
-            affinity: ""
+                      affinity: ""
 
-            nodeSelector: |
-              node-role.kubernetes.io/object-storage: "true"
+                      nodeSelector: |
+                          node-role.kubernetes.io/object-storage: "true"
 
-            tolerations: |
-              - key: dedicated
-                operator: Equal
-                value: object-storage
-                effect: NoSchedule
+                      tolerations: |
+                          - key: dedicated
+                            operator: Equal
+                            value: object-storage
+                            effect: NoSchedule
 
-            data:
-              type: "persistentVolumeClaim"
-              size: "5Gi"
-              storageClass: "local-path"
+                      data:
+                          type: "persistentVolumeClaim"
+                          size: "5Gi"
+                          storageClass: "local-path"
 
-            logs:
-              type: "emptyDir"
+                      logs:
+                          type: "emptyDir"
 
-            resources:
-              requests:
-                cpu: "200m"
-                memory: "192Mi"
-              limits:
-                memory: "512Mi"
+                      resources:
+                          requests:
+                              cpu: "200m"
+                              memory: "192Mi"
+                          limits:
+                              memory: "512Mi"
 
-            extraEnvironmentVars:
-              GOMEMLIMIT: "460MiB"
-              WEED_LEVELDB2_ENABLED: "true"
-              WEED_FILER_OPTIONS_RECURSIVE_DELETE: "false"
-              WEED_FILER_BUCKETS_FOLDER: "/buckets"
+                      extraEnvironmentVars:
+                          GOMEMLIMIT: "460MiB"
+                          WEED_LEVELDB2_ENABLED: "true"
+                          WEED_FILER_OPTIONS_RECURSIVE_DELETE: "false"
+                          WEED_FILER_BUCKETS_FOLDER: "/buckets"
 
-            s3:
-              enabled: true
-              port: 8333
-              enableAuth: true
-              existingConfigSecret: seaweedfs-s3-auth
+                      s3:
+                          enabled: true
+                          port: 8333
+                          enableAuth: true
+                          existingConfigSecret: seaweedfs-s3-auth
 
-          s3:
-            enabled: false
+                  s3:
+                      enabled: false
 
-          admin:
-            enabled: true
-            replicas: 1
+                  admin:
+                      enabled: true
+                      replicas: 1
 
-            podAnnotations:
-              reloader.stakater.com/auto: "true"
+                      podAnnotations:
+                          reloader.stakater.com/auto: "true"
 
-            affinity: ""
+                      affinity: ""
 
-            nodeSelector: |
-              node-role.kubernetes.io/object-storage: "true"
+                      nodeSelector: |
+                          node-role.kubernetes.io/object-storage: "true"
 
-            tolerations: |
-              - key: dedicated
-                operator: Equal
-                value: object-storage
-                effect: NoSchedule
+                      tolerations: |
+                          - key: dedicated
+                            operator: Equal
+                            value: object-storage
+                            effect: NoSchedule
 
-            data:
-              type: "emptyDir"
+                      data:
+                          type: "emptyDir"
 
-            logs:
-              type: "emptyDir"
+                      logs:
+                          type: "emptyDir"
 
-            resources:
-              requests:
-                cpu: "50m"
-                memory: "64Mi"
-              limits:
-                memory: "128Mi"
+                      resources:
+                          requests:
+                              cpu: "50m"
+                              memory: "64Mi"
+                          limits:
+                              memory: "128Mi"
 
-            service:
-              type: ClusterIP
-    - repoURL: git@github.com:kitti12911/homelab-devops.git
-      targetRevision: main
-      path: infrastructure/kubernetes/app/seaweedfs-manifests
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: seaweedfs
-  syncPolicy:
-    managedNamespaceMetadata:
-      labels:
-        gateway-access: "true"
-    syncOptions:
-      - CreateNamespace=true
+                      service:
+                          type: ClusterIP
+        - repoURL: git@github.com:kitti12911/homelab-devops.git
+          targetRevision: main
+          path: infrastructure/kubernetes/app/seaweedfs-manifests
+    destination:
+        server: https://kubernetes.default.svc
+        namespace: seaweedfs
+    syncPolicy:
+        managedNamespaceMetadata:
+            labels:
+                gateway-access: "true"
+        syncOptions:
+            - CreateNamespace=true

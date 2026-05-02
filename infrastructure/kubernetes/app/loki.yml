@@ -1,133 +1,133 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: loki
-  namespace: argocd
+    name: loki
+    namespace: argocd
 spec:
-  project: observability
-  sources:
-    - repoURL: https://grafana.github.io/helm-charts
-      chart: loki
-      targetRevision: "7.0.0"
-      helm:
-        valuesObject:
-          deploymentMode: SingleBinary
+    project: observability
+    sources:
+        - repoURL: https://grafana.github.io/helm-charts
+          chart: loki
+          targetRevision: "7.0.0"
+          helm:
+              valuesObject:
+                  deploymentMode: SingleBinary
 
-          loki:
-            auth_enabled: false
+                  loki:
+                      auth_enabled: false
 
-            server:
-              log_level: warn
+                      server:
+                          log_level: warn
 
-            commonConfig:
-              replication_factor: 1
+                      commonConfig:
+                          replication_factor: 1
 
-            schemaConfig:
-              configs:
-                - from: "2024-04-01"
-                  store: tsdb
-                  object_store: filesystem
-                  schema: v13
-                  index:
-                    prefix: index_
-                    period: 24h
+                      schemaConfig:
+                          configs:
+                              - from: "2024-04-01"
+                                store: tsdb
+                                object_store: filesystem
+                                schema: v13
+                                index:
+                                    prefix: index_
+                                    period: 24h
 
-            storage:
-              type: filesystem
+                      storage:
+                          type: filesystem
 
-            limits_config:
-              retention_period: 168h
-              max_query_lookback: 168h
+                      limits_config:
+                          retention_period: 168h
+                          max_query_lookback: 168h
 
-          singleBinary:
-            replicas: 1
+                  singleBinary:
+                      replicas: 1
 
-            extraEnv:
-              - name: GOMEMLIMIT
-                value: "460MiB"
+                      extraEnv:
+                          - name: GOMEMLIMIT
+                            value: "460MiB"
 
-            persistence:
-              enabled: true
-              storageClass: longhorn
-              size: 20Gi
+                      persistence:
+                          enabled: true
+                          storageClass: longhorn
+                          size: 20Gi
 
-            resources:
-              requests:
-                cpu: 100m
-                memory: 192Mi
-              limits:
-                memory: 512Mi
+                      resources:
+                          requests:
+                              cpu: 100m
+                              memory: 192Mi
+                          limits:
+                              memory: 512Mi
 
-          backend:
-            replicas: 0
-          read:
-            replicas: 0
-          write:
-            replicas: 0
+                  backend:
+                      replicas: 0
+                  read:
+                      replicas: 0
+                  write:
+                      replicas: 0
 
-          ingester:
-            replicas: 0
-          querier:
-            replicas: 0
-          queryFrontend:
-            replicas: 0
-          queryScheduler:
-            replicas: 0
-          distributor:
-            replicas: 0
-          compactor:
-            replicas: 0
-          indexGateway:
-            replicas: 0
-          bloomCompactor:
-            replicas: 0
-          bloomGateway:
-            replicas: 0
+                  ingester:
+                      replicas: 0
+                  querier:
+                      replicas: 0
+                  queryFrontend:
+                      replicas: 0
+                  queryScheduler:
+                      replicas: 0
+                  distributor:
+                      replicas: 0
+                  compactor:
+                      replicas: 0
+                  indexGateway:
+                      replicas: 0
+                  bloomCompactor:
+                      replicas: 0
+                  bloomGateway:
+                      replicas: 0
 
-          gateway:
-            enabled: true
-            replicas: 1
+                  gateway:
+                      enabled: true
+                      replicas: 1
 
-            resources:
-              requests:
-                cpu: 10m
-                memory: 32Mi
-              limits:
-                memory: 64Mi
+                      resources:
+                          requests:
+                              cpu: 10m
+                              memory: 32Mi
+                          limits:
+                              memory: 64Mi
 
-          minio:
-            enabled: false
+                  minio:
+                      enabled: false
 
-          monitoring:
-            selfMonitoring:
-              enabled: false
-              grafanaAgent:
-                installOperator: false
-            serviceMonitor:
-              enabled: true
+                  monitoring:
+                      selfMonitoring:
+                          enabled: false
+                          grafanaAgent:
+                              installOperator: false
+                      serviceMonitor:
+                          enabled: true
 
-          test:
-            enabled: false
+                  test:
+                      enabled: false
 
-          lokiCanary:
-            enabled: false
+                  lokiCanary:
+                      enabled: false
 
-          chunksCache:
-            enabled: false
+                  chunksCache:
+                      enabled: false
 
-          resultsCache:
-            enabled: false
+                  resultsCache:
+                      enabled: false
 
-    - repoURL: git@github.com:kitti12911/homelab-devops.git
-      targetRevision: main
-      path: infrastructure/kubernetes/app/loki-manifests
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: observability
-  syncPolicy:
-    managedNamespaceMetadata:
-      labels:
-        gateway-access: "true"
-    syncOptions:
-      - CreateNamespace=true
-      - ServerSideApply=true
+        - repoURL: git@github.com:kitti12911/homelab-devops.git
+          targetRevision: main
+          path: infrastructure/kubernetes/app/loki-manifests
+    destination:
+        server: https://kubernetes.default.svc
+        namespace: observability
+    syncPolicy:
+        managedNamespaceMetadata:
+            labels:
+                gateway-access: "true"
+        syncOptions:
+            - CreateNamespace=true
+            - ServerSideApply=true

@@ -1,179 +1,179 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: alloy
-  namespace: argocd
+    name: alloy
+    namespace: argocd
 spec:
-  project: observability
-  sources:
-    - repoURL: https://grafana.github.io/helm-charts
-      chart: alloy
-      targetRevision: "1.8.0"
-      helm:
-        valuesObject:
-          alloy:
-            configMap:
-              content: |
-                logging {
-                  level = "warn"
-                }
+    project: observability
+    sources:
+        - repoURL: https://grafana.github.io/helm-charts
+          chart: alloy
+          targetRevision: "1.8.0"
+          helm:
+              valuesObject:
+                  alloy:
+                      configMap:
+                          content: |
+                              logging {
+                                level = "warn"
+                              }
 
-                discovery.kubernetes "pods" {
-                  role = "pod"
-                }
+                              discovery.kubernetes "pods" {
+                                role = "pod"
+                              }
 
-                discovery.relabel "pods" {
-                  targets = discovery.kubernetes.pods.targets
+                              discovery.relabel "pods" {
+                                targets = discovery.kubernetes.pods.targets
 
-                  rule {
-                    source_labels = ["__meta_kubernetes_pod_phase"]
-                    regex         = "Pending|Succeeded|Failed|Unknown"
-                    action        = "drop"
-                  }
+                                rule {
+                                  source_labels = ["__meta_kubernetes_pod_phase"]
+                                  regex         = "Pending|Succeeded|Failed|Unknown"
+                                  action        = "drop"
+                                }
 
-                  rule {
-                    source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
-                    regex         = "descheduler"
-                    action        = "drop"
-                  }
+                                rule {
+                                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                                  regex         = "descheduler"
+                                  action        = "drop"
+                                }
 
-                  rule {
-                    source_labels = ["__meta_kubernetes_namespace"]
-                    target_label  = "namespace"
-                  }
+                                rule {
+                                  source_labels = ["__meta_kubernetes_namespace"]
+                                  target_label  = "namespace"
+                                }
 
-                  rule {
-                    source_labels = ["__meta_kubernetes_pod_name"]
-                    target_label  = "pod"
-                  }
+                                rule {
+                                  source_labels = ["__meta_kubernetes_pod_name"]
+                                  target_label  = "pod"
+                                }
 
-                  rule {
-                    source_labels = ["__meta_kubernetes_pod_container_name"]
-                    target_label  = "container"
-                  }
+                                rule {
+                                  source_labels = ["__meta_kubernetes_pod_container_name"]
+                                  target_label  = "container"
+                                }
 
-                  rule {
-                    source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
-                    target_label  = "app"
-                  }
+                                rule {
+                                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                                  target_label  = "app"
+                                }
 
-                  rule {
-                    source_labels = ["__meta_kubernetes_pod_node_name"]
-                    target_label  = "node"
-                  }
-                }
+                                rule {
+                                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                                  target_label  = "node"
+                                }
+                              }
 
-                loki.source.kubernetes "pods" {
-                  targets    = discovery.relabel.pods.output
-                  forward_to = [loki.process.pods.receiver]
-                }
+                              loki.source.kubernetes "pods" {
+                                targets    = discovery.relabel.pods.output
+                                forward_to = [loki.process.pods.receiver]
+                              }
 
-                loki.process "pods" {
-                  forward_to = [loki.write.default.receiver]
+                              loki.process "pods" {
+                                forward_to = [loki.write.default.receiver]
 
-                  stage.cri {}
+                                stage.cri {}
 
-                  stage.drop {
-                    expression  = ".*/loki/api/v1/.*"
-                    drop_counter_reason = "loki_api_access_log"
-                  }
+                                stage.drop {
+                                  expression  = ".*/loki/api/v1/.*"
+                                  drop_counter_reason = "loki_api_access_log"
+                                }
 
-                  stage.drop {
-                    expression  = ".*kube-probe/.*"
-                    drop_counter_reason = "kube_health_probe"
-                  }
-                }
+                                stage.drop {
+                                  expression  = ".*kube-probe/.*"
+                                  drop_counter_reason = "kube_health_probe"
+                                }
+                              }
 
-                loki.source.kubernetes_events "default" {
-                  forward_to = [loki.write.default.receiver]
-                }
+                              loki.source.kubernetes_events "default" {
+                                forward_to = [loki.write.default.receiver]
+                              }
 
-                loki.write "default" {
-                  endpoint {
-                    url = "http://loki-gateway.observability.svc.cluster.local:80/loki/api/v1/push"
-                  }
-                }
+                              loki.write "default" {
+                                endpoint {
+                                  url = "http://loki-gateway.observability.svc.cluster.local:80/loki/api/v1/push"
+                                }
+                              }
 
-                otelcol.receiver.otlp "default" {
-                  grpc {
-                    endpoint = "0.0.0.0:4317"
-                  }
-                  http {
-                    endpoint = "0.0.0.0:4318"
-                  }
+                              otelcol.receiver.otlp "default" {
+                                grpc {
+                                  endpoint = "0.0.0.0:4317"
+                                }
+                                http {
+                                  endpoint = "0.0.0.0:4318"
+                                }
 
-                  output {
-                    traces = [otelcol.processor.batch.default.input]
-                  }
-                }
+                                output {
+                                  traces = [otelcol.processor.batch.default.input]
+                                }
+                              }
 
-                otelcol.processor.batch "default" {
-                  output {
-                    traces = [otelcol.exporter.otlp.tempo.input]
-                  }
-                }
+                              otelcol.processor.batch "default" {
+                                output {
+                                  traces = [otelcol.exporter.otlp.tempo.input]
+                                }
+                              }
 
-                otelcol.exporter.otlp "tempo" {
-                  client {
-                    endpoint = "tempo.observability.svc.cluster.local:4317"
+                              otelcol.exporter.otlp "tempo" {
+                                client {
+                                  endpoint = "tempo.observability.svc.cluster.local:4317"
 
-                    tls {
-                      insecure = true
-                    }
-                  }
-                }
+                                  tls {
+                                    insecure = true
+                                  }
+                                }
+                              }
 
-            extraPorts:
-              - name: otlp-grpc
-                port: 4317
-                targetPort: 4317
-                protocol: TCP
-              - name: otlp-http
-                port: 4318
-                targetPort: 4318
-                protocol: TCP
+                      extraPorts:
+                          - name: otlp-grpc
+                            port: 4317
+                            targetPort: 4317
+                            protocol: TCP
+                          - name: otlp-http
+                            port: 4318
+                            targetPort: 4318
+                            protocol: TCP
 
-            extraEnv:
-              - name: GOMEMLIMIT
-                value: "460MiB"
+                      extraEnv:
+                          - name: GOMEMLIMIT
+                            value: "460MiB"
 
-            resources:
-              requests:
-                cpu: 50m
-                memory: 192Mi
-              limits:
-                memory: 512Mi
+                      resources:
+                          requests:
+                              cpu: 50m
+                              memory: 192Mi
+                          limits:
+                              memory: 512Mi
 
-          controller:
-            type: daemonset
-            tolerations:
-              - key: node-role.kubernetes.io/control-plane
-                operator: Exists
-                effect: NoSchedule
-              - key: node-role.kubernetes.io/master
-                operator: Exists
-                effect: NoSchedule
-              - key: dedicated
-                operator: Equal
-                value: database
-                effect: NoSchedule
-              - key: dedicated
-                operator: Equal
-                value: object-storage
-                effect: NoSchedule
+                  controller:
+                      type: daemonset
+                      tolerations:
+                          - key: node-role.kubernetes.io/control-plane
+                            operator: Exists
+                            effect: NoSchedule
+                          - key: node-role.kubernetes.io/master
+                            operator: Exists
+                            effect: NoSchedule
+                          - key: dedicated
+                            operator: Equal
+                            value: database
+                            effect: NoSchedule
+                          - key: dedicated
+                            operator: Equal
+                            value: object-storage
+                            effect: NoSchedule
 
-          serviceMonitor:
-            enabled: true
+                  serviceMonitor:
+                      enabled: true
 
-    - repoURL: git@github.com:kitti12911/homelab-devops.git
-      targetRevision: main
-      path: infrastructure/kubernetes/app/alloy-manifests
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: observability
-  syncPolicy:
-    managedNamespaceMetadata:
-      labels:
-        gateway-access: "true"
-    syncOptions:
-      - CreateNamespace=true
+        - repoURL: git@github.com:kitti12911/homelab-devops.git
+          targetRevision: main
+          path: infrastructure/kubernetes/app/alloy-manifests
+    destination:
+        server: https://kubernetes.default.svc
+        namespace: observability
+    syncPolicy:
+        managedNamespaceMetadata:
+            labels:
+                gateway-access: "true"
+        syncOptions:
+            - CreateNamespace=true

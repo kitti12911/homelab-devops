@@ -1,36 +1,36 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: lan-tls
-  namespace: default
+    name: lan-tls
+    namespace: default
 spec:
-  secretName: lan-tls
-  privateKey:
-    rotationPolicy: Always
-  usages:
-    - server auth
-    - digital signature
-    - key encipherment
-  issuerRef:
-    name: homelab-ca-issuer
-    kind: ClusterIssuer
-  dnsNames:
-    - longhorn.lan
-    - keycloak.lan
-    - zot.lan
-    - seaweedfs.lan
-    - seaweedfs-admin.lan
-    - s3.lan
-    - argocd.lan
-    - vault.lan
-    - prometheus.lan
-    - grafana.lan
-    - alertmanager.lan
-    - loki.lan
-    - tempo.lan
-    - alloy.lan
-    - oauth2-proxy.lan
-    - redpanda.lan
-    - sonarqube.lan
-    - pyroscope.lan
-    - pyroscope-ingest.lan
+    secretName: lan-tls
+    privateKey:
+        rotationPolicy: Always
+    usages:
+        - server auth
+        - digital signature
+        - key encipherment
+    issuerRef:
+        name: homelab-ca-issuer
+        kind: ClusterIssuer
+    dnsNames:
+        - longhorn.lan
+        - keycloak.lan
+        - zot.lan
+        - seaweedfs.lan
+        - seaweedfs-admin.lan
+        - s3.lan
+        - argocd.lan
+        - vault.lan
+        - prometheus.lan
+        - grafana.lan
+        - alertmanager.lan
+        - loki.lan
+        - tempo.lan
+        - alloy.lan
+        - oauth2-proxy.lan
+        - redpanda.lan
+        - sonarqube.lan
+        - pyroscope.lan
+        - pyroscope-ingest.lan

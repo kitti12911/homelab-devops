@@ -3,142 +3,142 @@
   become: true
 
   vars:
-    envoy_config_dir: "/etc/envoy"
-    envoy_config_path: "{{ envoy_config_dir }}/envoy.yaml"
-    envoy_service_name: "envoy"
-    traefik_http_port: 32755
-    traefik_https_port: 30880
-    traefik_otlp_grpc_port: 32442
-    postgresql_nodeport: 30432
-    nats_nodeport: 30422
-    dragonfly_nodeport: 30379
-    # redpanda_kafka_nodeport: 31092
-    envoy_log_level: "warning"
-    envoy_apt_suite: "{{ 'bookworm' if ansible_facts.distribution_release == 'trixie' else ansible_facts.distribution_release }}"
-    node_exporter_systemd_unit_exclude: '^(openipmi|smartmontools)\.service$'
-    node_exporter_args: >-
-      --web.listen-address=:9100
-      --log.level=warn
-      --collector.systemd.unit-exclude={{ node_exporter_systemd_unit_exclude }}
+      envoy_config_dir: "/etc/envoy"
+      envoy_config_path: "{{ envoy_config_dir }}/envoy.yaml"
+      envoy_service_name: "envoy"
+      traefik_http_port: 32755
+      traefik_https_port: 30880
+      traefik_otlp_grpc_port: 32442
+      postgresql_nodeport: 30432
+      nats_nodeport: 30422
+      dragonfly_nodeport: 30379
+      # redpanda_kafka_nodeport: 31092
+      envoy_log_level: "warning"
+      envoy_apt_suite: "{{ 'bookworm' if ansible_facts.distribution_release == 'trixie' else ansible_facts.distribution_release }}"
+      node_exporter_systemd_unit_exclude: '^(openipmi|smartmontools)\.service$'
+      node_exporter_args: >-
+          --web.listen-address=:9100
+          --log.level=warn
+          --collector.systemd.unit-exclude={{ node_exporter_systemd_unit_exclude }}
 
   tasks:
-    - name: Create Envoy config directory
-      ansible.builtin.file:
-        path: "{{ envoy_config_dir }}"
-        state: directory
-        mode: "0755"
+      - name: Create Envoy config directory
+        ansible.builtin.file:
+            path: "{{ envoy_config_dir }}"
+            state: directory
+            mode: "0755"
 
-    - name: Create APT keyrings directory
-      ansible.builtin.file:
-        path: /etc/apt/keyrings
-        state: directory
-        mode: "0755"
+      - name: Create APT keyrings directory
+        ansible.builtin.file:
+            path: /etc/apt/keyrings
+            state: directory
+            mode: "0755"
 
-    - name: Add Envoy APT signing key
-      ansible.builtin.get_url:
-        url: https://apt.envoyproxy.io/signing.key
-        dest: /tmp/envoy-signing.key
-        mode: "0644"
+      - name: Add Envoy APT signing key
+        ansible.builtin.get_url:
+            url: https://apt.envoyproxy.io/signing.key
+            dest: /tmp/envoy-signing.key
+            mode: "0644"
 
-    - name: Install Envoy signing key into keyring
-      ansible.builtin.shell: gpg --dearmor -o /etc/apt/keyrings/envoy-keyring.gpg < /tmp/envoy-signing.key
-      args:
-        creates: /etc/apt/keyrings/envoy-keyring.gpg
+      - name: Install Envoy signing key into keyring
+        ansible.builtin.shell: gpg --dearmor -o /etc/apt/keyrings/envoy-keyring.gpg < /tmp/envoy-signing.key
+        args:
+            creates: /etc/apt/keyrings/envoy-keyring.gpg
 
-    - name: Remove temporary signing key
-      ansible.builtin.file:
-        path: /tmp/envoy-signing.key
-        state: absent
+      - name: Remove temporary signing key
+        ansible.builtin.file:
+            path: /tmp/envoy-signing.key
+            state: absent
 
-    - name: Add Envoy APT repository
-      ansible.builtin.apt_repository:
-        repo: "deb [arch={{ ansible_facts.architecture | replace('aarch64', 'arm64') }} signed-by=/etc/apt/keyrings/envoy-keyring.gpg] https://apt.envoyproxy.io {{ envoy_apt_suite }} main"
-        filename: envoy
-        state: present
+      - name: Add Envoy APT repository
+        ansible.builtin.apt_repository:
+            repo: "deb [arch={{ ansible_facts.architecture | replace('aarch64', 'arm64') }} signed-by=/etc/apt/keyrings/envoy-keyring.gpg] https://apt.envoyproxy.io {{ envoy_apt_suite }} main"
+            filename: envoy
+            state: present
 
-    - name: Update apt cache
-      ansible.builtin.apt:
-        update_cache: true
-        cache_valid_time: 3600
+      - name: Update apt cache
+        ansible.builtin.apt:
+            update_cache: true
+            cache_valid_time: 3600
 
-    - name: Install Envoy
-      ansible.builtin.apt:
-        name: envoy
-        state: present
+      - name: Install Envoy
+        ansible.builtin.apt:
+            name: envoy
+            state: present
 
-    - name: Install node exporter
-      ansible.builtin.apt:
-        name: prometheus-node-exporter
-        state: present
+      - name: Install node exporter
+        ansible.builtin.apt:
+            name: prometheus-node-exporter
+            state: present
 
-    - name: Configure node exporter with quiet logging
-      ansible.builtin.copy:
-        content: |
-          ARGS="{{ node_exporter_args }}"
-        dest: /etc/default/prometheus-node-exporter
-        mode: "0644"
-      notify: Restart Node Exporter
+      - name: Configure node exporter with quiet logging
+        ansible.builtin.copy:
+            content: |
+                ARGS="{{ node_exporter_args }}"
+            dest: /etc/default/prometheus-node-exporter
+            mode: "0644"
+        notify: Restart Node Exporter
 
-    - name: Create node exporter systemd override directory
-      ansible.builtin.file:
-        path: /etc/systemd/system/prometheus-node-exporter.service.d
-        state: directory
-        mode: "0755"
+      - name: Create node exporter systemd override directory
+        ansible.builtin.file:
+            path: /etc/systemd/system/prometheus-node-exporter.service.d
+            state: directory
+            mode: "0755"
 
-    - name: Limit node exporter journal noise
-      ansible.builtin.copy:
-        content: |
-          [Service]
-          StandardOutput=journal
-          StandardError=journal
-          LogRateLimitIntervalSec=30s
-          LogRateLimitBurst=5
-        dest: /etc/systemd/system/prometheus-node-exporter.service.d/logging.conf
-        mode: "0644"
-      notify: Restart Node Exporter
+      - name: Limit node exporter journal noise
+        ansible.builtin.copy:
+            content: |
+                [Service]
+                StandardOutput=journal
+                StandardError=journal
+                LogRateLimitIntervalSec=30s
+                LogRateLimitBurst=5
+            dest: /etc/systemd/system/prometheus-node-exporter.service.d/logging.conf
+            mode: "0644"
+        notify: Restart Node Exporter
 
-    - name: Remove existing Envoy config
-      ansible.builtin.file:
-        path: "{{ envoy_config_path }}"
-        state: absent
+      - name: Remove existing Envoy config
+        ansible.builtin.file:
+            path: "{{ envoy_config_path }}"
+            state: absent
 
-    - name: Deploy Envoy config (after install so package default is overwritten)
-      ansible.builtin.template:
-        src: envoy.yaml.j2
-        dest: "{{ envoy_config_path }}"
-        mode: "0644"
-      notify: Restart Envoy
+      - name: Deploy Envoy config (after install so package default is overwritten)
+        ansible.builtin.template:
+            src: envoy.yaml.j2
+            dest: "{{ envoy_config_path }}"
+            mode: "0644"
+        notify: Restart Envoy
 
-    - name: Deploy Envoy systemd unit (minimal logging for SD card)
-      ansible.builtin.template:
-        src: envoy.service.j2
-        dest: "/etc/systemd/system/{{ envoy_service_name }}.service"
-        mode: "0644"
-      notify: Restart Envoy
+      - name: Deploy Envoy systemd unit (minimal logging for SD card)
+        ansible.builtin.template:
+            src: envoy.service.j2
+            dest: "/etc/systemd/system/{{ envoy_service_name }}.service"
+            mode: "0644"
+        notify: Restart Envoy
 
-    - name: Enable and start Envoy
-      ansible.builtin.systemd:
-        name: "{{ envoy_service_name }}"
-        state: started
-        enabled: true
-        daemon_reload: true
+      - name: Enable and start Envoy
+        ansible.builtin.systemd:
+            name: "{{ envoy_service_name }}"
+            state: started
+            enabled: true
+            daemon_reload: true
 
-    - name: Enable and start node exporter
-      ansible.builtin.systemd:
-        name: prometheus-node-exporter
-        state: started
-        enabled: true
-        daemon_reload: true
+      - name: Enable and start node exporter
+        ansible.builtin.systemd:
+            name: prometheus-node-exporter
+            state: started
+            enabled: true
+            daemon_reload: true
 
   handlers:
-    - name: Restart Envoy
-      ansible.builtin.systemd:
-        name: "{{ envoy_service_name }}"
-        state: restarted
-        daemon_reload: true
+      - name: Restart Envoy
+        ansible.builtin.systemd:
+            name: "{{ envoy_service_name }}"
+            state: restarted
+            daemon_reload: true
 
-    - name: Restart Node Exporter
-      ansible.builtin.systemd:
-        name: prometheus-node-exporter
-        state: restarted
-        daemon_reload: true
+      - name: Restart Node Exporter
+        ansible.builtin.systemd:
+            name: prometheus-node-exporter
+            state: restarted
+            daemon_reload: true

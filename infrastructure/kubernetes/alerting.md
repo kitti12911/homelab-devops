@@ -33,7 +33,7 @@ sops -e -i infrastructure/kubernetes/app/kube-prometheus-stack-manifests/alertma
 In `infrastructure/kubernetes/app/kube-prometheus-stack.yml`, replace:
 
 ```yaml
-chat_id: 0  # TODO: replace with your Telegram chat ID (integer)
+chat_id: 0 # TODO: replace with your Telegram chat ID (integer)
 ```
 
 with your actual integer chat ID (no quotes):
@@ -68,11 +68,11 @@ You should receive a Telegram message within ~30 seconds.
 
 ## Alert Routing
 
-| Matcher | Receiver | Notes |
-| --- | --- | --- |
-| `alertname =~ "Watchdog\|InfoInhibitor"` | null | Silenced — heartbeat/noise alerts |
-| `severity =~ "warning\|critical"` | telegram | Sent to Telegram |
-| everything else | null | Dropped |
+| Matcher                                  | Receiver | Notes                             |
+| ---------------------------------------- | -------- | --------------------------------- |
+| `alertname =~ "Watchdog\|InfoInhibitor"` | null     | Silenced — heartbeat/noise alerts |
+| `severity =~ "warning\|critical"`        | telegram | Sent to Telegram                  |
+| everything else                          | null     | Dropped                           |
 
 Alerts are grouped by `alertname`, `namespace`, and `severity`.
 Repeated alerts fire again after **12 hours** (`repeat_interval`).

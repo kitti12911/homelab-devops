@@ -11,41 +11,41 @@ bootstrap and manage kubernetes applications via argocd. all apps are deployed a
 
 ## deployed applications
 
-| app                       | namespace          | url / endpoint                                | description                     |
-|---------------------------|--------------------|-----------------------------------------------|---------------------------------|
-| flannel                   | kube-flannel       | -                                             | cni plugin                      |
-| cert-manager              | cert-manager       | -                                             | certificate management          |
-| trust-manager             | cert-manager       | -                                             | certificate trust distribution  |
-| traefik                   | kube-system        | -                                             | ingress / gateway               |
-| argocd                    | argocd             | argocd.lan                                    | gitops deployment               |
-| keycloak                  | auth               | keycloak.lan                                  | identity provider               |
-| keycloak-operator         | auth               | -                                             | keycloak operator               |
-| oauth2-proxy              | auth               | oauth2-proxy.lan                              | forward auth for non-oidc apps  |
-| postgresql                | database           | postgres.lan:5432                             | database                        |
-| dragonfly                 | database           | dragonfly.lan:6379                            | redis-compatible cache          |
-| nats                      | database           | nats.lan:4222                                 | messaging                       |
-| ~~redpanda~~              | ~~database~~       | ~~redpanda.lan, redpanda.lan:9092~~           | ~~kafka-compatible streaming~~  |
-| longhorn                  | longhorn-system    | longhorn.lan                                  | distributed storage             |
-| seaweedfs                 | seaweedfs          | seaweedfs.lan, s3.lan                         | object storage                  |
-| zot                       | zot                | zot.lan                                       | oci container registry          |
-| ~~vault~~                 | ~~vault~~          | ~~vault.lan~~                                 | ~~secret management~~           |
-| kube-prometheus-stack     | observability      | grafana.lan, prometheus.lan, alertmanager.lan | monitoring                      |
-| loki                      | observability      | loki.lan                                      | log aggregation                 |
-| tempo                     | observability      | tempo.lan                                     | distributed tracing             |
-| pyroscope                 | observability      | pyroscope.lan                                 | continuous profiling            |
-| alloy                     | observability      | alloy.lan                                     | observability agent             |
-| sonarqube                 | sonarqube          | sonarqube.lan                                 | code quality analysis           |
-| reloader                  | reloader           | -                                             | auto-reload on config changes   |
-| system-upgrade-controller | system-upgrade     | -                                             | k3s auto-upgrades               |
-| cloudnative-pg            | cnpg-system        | -                                             | postgresql operator             |
-| trivy-operator            | trivy-system       | -                                             | kubernetes security scanning    |
+| app                       | namespace       | url / endpoint                                | description                    |
+| ------------------------- | --------------- | --------------------------------------------- | ------------------------------ |
+| flannel                   | kube-flannel    | -                                             | cni plugin                     |
+| cert-manager              | cert-manager    | -                                             | certificate management         |
+| trust-manager             | cert-manager    | -                                             | certificate trust distribution |
+| traefik                   | kube-system     | -                                             | ingress / gateway              |
+| argocd                    | argocd          | argocd.lan                                    | gitops deployment              |
+| keycloak                  | auth            | keycloak.lan                                  | identity provider              |
+| keycloak-operator         | auth            | -                                             | keycloak operator              |
+| oauth2-proxy              | auth            | oauth2-proxy.lan                              | forward auth for non-oidc apps |
+| postgresql                | database        | postgres.lan:5432                             | database                       |
+| dragonfly                 | database        | dragonfly.lan:6379                            | redis-compatible cache         |
+| nats                      | database        | nats.lan:4222                                 | messaging                      |
+| ~~redpanda~~              | ~~database~~    | ~~redpanda.lan, redpanda.lan:9092~~           | ~~kafka-compatible streaming~~ |
+| longhorn                  | longhorn-system | longhorn.lan                                  | distributed storage            |
+| seaweedfs                 | seaweedfs       | seaweedfs.lan, s3.lan                         | object storage                 |
+| zot                       | zot             | zot.lan                                       | oci container registry         |
+| ~~vault~~                 | ~~vault~~       | ~~vault.lan~~                                 | ~~secret management~~          |
+| kube-prometheus-stack     | observability   | grafana.lan, prometheus.lan, alertmanager.lan | monitoring                     |
+| loki                      | observability   | loki.lan                                      | log aggregation                |
+| tempo                     | observability   | tempo.lan                                     | distributed tracing            |
+| pyroscope                 | observability   | pyroscope.lan                                 | continuous profiling           |
+| alloy                     | observability   | alloy.lan                                     | observability agent            |
+| sonarqube                 | sonarqube       | sonarqube.lan                                 | code quality analysis          |
+| reloader                  | reloader        | -                                             | auto-reload on config changes  |
+| system-upgrade-controller | system-upgrade  | -                                             | k3s auto-upgrades              |
+| cloudnative-pg            | cnpg-system     | -                                             | postgresql operator            |
+| trivy-operator            | trivy-system    | -                                             | kubernetes security scanning   |
 
 ## app sync order
 
 sync apps in this order after argocd is running. each wave depends on the previous being healthy.
 
 | wave | apps                                                                                                             | reason                                                                                             |
-|------|------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| ---- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | 1    | cert-manager, cloudnative-pg, keycloak-operator, longhorn                                                        | operators and storage - no dependencies                                                            |
 | 2    | trust-manager, postgresql, dragonfly, nats, seaweedfs                                                            | trust-manager needs cert-manager; dbs need cnpg + longhorn                                         |
 | 3    | keycloak, kube-prometheus-stack                                                                                  | keycloak needs keycloak-operator + postgresql                                                      |
@@ -200,20 +200,20 @@ create realm `homelab` at [keycloak.lan](https://keycloak.lan).
 
 create these groups (used for role mapping across apps):
 
-| group             | used by                         |
-|-------------------|---------------------------------|
-| `argocd-admins`   | argocd — admin role             |
-| `argocd-viewers`  | argocd — readonly role          |
-| `grafana-admins`  | grafana — Admin role            |
-| `grafana-editors` | grafana — Editor role           |
-| `zot-admins`      | zot — admin role                |
-| `sonarqube-admins`| sonarqube — admin role          |
+| group              | used by                |
+| ------------------ | ---------------------- |
+| `argocd-admins`    | argocd - admin role    |
+| `argocd-viewers`   | argocd - readonly role |
+| `grafana-admins`   | grafana - Admin role   |
+| `grafana-editors`  | grafana - Editor role  |
+| `zot-admins`       | zot - admin role       |
+| `sonarqube-admins` | sonarqube - admin role |
 
 #### client scope: groups
 
 add a `groups` client scope at the realm level so all clients can receive group memberships in tokens:
 
-1. **client scopes** → create scope named `groups`, type `optional`
+1. **client scopes** -> create scope named `groups`, type `optional`
 2. add mapper: type `Group Membership`, token claim name `groups`, turn off **full group path**
 3. add this scope to every client below
 
@@ -223,94 +223,94 @@ create these clients (capability config: `client authentication` on, `standard f
 
 ##### argocd
 
-| field                          | value                                          |
-|--------------------------------|------------------------------------------------|
-| root url                       | `https://argocd.lan`                           |
-| home url                       | `https://argocd.lan`                           |
-| valid redirect uris            | `https://argocd.lan/auth/callback`             |
-|                                | `http://192.168.88.202:30800/auth/callback`    |
-| valid post logout redirect uris| `https://argocd.lan`                           |
-| web origins                    | `https://argocd.lan`                           |
+| field                           | value                                       |
+| ------------------------------- | ------------------------------------------- |
+| root url                        | `https://argocd.lan`                        |
+| home url                        | `https://argocd.lan`                        |
+| valid redirect uris             | `https://argocd.lan/auth/callback`          |
+|                                 | `http://192.168.88.202:30800/auth/callback` |
+| valid post logout redirect uris | `https://argocd.lan`                        |
+| web origins                     | `https://argocd.lan`                        |
 
 ##### grafana
 
-| field                          | value                                     |
-|--------------------------------|-------------------------------------------|
-| root url                       | `https://grafana.lan`                     |
-| home url                       | `https://grafana.lan`                     |
-| valid redirect uris            | `https://grafana.lan/login/generic_oauth` |
-| valid post logout redirect uris| `https://grafana.lan`                     |
-| web origins                    | `https://grafana.lan`                     |
+| field                           | value                                     |
+| ------------------------------- | ----------------------------------------- |
+| root url                        | `https://grafana.lan`                     |
+| home url                        | `https://grafana.lan`                     |
+| valid redirect uris             | `https://grafana.lan/login/generic_oauth` |
+| valid post logout redirect uris | `https://grafana.lan`                     |
+| web origins                     | `https://grafana.lan`                     |
 
 ##### zot
 
-| field                          | value                               |
-|--------------------------------|-------------------------------------|
-| root url                       | `https://zot.lan`                   |
-| home url                       | `https://zot.lan`                   |
-| valid redirect uris            | `https://zot.lan/zot/auth/callback` |
-| valid post logout redirect uris| `https://zot.lan`                   |
-| web origins                    | `https://zot.lan`                   |
+| field                           | value                               |
+| ------------------------------- | ----------------------------------- |
+| root url                        | `https://zot.lan`                   |
+| home url                        | `https://zot.lan`                   |
+| valid redirect uris             | `https://zot.lan/zot/auth/callback` |
+| valid post logout redirect uris | `https://zot.lan`                   |
+| web origins                     | `https://zot.lan`                   |
 
 ##### sonarqube (SAML)
 
 sonarqube uses SAML instead of OIDC. create a SAML client in keycloak:
 
-**step 1:** **clients** → create client → client type: `SAML`, client id: `sonarqube`
+**step 1:** **clients** -> create client -> client type: `SAML`, client id: `sonarqube`
 
 **step 2:** configure the client:
 
-| field                          | value                                                  |
-|--------------------------------|--------------------------------------------------------|
-| root url                       | `https://sonarqube.lan`                                |
-| home url                       | `https://sonarqube.lan`                                |
-| valid redirect uris            | `https://sonarqube.lan/*`                              |
-| valid post logout redirect uris| `https://sonarqube.lan`                                |
-| master saml processing url     | `https://sonarqube.lan/oauth2/callback/saml`           |
+| field                           | value                                        |
+| ------------------------------- | -------------------------------------------- |
+| root url                        | `https://sonarqube.lan`                      |
+| home url                        | `https://sonarqube.lan`                      |
+| valid redirect uris             | `https://sonarqube.lan/*`                    |
+| valid post logout redirect uris | `https://sonarqube.lan`                      |
+| master saml processing url      | `https://sonarqube.lan/oauth2/callback/saml` |
 
 **step 3:** under **keys** tab, leave `Client signature required` set to `Off`
 
-**step 4:** add mappers (under **client scopes** → `sonarqube-dedicated` → **add mapper** → **by configuration**):
+**step 4:** add mappers (under **client scopes** -> `sonarqube-dedicated` -> **add mapper** -> **by configuration**):
 
-| mapper type        | name    | property    | saml attribute name       | friendly name |
-|--------------------|---------|-------------|---------------------------|---------------|
-| User Property      | email   | email       | email                     | email         |
-| User Property      | login   | username    | login                     | login         |
-| User Property      | name    | firstName   | name                      | name          |
-| Group list         | groups  | -           | group attribute: `groups` | groups        |
+| mapper type   | name   | property  | saml attribute name       | friendly name |
+| ------------- | ------ | --------- | ------------------------- | ------------- |
+| User Property | email  | email     | email                     | email         |
+| User Property | login  | username  | login                     | login         |
+| User Property | name   | firstName | name                      | name          |
+| Group list    | groups | -         | group attribute: `groups` | groups        |
 
 for the group list mapper, set `single group attribute` to `on` and `full group path` to `off`.
 
 **step 5:** configure sonarqube (after it is running):
 
-go to **administration** → **configuration** → **general settings** → **authentication** → **SAML**:
+go to **administration** -> **configuration** -> **general settings** -> **authentication** -> **SAML**:
 
-| setting                        | value                                                                                         |
-|--------------------------------|-----------------------------------------------------------------------------------------------|
-| enabled                        | `true`                                                                                        |
-| application id                 | `sonarqube`                                                                                   |
-| provider name                  | `Keycloak`                                                                                    |
-| provider id                    | `https://keycloak.lan/realms/homelab`                                                         |
-| saml login url                 | `https://keycloak.lan/realms/homelab/protocol/saml`                                           |
-| provider certificate           | keycloak → **realm settings** → **keys** → `RS256` row → click **Certificate** → copy value   |
-| user login attribute           | `login`                                                                                       |
-| user name attribute            | `name`                                                                                        |
-| user email attribute           | `email`                                                                                       |
-| group attribute                | `groups`                                                                                      |
+| setting              | value                                                                                            |
+| -------------------- | ------------------------------------------------------------------------------------------------ |
+| enabled              | `true`                                                                                           |
+| application id       | `sonarqube`                                                                                      |
+| provider name        | `Keycloak`                                                                                       |
+| provider id          | `https://keycloak.lan/realms/homelab`                                                            |
+| saml login url       | `https://keycloak.lan/realms/homelab/protocol/saml`                                              |
+| provider certificate | keycloak -> **realm settings** -> **keys** -> `RS256` row -> click **Certificate** -> copy value |
+| user login attribute | `login`                                                                                          |
+| user name attribute  | `name`                                                                                           |
+| user email attribute | `email`                                                                                          |
+| group attribute      | `groups`                                                                                         |
 
 **step 6:** log in to sonarqube via SAML (the `sonarqube-admins` group will be auto-created from keycloak). then grant it admin permissions:
 
-go to **administration** → **security** → **global permissions** → find the `sonarqube-admins` group and enable the **Administer** permission. this is a one-time setup; group membership syncs from keycloak on each login.
+go to **administration** -> **security** -> **global permissions** -> find the `sonarqube-admins` group and enable the **Administer** permission. this is a one-time setup; group membership syncs from keycloak on each login.
 
 ##### oauth2-proxy
 
-| field                          | value                                      |
-|--------------------------------|--------------------------------------------|
-| root url                       | `https://oauth2-proxy.lan`                 |
-| home url                       | `https://oauth2-proxy.lan`                 |
-| valid redirect uris            | `https://oauth2-proxy.lan/oauth2/callback` |
-| valid post logout redirect uris| `https://oauth2-proxy.lan`                 |
-| web origins                    | `https://oauth2-proxy.lan`                 |
+| field                           | value                                      |
+| ------------------------------- | ------------------------------------------ |
+| root url                        | `https://oauth2-proxy.lan`                 |
+| home url                        | `https://oauth2-proxy.lan`                 |
+| valid redirect uris             | `https://oauth2-proxy.lan/oauth2/callback` |
+| valid post logout redirect uris | `https://oauth2-proxy.lan`                 |
+| web origins                     | `https://oauth2-proxy.lan`                 |
 
 for each client:
 
@@ -323,7 +323,7 @@ create at least one user and assign to the appropriate groups. the user must ver
 
 after your own admin user is working, delete the temporary bootstrap account:
 
-1. in keycloak admin ui: **users** → delete the `temp-admin` user (or whatever the initial admin username was)
+1. in keycloak admin ui: **users** -> delete the `temp-admin` user (or whatever the initial admin username was)
 2. delete the operator-generated secret:
 
     ```bash
@@ -396,8 +396,8 @@ annotate workloads to auto-restart when their referenced secrets or configmaps c
 
 ```yaml
 metadata:
-  annotations:
-    reloader.stakater.com/auto: "true"
+    annotations:
+        reloader.stakater.com/auto: "true"
 ```
 
 ### watching specific resources
@@ -406,25 +406,25 @@ to only reload when specific labeled resources change:
 
 ```yaml
 metadata:
-  annotations:
-    reloader.stakater.com/search: "true"
+    annotations:
+        reloader.stakater.com/search: "true"
 ```
 
 then label the secret or configmap:
 
 ```yaml
 metadata:
-  labels:
-    reloader.stakater.com/match: "true"
+    labels:
+        reloader.stakater.com/match: "true"
 ```
 
 to watch a specific secret or configmap by name:
 
 ```yaml
 metadata:
-  annotations:
-    secret.reloader.stakater.com/reload: "my-secret"
-    configmap.reloader.stakater.com/reload: "my-configmap"
+    annotations:
+        secret.reloader.stakater.com/reload: "my-secret"
+        configmap.reloader.stakater.com/reload: "my-configmap"
 ```
 
 multiple resources can be comma-separated:
@@ -457,26 +457,26 @@ kubectl rollout history deployment/<name> -n <namespace>
     apiVersion: traefik.io/v1alpha1
     kind: Middleware
     metadata:
-      name: oauth2-proxy-auth
-      namespace: <app-namespace>
+        name: oauth2-proxy-auth
+        namespace: <app-namespace>
     spec:
-      forwardAuth:
-        address: http://oauth2-proxy.auth.svc.cluster.local/
-        trustForwardHeader: true
-        authResponseHeaders:
-          - X-Auth-Request-User
-          - X-Auth-Request-Email
+        forwardAuth:
+            address: http://oauth2-proxy.auth.svc.cluster.local/
+            trustForwardHeader: true
+            authResponseHeaders:
+                - X-Auth-Request-User
+                - X-Auth-Request-Email
     ```
 
 2. add an `extensionRef` filter to the app's HTTPRoute:
 
     ```yaml
     filters:
-      - type: ExtensionRef
-        extensionRef:
-          group: traefik.io
-          kind: Middleware
-          name: oauth2-proxy-auth
+        - type: ExtensionRef
+          extensionRef:
+              group: traefik.io
+              kind: Middleware
+              name: oauth2-proxy-auth
     ```
 
 3. create the keycloak client for oauth2-proxy if not already done (see [keycloak configuration](#6-keycloak-configuration))

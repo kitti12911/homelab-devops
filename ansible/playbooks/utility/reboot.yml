@@ -3,8 +3,8 @@
   become: true
 
   tasks:
-    - name: Reboot the host
-      ansible.builtin.reboot:
-        msg: "Reboot triggered by Ansible"
-        connect_timeout: 5
-        reboot_timeout: 300
+      - name: Reboot the host
+        ansible.builtin.reboot:
+            msg: "Reboot triggered by Ansible"
+            connect_timeout: 5
+            reboot_timeout: 300

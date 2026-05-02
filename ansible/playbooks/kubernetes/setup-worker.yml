@@ -4,36 +4,36 @@
   gather_facts: false
 
   tasks:
-    - name: Read node token from master
-      ansible.builtin.slurp:
-        src: /var/lib/rancher/k3s/server/node-token
-      register: k3s_token_slurp
+      - name: Read node token from master
+        ansible.builtin.slurp:
+            src: /var/lib/rancher/k3s/server/node-token
+        register: k3s_token_slurp
 
-    - name: Set K3s node token fact
-      ansible.builtin.set_fact:
-        k3s_node_token: "{{ (k3s_token_slurp.content | b64decode) | trim }}"
-      run_once: true
+      - name: Set K3s node token fact
+        ansible.builtin.set_fact:
+            k3s_node_token: "{{ (k3s_token_slurp.content | b64decode) | trim }}"
+        run_once: true
 
 - name: Install K3s agent on workers
   hosts: worker
   become: true
 
   vars:
-    k3s_master_url: "https://{{ hostvars[groups['master'][0]].ansible_host }}:6443"
-    k3s_token: "{{ hostvars[groups['master'][0]].k3s_node_token }}"
+      k3s_master_url: "https://{{ hostvars[groups['master'][0]].ansible_host }}:6443"
+      k3s_token: "{{ hostvars[groups['master'][0]].k3s_node_token }}"
 
   tasks:
-    - name: Check if K3s is already installed
-      ansible.builtin.stat:
-        path: /usr/local/bin/k3s
-      register: k3s_installed
+      - name: Check if K3s is already installed
+        ansible.builtin.stat:
+            path: /usr/local/bin/k3s
+        register: k3s_installed
 
-    - name: Install K3s agent
-      ansible.builtin.shell: |
-        curl -sfL https://get.k3s.io | K3S_URL={{ k3s_master_url }} K3S_TOKEN={{ k3s_token }} sh -
-      args:
-        creates: /usr/local/bin/k3s
-      when: not k3s_installed.stat.exists
+      - name: Install K3s agent
+        ansible.builtin.shell: |
+            curl -sfL https://get.k3s.io | K3S_URL={{ k3s_master_url }} K3S_TOKEN={{ k3s_token }} sh -
+        args:
+            creates: /usr/local/bin/k3s
+        when: not k3s_installed.stat.exists
 
 - name: Wait until all worker nodes are Ready
   hosts: master
@@ -41,31 +41,31 @@
   gather_facts: false
 
   vars:
-    worker_names: "{{ groups['worker'] | join(',') }}"
+      worker_names: "{{ groups['worker'] | join(',') }}"
 
   tasks:
-    - name: Check that all worker nodes are Ready
-      ansible.builtin.shell: |
-        /usr/local/bin/k3s kubectl get nodes --no-headers |
-          awk -v workers="{{ worker_names }}" '
-            BEGIN { n = split(workers, w, ","); for (i=1;i<=n;i++) want[w[i]]=1 }
-            $2 == "Ready" && $1 in want { delete want[$1] }
-            END { exit (length(want) > 0) }
-          '
-      register: workers_ready
-      until: workers_ready.rc == 0
-      retries: 24
-      delay: 10
-      failed_when: false
+      - name: Check that all worker nodes are Ready
+        ansible.builtin.shell: |
+            /usr/local/bin/k3s kubectl get nodes --no-headers |
+              awk -v workers="{{ worker_names }}" '
+                BEGIN { n = split(workers, w, ","); for (i=1;i<=n;i++) want[w[i]]=1 }
+                $2 == "Ready" && $1 in want { delete want[$1] }
+                END { exit (length(want) > 0) }
+              '
+        register: workers_ready
+        until: workers_ready.rc == 0
+        retries: 24
+        delay: 10
+        failed_when: false
 
-    - name: Fail if workers did not become Ready
-      ansible.builtin.fail:
-        msg: "Not all worker nodes are Ready after 4 minutes. Run 'k3s kubectl get nodes' on master to inspect."
-      when: workers_ready.rc != 0
+      - name: Fail if workers did not become Ready
+        ansible.builtin.fail:
+            msg: "Not all worker nodes are Ready after 4 minutes. Run 'k3s kubectl get nodes' on master to inspect."
+        when: workers_ready.rc != 0
 
-    - name: Show node status
-      ansible.builtin.command: /usr/local/bin/k3s kubectl get nodes
-      changed_when: false
+      - name: Show node status
+        ansible.builtin.command: /usr/local/bin/k3s kubectl get nodes
+        changed_when: false
 
 - name: Label and taint dedicated nodes
   hosts: master
@@ -73,23 +73,23 @@
   gather_facts: false
 
   tasks:
-    - name: Label and taint database nodes
-      ansible.builtin.shell: |
-        /usr/local/bin/k3s kubectl label node {{ item }} node-role.kubernetes.io/database=true --overwrite
-        /usr/local/bin/k3s kubectl taint node {{ item }} dedicated=database:NoSchedule --overwrite
-      loop: "{{ groups['database'] }}"
-      when: groups['database'] | length > 0
+      - name: Label and taint database nodes
+        ansible.builtin.shell: |
+            /usr/local/bin/k3s kubectl label node {{ item }} node-role.kubernetes.io/database=true --overwrite
+            /usr/local/bin/k3s kubectl taint node {{ item }} dedicated=database:NoSchedule --overwrite
+        loop: "{{ groups['database'] }}"
+        when: groups['database'] | length > 0
 
-    - name: Remove object-storage label and taint from all worker nodes (cleanup before reapply)
-      ansible.builtin.shell: |
-        /usr/local/bin/k3s kubectl label node {{ item }} node-role.kubernetes.io/object-storage- 2>/dev/null || true
-        /usr/local/bin/k3s kubectl taint node {{ item }} dedicated=object-storage:NoSchedule- 2>/dev/null || true
-      loop: "{{ groups['worker'] }}"
-      ignore_errors: true
-      changed_when: false
+      - name: Remove object-storage label and taint from all worker nodes (cleanup before reapply)
+        ansible.builtin.shell: |
+            /usr/local/bin/k3s kubectl label node {{ item }} node-role.kubernetes.io/object-storage- 2>/dev/null || true
+            /usr/local/bin/k3s kubectl taint node {{ item }} dedicated=object-storage:NoSchedule- 2>/dev/null || true
+        loop: "{{ groups['worker'] }}"
+        ignore_errors: true
+        changed_when: false
 
-    - name: Label and taint object storage nodes
-      ansible.builtin.shell: |
-        /usr/local/bin/k3s kubectl label node {{ item }} node-role.kubernetes.io/object-storage=true --overwrite
-        /usr/local/bin/k3s kubectl taint node {{ item }} dedicated=object-storage:NoSchedule --overwrite
-      loop: "{{ object_storage_nodes }}"
+      - name: Label and taint object storage nodes
+        ansible.builtin.shell: |
+            /usr/local/bin/k3s kubectl label node {{ item }} node-role.kubernetes.io/object-storage=true --overwrite
+            /usr/local/bin/k3s kubectl taint node {{ item }} dedicated=object-storage:NoSchedule --overwrite
+        loop: "{{ object_storage_nodes }}"

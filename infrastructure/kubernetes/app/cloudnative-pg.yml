@@ -1,37 +1,37 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: cloudnative-pg
-  namespace: argocd
+    name: cloudnative-pg
+    namespace: argocd
 spec:
-  project: database
-  source:
-    repoURL: https://cloudnative-pg.github.io/charts
-    chart: cloudnative-pg
-    targetRevision: "0.28.0"
-    helm:
-      valuesObject:
-        nodeSelector:
-          node-role.kubernetes.io/control-plane: "true"
+    project: database
+    source:
+        repoURL: https://cloudnative-pg.github.io/charts
+        chart: cloudnative-pg
+        targetRevision: "0.28.0"
+        helm:
+            valuesObject:
+                nodeSelector:
+                    node-role.kubernetes.io/control-plane: "true"
 
-        tolerations:
-          - key: node-role.kubernetes.io/control-plane
-            operator: Exists
-            effect: NoSchedule
-          - key: node-role.kubernetes.io/master
-            operator: Exists
-            effect: NoSchedule
+                tolerations:
+                    - key: node-role.kubernetes.io/control-plane
+                      operator: Exists
+                      effect: NoSchedule
+                    - key: node-role.kubernetes.io/master
+                      operator: Exists
+                      effect: NoSchedule
 
-        resources:
-          requests:
-            cpu: 50m
-            memory: 128Mi
-          limits:
-            memory: 256Mi
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: cnpg-system
-  syncPolicy:
-    syncOptions:
-      - CreateNamespace=true
-      - ServerSideApply=true
+                resources:
+                    requests:
+                        cpu: 50m
+                        memory: 128Mi
+                    limits:
+                        memory: 256Mi
+    destination:
+        server: https://kubernetes.default.svc
+        namespace: cnpg-system
+    syncPolicy:
+        syncOptions:
+            - CreateNamespace=true
+            - ServerSideApply=true

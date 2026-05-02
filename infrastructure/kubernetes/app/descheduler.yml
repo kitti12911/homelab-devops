@@ -1,68 +1,68 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: descheduler
-  namespace: argocd
+    name: descheduler
+    namespace: argocd
 spec:
-  project: platform
-  sources:
-    - repoURL: https://kubernetes-sigs.github.io/descheduler/
-      chart: descheduler
-      targetRevision: "0.35.1"
-      helm:
-        valuesObject:
-          schedule: "*/10 * * * *"
-          successfulJobsHistoryLimit: 1
-          failedJobsHistoryLimit: 1
+    project: platform
+    sources:
+        - repoURL: https://kubernetes-sigs.github.io/descheduler/
+          chart: descheduler
+          targetRevision: "0.35.1"
+          helm:
+              valuesObject:
+                  schedule: "*/10 * * * *"
+                  successfulJobsHistoryLimit: 1
+                  failedJobsHistoryLimit: 1
 
-          nodeSelector:
-            node-role.kubernetes.io/control-plane: "true"
+                  nodeSelector:
+                      node-role.kubernetes.io/control-plane: "true"
 
-          tolerations:
-            - key: node-role.kubernetes.io/control-plane
-              operator: Exists
-              effect: NoSchedule
+                  tolerations:
+                      - key: node-role.kubernetes.io/control-plane
+                        operator: Exists
+                        effect: NoSchedule
 
-          resources:
-            requests:
-              cpu: 10m
-              memory: 64Mi
-            limits:
-              memory: 128Mi
+                  resources:
+                      requests:
+                          cpu: 10m
+                          memory: 64Mi
+                      limits:
+                          memory: 128Mi
 
-          deschedulerPolicy:
-            profiles:
-              - name: default
-                pluginConfig:
-                  - name: DefaultEvictor
-                    args:
-                      ignorePvcPods: false
-                      evictLocalStoragePods: false
-                      nodeFit: true
-                  - name: RemoveDuplicates
-                  - name: LowNodeUtilization
-                    args:
-                      thresholds:
-                        cpu: 20
-                        memory: 15
-                        pods: 20
-                      targetThresholds:
-                        cpu: 45
-                        memory: 40
-                        pods: 50
-                  - name: RemovePodsViolatingTopologySpreadConstraint
-                plugins:
-                  balance:
-                    enabled:
-                      - RemoveDuplicates
-                      - LowNodeUtilization
-                      - RemovePodsViolatingTopologySpreadConstraint
-    - repoURL: git@github.com:kitti12911/homelab-devops.git
-      targetRevision: main
-      path: infrastructure/kubernetes/app/descheduler-manifests
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: kube-system
-  syncPolicy:
-    syncOptions:
-      - CreateNamespace=true
+                  deschedulerPolicy:
+                      profiles:
+                          - name: default
+                            pluginConfig:
+                                - name: DefaultEvictor
+                                  args:
+                                      ignorePvcPods: false
+                                      evictLocalStoragePods: false
+                                      nodeFit: true
+                                - name: RemoveDuplicates
+                                - name: LowNodeUtilization
+                                  args:
+                                      thresholds:
+                                          cpu: 20
+                                          memory: 15
+                                          pods: 20
+                                      targetThresholds:
+                                          cpu: 45
+                                          memory: 40
+                                          pods: 50
+                                - name: RemovePodsViolatingTopologySpreadConstraint
+                            plugins:
+                                balance:
+                                    enabled:
+                                        - RemoveDuplicates
+                                        - LowNodeUtilization
+                                        - RemovePodsViolatingTopologySpreadConstraint
+        - repoURL: git@github.com:kitti12911/homelab-devops.git
+          targetRevision: main
+          path: infrastructure/kubernetes/app/descheduler-manifests
+    destination:
+        server: https://kubernetes.default.svc
+        namespace: kube-system
+    syncPolicy:
+        syncOptions:
+            - CreateNamespace=true

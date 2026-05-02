@@ -1,4 +1,4 @@
-hw_board: "Apple Mac"   # update to e.g. "Apple MacBook Pro M3" if desired
+hw_board: "Apple Mac" # update to e.g. "Apple MacBook Pro M3" if desired
 hw_network: "1Gbps Ethernet / WiFi"
 
 # --- macOS load-testing tuning values ---

@@ -16,12 +16,12 @@ project.
 
 ## Stack Coverage
 
-| Stack      | Lint              | Type Check | Tests           | Security              |
-| ---------- | ----------------- | ---------- | --------------- | --------------------- |
-| Go         | golangci-lint     | go vet     | go test -race   | govulncheck, Trivy    |
-| TypeScript | ESLint or oxlint  | tsc        | Vitest or Jest  | OSV, Trivy, Socket    |
-| Markdown   | markdownlint-cli2 | n/a        | n/a             | CODEOWNERS            |
-| Shared     | Gitleaks, Semgrep | n/a        | optional smoke  | Renovate              |
+| Stack      | Lint              | Type Check | Tests          | Security           |
+| ---------- | ----------------- | ---------- | -------------- | ------------------ |
+| Go         | golangci-lint     | go vet     | go test -race  | govulncheck, Trivy |
+| TypeScript | ESLint or oxlint  | tsc        | Vitest or Jest | OSV, Trivy, Socket |
+| Markdown   | markdownlint-cli2 | n/a        | n/a            | CODEOWNERS         |
+| Shared     | Gitleaks, Semgrep | n/a        | optional smoke | Renovate           |
 
 ## Action Pins
 
@@ -66,137 +66,137 @@ libraries.
 name: Go CI
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/go-ci.yml"
-      - ".golangci.yml"
-      - "Dockerfile"
-      - "Makefile"
-      - "go.mod"
-      - "go.sum"
-      - "**/*.go"
-  pull_request:
-    paths:
-      - ".github/workflows/go-ci.yml"
-      - ".golangci.yml"
-      - "Dockerfile"
-      - "Makefile"
-      - "go.mod"
-      - "go.sum"
-      - "**/*.go"
+    push:
+        branches:
+            - main
+        paths:
+            - ".github/workflows/go-ci.yml"
+            - ".golangci.yml"
+            - "Dockerfile"
+            - "Makefile"
+            - "go.mod"
+            - "go.sum"
+            - "**/*.go"
+    pull_request:
+        paths:
+            - ".github/workflows/go-ci.yml"
+            - ".golangci.yml"
+            - "Dockerfile"
+            - "Makefile"
+            - "go.mod"
+            - "go.sum"
+            - "**/*.go"
 
 permissions:
-  contents: read
+    contents: read
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      # actions/checkout v6.0.2
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    lint:
+        name: Lint
+        runs-on: ubuntu-latest
+        steps:
+            # actions/checkout v6.0.2
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      # actions/setup-go v6.4.0
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
-        with:
-          go-version-file: go.mod
-          cache: true
+            # actions/setup-go v6.4.0
+            - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+              with:
+                  go-version-file: go.mod
+                  cache: true
 
-      - name: Go vet
-        run: go vet ./...
+            - name: Go vet
+              run: go vet ./...
 
-      # golangci/golangci-lint-action v9.2.0
-      - uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20
-        with:
-          version: v2.12.1
-          args: --timeout=5m
+            # golangci/golangci-lint-action v9.2.0
+            - uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20
+              with:
+                  version: v2.12.1
+                  args: --timeout=5m
 
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      # actions/checkout v6.0.2
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    test:
+        name: Test
+        runs-on: ubuntu-latest
+        steps:
+            # actions/checkout v6.0.2
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      # actions/setup-go v6.4.0
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
-        with:
-          go-version-file: go.mod
-          cache: true
+            # actions/setup-go v6.4.0
+            - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+              with:
+                  go-version-file: go.mod
+                  cache: true
 
-      - name: Test with race detector and coverage
-        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+            - name: Test with race detector and coverage
+              run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
 
-      # codecov/codecov-action v6.0.0
-      - uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2
-        with:
-          files: coverage.out
-          token: ${{ secrets.CODECOV_TOKEN }}
+            # codecov/codecov-action v6.0.0
+            - uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2
+              with:
+                  files: coverage.out
+                  token: ${{ secrets.CODECOV_TOKEN }}
 
-  security:
-    name: Security
-    runs-on: ubuntu-latest
-    steps:
-      # actions/checkout v6.0.2
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-        with:
-          fetch-depth: 0
+    security:
+        name: Security
+        runs-on: ubuntu-latest
+        steps:
+            # actions/checkout v6.0.2
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+              with:
+                  fetch-depth: 0
 
-      # actions/setup-go v6.4.0
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
-        with:
-          go-version-file: go.mod
-          cache: true
+            # actions/setup-go v6.4.0
+            - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+              with:
+                  go-version-file: go.mod
+                  cache: true
 
-      - name: govulncheck
-        run: |
-          go install golang.org/x/vuln/cmd/govulncheck@v1.3.0
-          govulncheck ./...
+            - name: govulncheck
+              run: |
+                  go install golang.org/x/vuln/cmd/govulncheck@v1.3.0
+                  govulncheck ./...
 
-      # aquasecurity/trivy-action v0.36.0
-      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
-        with:
-          scan-type: fs
-          scan-ref: .
-          scanners: vuln,secret,misconfig
-          exit-code: 1
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
+            # aquasecurity/trivy-action v0.36.0
+            - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+              with:
+                  scan-type: fs
+                  scan-ref: .
+                  scanners: vuln,secret,misconfig
+                  exit-code: 1
+                  severity: CRITICAL,HIGH
+                  ignore-unfixed: true
 
-      # gitleaks/gitleaks-action v2.3.9
-      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            # gitleaks/gitleaks-action v2.3.9
+            - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Semgrep
-        run: |
-          python3 -m pip install --user semgrep==1.161.0
-          ~/.local/bin/semgrep scan --config=p/golang --config=p/secrets --error
+            - name: Semgrep
+              run: |
+                  python3 -m pip install --user semgrep==1.161.0
+                  ~/.local/bin/semgrep scan --config=p/golang --config=p/secrets --error
 
-  build:
-    name: Build and Container Scan
-    runs-on: ubuntu-latest
-    needs:
-      - lint
-      - test
-      - security
-    if: github.ref == 'refs/heads/main'
-    steps:
-      # actions/checkout v6.0.2
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    build:
+        name: Build and Container Scan
+        runs-on: ubuntu-latest
+        needs:
+            - lint
+            - test
+            - security
+        if: github.ref == 'refs/heads/main'
+        steps:
+            # actions/checkout v6.0.2
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - name: Build Docker image
-        run: docker build -t ${{ github.repository }}:${{ github.sha }} .
+            - name: Build Docker image
+              run: docker build -t ${{ github.repository }}:${{ github.sha }} .
 
-      # aquasecurity/trivy-action v0.36.0
-      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
-        with:
-          image-ref: ${{ github.repository }}:${{ github.sha }}
-          format: table
-          exit-code: 1
-          severity: CRITICAL,HIGH
+            # aquasecurity/trivy-action v0.36.0
+            - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+              with:
+                  image-ref: ${{ github.repository }}:${{ github.sha }}
+                  format: table
+                  exit-code: 1
+                  severity: CRITICAL,HIGH
 ```
 
 ### Recommended `.golangci.yml`
@@ -207,142 +207,142 @@ This uses golangci-lint v2 config format.
 version: "2"
 
 run:
-  timeout: 5m
+    timeout: 5m
 
 linters:
-  enable:
-    - bodyclose
-    - cyclop
-    - errcheck
-    - errorlint
-    - exhaustive
-    - gocritic
-    - godot
-    - gosec
-    - govet
-    - ineffassign
-    - misspell
-    - nilerr
-    - noctx
-    - prealloc
-    - revive
-    - sqlclosecheck
-    - staticcheck
-    - unconvert
-    - unparam
-    - unused
-    - wrapcheck
+    enable:
+        - bodyclose
+        - cyclop
+        - errcheck
+        - errorlint
+        - exhaustive
+        - gocritic
+        - godot
+        - gosec
+        - govet
+        - ineffassign
+        - misspell
+        - nilerr
+        - noctx
+        - prealloc
+        - revive
+        - sqlclosecheck
+        - staticcheck
+        - unconvert
+        - unparam
+        - unused
+        - wrapcheck
 
-  settings:
-    cyclop:
-      max-complexity: 15
-      skip-tests: true
+    settings:
+        cyclop:
+            max-complexity: 15
+            skip-tests: true
 
-    exhaustive:
-      default-signifies-exhaustive: true
+        exhaustive:
+            default-signifies-exhaustive: true
 
-    gocritic:
-      enabled-tags:
-        - diagnostic
-        - performance
-        - style
-      disabled-checks:
-        - hugeParam
-        - rangeValCopy
+        gocritic:
+            enabled-tags:
+                - diagnostic
+                - performance
+                - style
+            disabled-checks:
+                - hugeParam
+                - rangeValCopy
 
-    gosec:
-      excludes:
-        - G404
+        gosec:
+            excludes:
+                - G404
 
-    govet:
-      enable-all: true
+        govet:
+            enable-all: true
 
-    misspell:
-      locale: US
+        misspell:
+            locale: US
 
-    revive:
-      rules:
-        - name: exported
-          arguments:
-            - disableStutteringCheck
-        - name: var-naming
-        - name: blank-imports
-        - name: context-as-argument
-        - name: error-return
-        - name: error-strings
-        - name: increment-decrement
-        - name: range
-        - name: receiver-naming
-        - name: unused-parameter
-          disabled: true
+        revive:
+            rules:
+                - name: exported
+                  arguments:
+                      - disableStutteringCheck
+                - name: var-naming
+                - name: blank-imports
+                - name: context-as-argument
+                - name: error-return
+                - name: error-strings
+                - name: increment-decrement
+                - name: range
+                - name: receiver-naming
+                - name: unused-parameter
+                  disabled: true
 
-    unparam:
-      check-exported: false
+        unparam:
+            check-exported: false
 
-    wrapcheck:
-      ignore-package-globs:
-        - google.golang.org/grpc/status
-      ignore-sigs:
-        - .Errorf(
-        - errors.New(
-        - errors.Unwrap(
-        - errors.Join(
-        - .Wrap(
-        - .Wrapf(
-        - .WithMessage(
-        - .WithMessagef(
-        - .WithStack(
+        wrapcheck:
+            ignore-package-globs:
+                - google.golang.org/grpc/status
+            ignore-sigs:
+                - .Errorf(
+                - errors.New(
+                - errors.Unwrap(
+                - errors.Join(
+                - .Wrap(
+                - .Wrapf(
+                - .WithMessage(
+                - .WithMessagef(
+                - .WithStack(
 
-  exclusions:
-    generated: lax
-    presets:
-      - comments
-      - common-false-positives
-      - legacy
-      - std-error-handling
-    rules:
-      - path: \.pb\.go$
-        linters:
-          - cyclop
-          - exhaustive
-          - gocritic
-          - godot
-          - revive
-          - wrapcheck
-      - path: graph/generated/.*\.go$
-        linters:
-          - cyclop
-          - gocritic
-          - godot
-          - wrapcheck
-      - path: _test\.go$
-        linters:
-          - errcheck
-          - godot
-          - wrapcheck
+    exclusions:
+        generated: lax
+        presets:
+            - comments
+            - common-false-positives
+            - legacy
+            - std-error-handling
+        rules:
+            - path: \.pb\.go$
+              linters:
+                  - cyclop
+                  - exhaustive
+                  - gocritic
+                  - godot
+                  - revive
+                  - wrapcheck
+            - path: graph/generated/.*\.go$
+              linters:
+                  - cyclop
+                  - gocritic
+                  - godot
+                  - wrapcheck
+            - path: _test\.go$
+              linters:
+                  - errcheck
+                  - godot
+                  - wrapcheck
 
 formatters:
-  enable:
-    - gofmt
-    - goimports
-  settings:
-    goimports:
-      local-prefixes:
-        - github.com/kitti12911
+    enable:
+        - gofmt
+        - goimports
+    settings:
+        goimports:
+            local-prefixes:
+                - github.com/kitti12911
 
 issues:
-  max-issues-per-linter: 0
-  max-same-issues: 0
+    max-issues-per-linter: 0
+    max-same-issues: 0
 ```
 
 ### Go Linter Tiers
 
-| Tier       | Linters                                      |
-| ---------- | -------------------------------------------- |
-| Required   | govet, errcheck, staticcheck, gosec          |
-| Strong     | bodyclose, nilerr, errorlint, wrapcheck      |
-| Quality    | gocritic, revive, unused, misspell           |
-| Optional   | cyclop, exhaustive, prealloc, unconvert      |
+| Tier     | Linters                                 |
+| -------- | --------------------------------------- |
+| Required | govet, errcheck, staticcheck, gosec     |
+| Strong   | bodyclose, nilerr, errorlint, wrapcheck |
+| Quality  | gocritic, revive, unused, misspell      |
+| Optional | cyclop, exhaustive, prealloc, unconvert |
 
 Keep `gochecknoglobals` out of the default app profile. It is useful for strict
 library packages, but it is noisy for real services with config, metrics,
@@ -359,170 +359,170 @@ Prefer the package manager already used by the project. The example below uses
 name: TypeScript CI
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/ts-ci.yml"
-      - "Dockerfile"
-      - "package.json"
-      - "package-lock.json"
-      - "tsconfig*.json"
-      - "vite.config.*"
-      - "vitest.config.*"
-      - "eslint.config.*"
-      - ".oxlintrc*"
-      - "src/**"
-      - "test/**"
-      - "tests/**"
-  pull_request:
-    paths:
-      - ".github/workflows/ts-ci.yml"
-      - "Dockerfile"
-      - "package.json"
-      - "package-lock.json"
-      - "tsconfig*.json"
-      - "vite.config.*"
-      - "vitest.config.*"
-      - "eslint.config.*"
-      - ".oxlintrc*"
-      - "src/**"
-      - "test/**"
-      - "tests/**"
+    push:
+        branches:
+            - main
+        paths:
+            - ".github/workflows/ts-ci.yml"
+            - "Dockerfile"
+            - "package.json"
+            - "package-lock.json"
+            - "tsconfig*.json"
+            - "vite.config.*"
+            - "vitest.config.*"
+            - "eslint.config.*"
+            - ".oxlintrc*"
+            - "src/**"
+            - "test/**"
+            - "tests/**"
+    pull_request:
+        paths:
+            - ".github/workflows/ts-ci.yml"
+            - "Dockerfile"
+            - "package.json"
+            - "package-lock.json"
+            - "tsconfig*.json"
+            - "vite.config.*"
+            - "vitest.config.*"
+            - "eslint.config.*"
+            - ".oxlintrc*"
+            - "src/**"
+            - "test/**"
+            - "tests/**"
 
 permissions:
-  contents: read
+    contents: read
 
 jobs:
-  lint-and-typecheck:
-    name: Lint and Type Check
-    runs-on: ubuntu-latest
-    steps:
-      # actions/checkout v6.0.2
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    lint-and-typecheck:
+        name: Lint and Type Check
+        runs-on: ubuntu-latest
+        steps:
+            # actions/checkout v6.0.2
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      # actions/setup-node v6.4.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
-        with:
-          node-version-file: .nvmrc
-          cache: npm
+            # actions/setup-node v6.4.0
+            - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              with:
+                  node-version-file: .nvmrc
+                  cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+            - name: Install dependencies
+              run: npm ci
 
-      - name: Type check
-        run: npm run typecheck --if-present
+            - name: Type check
+              run: npm run typecheck --if-present
 
-      - name: ESLint
-        run: npm run lint --if-present
+            - name: ESLint
+              run: npm run lint --if-present
 
-      - name: oxlint
-        run: npm run lint:ox --if-present
+            - name: oxlint
+              run: npm run lint:ox --if-present
 
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      # actions/checkout v6.0.2
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    test:
+        name: Test
+        runs-on: ubuntu-latest
+        steps:
+            # actions/checkout v6.0.2
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      # actions/setup-node v6.4.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
-        with:
-          node-version-file: .nvmrc
-          cache: npm
+            # actions/setup-node v6.4.0
+            - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              with:
+                  node-version-file: .nvmrc
+                  cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+            - name: Install dependencies
+              run: npm ci
 
-      - name: Test
-        run: npm run test --if-present -- --coverage
+            - name: Test
+              run: npm run test --if-present -- --coverage
 
-      # codecov/codecov-action v6.0.0
-      - uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+            # codecov/codecov-action v6.0.0
+            - uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2
+              with:
+                  token: ${{ secrets.CODECOV_TOKEN }}
 
-  security:
-    name: Security
-    runs-on: ubuntu-latest
-    steps:
-      # actions/checkout v6.0.2
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-        with:
-          fetch-depth: 0
+    security:
+        name: Security
+        runs-on: ubuntu-latest
+        steps:
+            # actions/checkout v6.0.2
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+              with:
+                  fetch-depth: 0
 
-      # actions/setup-node v6.4.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
-        with:
-          node-version-file: .nvmrc
-          cache: npm
+            # actions/setup-node v6.4.0
+            - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              with:
+                  node-version-file: .nvmrc
+                  cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+            - name: Install dependencies
+              run: npm ci
 
-      # google/osv-scanner-action v2.3.5
-      - uses: google/osv-scanner-action/osv-scanner-action@c51854704019a247608d928f370c98740469d4b5
-        with:
-          scan-args: |-
-            --lockfile=package-lock.json
-            --recursive
-            ./
+            # google/osv-scanner-action v2.3.5
+            - uses: google/osv-scanner-action/osv-scanner-action@c51854704019a247608d928f370c98740469d4b5
+              with:
+                  scan-args: |-
+                      --lockfile=package-lock.json
+                      --recursive
+                      ./
 
-      # aquasecurity/trivy-action v0.36.0
-      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
-        with:
-          scan-type: fs
-          scan-ref: .
-          scanners: vuln,secret,misconfig
-          exit-code: 1
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
+            # aquasecurity/trivy-action v0.36.0
+            - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+              with:
+                  scan-type: fs
+                  scan-ref: .
+                  scanners: vuln,secret,misconfig
+                  exit-code: 1
+                  severity: CRITICAL,HIGH
+                  ignore-unfixed: true
 
-      # gitleaks/gitleaks-action v2.3.9
-      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            # gitleaks/gitleaks-action v2.3.9
+            - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Semgrep
-        run: |
-          python3 -m pip install --user semgrep==1.161.0
-          ~/.local/bin/semgrep scan --config=p/typescript --config=p/secrets --error
+            - name: Semgrep
+              run: |
+                  python3 -m pip install --user semgrep==1.161.0
+                  ~/.local/bin/semgrep scan --config=p/typescript --config=p/secrets --error
 
-  build:
-    name: Build and Container Scan
-    runs-on: ubuntu-latest
-    needs:
-      - lint-and-typecheck
-      - test
-      - security
-    if: github.ref == 'refs/heads/main'
-    steps:
-      # actions/checkout v6.0.2
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    build:
+        name: Build and Container Scan
+        runs-on: ubuntu-latest
+        needs:
+            - lint-and-typecheck
+            - test
+            - security
+        if: github.ref == 'refs/heads/main'
+        steps:
+            # actions/checkout v6.0.2
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      # actions/setup-node v6.4.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
-        with:
-          node-version-file: .nvmrc
-          cache: npm
+            # actions/setup-node v6.4.0
+            - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              with:
+                  node-version-file: .nvmrc
+                  cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+            - name: Install dependencies
+              run: npm ci
 
-      - name: Build app
-        run: npm run build --if-present
+            - name: Build app
+              run: npm run build --if-present
 
-      - name: Build Docker image
-        run: docker build -t ${{ github.repository }}:${{ github.sha }} .
+            - name: Build Docker image
+              run: docker build -t ${{ github.repository }}:${{ github.sha }} .
 
-      # aquasecurity/trivy-action v0.36.0
-      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
-        with:
-          image-ref: ${{ github.repository }}:${{ github.sha }}
-          format: table
-          exit-code: 1
-          severity: CRITICAL,HIGH
+            # aquasecurity/trivy-action v0.36.0
+            - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+              with:
+                  image-ref: ${{ github.repository }}:${{ github.sha }}
+                  format: table
+                  exit-code: 1
+                  severity: CRITICAL,HIGH
 ```
 
 ### TypeScript Notes
@@ -541,15 +541,15 @@ Add `.github/renovate.json`:
 
 ```json
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
-  "timezone": "Asia/Bangkok",
-  "schedule": ["* 0-4 1 * *"],
-  "updateNotScheduled": false,
-  "enabledManagers": ["gomod", "npm", "github-actions"],
-  "reviewersFromCodeOwners": true,
-  "assigneesFromCodeOwners": true,
-  "assignAutomerge": true
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": ["config:recommended"],
+    "timezone": "Asia/Bangkok",
+    "schedule": ["* 0-4 1 * *"],
+    "updateNotScheduled": false,
+    "enabledManagers": ["gomod", "npm", "github-actions"],
+    "reviewersFromCodeOwners": true,
+    "assigneesFromCodeOwners": true,
+    "assignAutomerge": true
 }
 ```
 
@@ -568,15 +568,11 @@ Add `.markdownlint-cli2.jsonc`:
 
 ```jsonc
 {
-  "config": {
-    "MD013": false
-  },
-  "globs": [
-    "**/*.{md,markdown}"
-  ],
-  "ignores": [
-    ".cursor/**"
-  ]
+    "config": {
+        "MD013": false,
+    },
+    "globs": ["**/*.{md,markdown}"],
+    "ignores": [".cursor/**"],
 }
 ```
 
@@ -586,36 +582,36 @@ Add `.github/workflows/markdownlint.yml`:
 name: Markdownlint
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/markdownlint.yml"
-      - ".markdownlint-cli2.*"
-      - ".markdownlint.*"
-      - "**/*.md"
-      - "**/*.markdown"
-  pull_request:
-    paths:
-      - ".github/workflows/markdownlint.yml"
-      - ".markdownlint-cli2.*"
-      - ".markdownlint.*"
-      - "**/*.md"
-      - "**/*.markdown"
+    push:
+        branches:
+            - main
+        paths:
+            - ".github/workflows/markdownlint.yml"
+            - ".markdownlint-cli2.*"
+            - ".markdownlint.*"
+            - "**/*.md"
+            - "**/*.markdown"
+    pull_request:
+        paths:
+            - ".github/workflows/markdownlint.yml"
+            - ".markdownlint-cli2.*"
+            - ".markdownlint.*"
+            - "**/*.md"
+            - "**/*.markdown"
 
 permissions:
-  contents: read
+    contents: read
 
 jobs:
-  markdownlint:
-    name: Markdownlint
-    runs-on: ubuntu-latest
-    steps:
-      # actions/checkout v6.0.2
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    markdownlint:
+        name: Markdownlint
+        runs-on: ubuntu-latest
+        steps:
+            # actions/checkout v6.0.2
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      # DavidAnson/markdownlint-cli2-action v23.1.0
-      - uses: DavidAnson/markdownlint-cli2-action@6b51ade7a9e4a75a7ad929842dd298a3804ebe8b
+            # DavidAnson/markdownlint-cli2-action v23.1.0
+            - uses: DavidAnson/markdownlint-cli2-action@6b51ade7a9e4a75a7ad929842dd298a3804ebe8b
 ```
 
 ## CODEOWNERS

@@ -2,155 +2,155 @@
 # version: 9.5.11
 
 global:
-  logging:
-    level: error
-  domain: argocd.lan
-  nodeSelector: {}
-  tolerations: []
+    logging:
+        level: error
+    domain: argocd.lan
+    nodeSelector: {}
+    tolerations: []
 
 dex:
-  enabled: false
+    enabled: false
 
 configs:
-  cm:
-    url: https://argocd.lan
-    kustomize.buildOptions: "--enable-alpha-plugins --enable-exec"
-    oidc.config: |
-      name: Keycloak
-      issuer: https://keycloak.lan/realms/homelab
-      clientID: argocd
-      clientSecret: $oidc.keycloak.clientSecret
-      requestedScopes: ["openid", "profile", "email", "argocd-groups"]
-      logoutURL: https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fargocd.lan&client_id=argocd
-  rbac:
-    policy.csv: |
-      g, /argocd-admins, role:admin
-      g, /argocd-viewers, role:readonly
-    scopes: "[groups]"
-  params:
-    server.insecure: "true"
-    controller.status.processors: "20"
-    controller.operation.processors: "10"
-    controller.kubectl.parallelism.limit: "10"
-    timeout.reconciliation: "180"
+    cm:
+        url: https://argocd.lan
+        kustomize.buildOptions: "--enable-alpha-plugins --enable-exec"
+        oidc.config: |
+            name: Keycloak
+            issuer: https://keycloak.lan/realms/homelab
+            clientID: argocd
+            clientSecret: $oidc.keycloak.clientSecret
+            requestedScopes: ["openid", "profile", "email", "argocd-groups"]
+            logoutURL: https://keycloak.lan/realms/homelab/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fargocd.lan&client_id=argocd
+    rbac:
+        policy.csv: |
+            g, /argocd-admins, role:admin
+            g, /argocd-viewers, role:readonly
+        scopes: "[groups]"
+    params:
+        server.insecure: "true"
+        controller.status.processors: "20"
+        controller.operation.processors: "10"
+        controller.kubectl.parallelism.limit: "10"
+        timeout.reconciliation: "180"
 
 controller:
-  podAnnotations:
-    reloader.stakater.com/auto: "true"
-  resources:
-    requests:
-      cpu: 250m
-      memory: 512Mi
-    limits:
-      memory: 2Gi
+    podAnnotations:
+        reloader.stakater.com/auto: "true"
+    resources:
+        requests:
+            cpu: 250m
+            memory: 512Mi
+        limits:
+            memory: 2Gi
 
 server:
-  podAnnotations:
-    reloader.stakater.com/auto: "true"
-  volumes:
-    - name: homelab-ca
-      configMap:
-        name: homelab-ca
-        optional: true
-  volumeMounts:
-    - name: homelab-ca
-      mountPath: /etc/ssl/certs/homelab
-      readOnly: true
-  env:
-    - name: SSL_CERT_DIR
-      value: /etc/ssl/certs/homelab
-  service:
-    type: NodePort
-    nodePortHttp: 30800
-    nodePortHttps: 30801
-  resources:
-    requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
-      memory: 256Mi
-  httproute:
-    enabled: true
-    parentRefs:
-      - name: traefik
-        namespace: default
-        sectionName: https
-    hostnames:
-      - argocd.lan
+    podAnnotations:
+        reloader.stakater.com/auto: "true"
+    volumes:
+        - name: homelab-ca
+          configMap:
+              name: homelab-ca
+              optional: true
+    volumeMounts:
+        - name: homelab-ca
+          mountPath: /etc/ssl/certs/homelab
+          readOnly: true
+    env:
+        - name: SSL_CERT_DIR
+          value: /etc/ssl/certs/homelab
+    service:
+        type: NodePort
+        nodePortHttp: 30800
+        nodePortHttps: 30801
+    resources:
+        requests:
+            cpu: 50m
+            memory: 128Mi
+        limits:
+            memory: 256Mi
+    httproute:
+        enabled: true
+        parentRefs:
+            - name: traefik
+              namespace: default
+              sectionName: https
+        hostnames:
+            - argocd.lan
 
 repoServer:
-  podAnnotations:
-    reloader.stakater.com/auto: "true"
-  env:
-    - name: SOPS_AGE_KEY_FILE
-      value: /sops/age/keys.txt
-    - name: HELM_PLUGINS
-      value: /custom-tools/helm-plugins/
-    - name: HELM_SECRETS_SOPS_PATH
-      value: /custom-tools/sops
-    - name: HELM_SECRETS_BACKEND
-      value: sops
-    - name: XDG_CONFIG_HOME
-      value: /custom-tools/.config
-  volumes:
-    - name: sops-age
-      secret:
-        secretName: sops-age
-    - name: custom-tools
-      emptyDir: {}
-  volumeMounts:
-    - name: sops-age
-      mountPath: /sops/age
-    - name: custom-tools
-      mountPath: /custom-tools
-  initContainers:
-    - name: install-sops
-      image: alpine:3.23
-      command: [sh, -ec]
-      args:
-        - |
-          set -euo pipefail
-          cd /custom-tools
-          mkdir -p /custom-tools/helm-plugins
-
-          wget -qO sops https://github.com/getsops/sops/releases/download/v3.12.2/sops-v3.12.2.linux.arm64
-          echo "f66de6f528dca946e910d74fa36a62a7714c11d0db16bd3c9bd8acf73b66704b sops" | sha256sum -c -
-          chmod +x sops
-
-          wget -qO helm-secrets.tar.gz https://github.com/jkroepke/helm-secrets/releases/download/v4.7.6/helm-secrets.tar.gz
-          echo "7331a63edb22cc4c2b6aa33f276e69d412e82005605cd188e7e61d47fada1102 helm-secrets.tar.gz" | sha256sum -c -
-          tar -C /custom-tools/helm-plugins -xzf helm-secrets.tar.gz
-          rm helm-secrets.tar.gz
-
-          wget -qO ksops.tar.gz https://github.com/viaduct-ai/kustomize-sops/releases/download/v4.5.1/ksops_4.5.1_Linux_arm64.tar.gz
-          echo "c7bb562cc2d580a1decc6c77a35e4d35575fb01ca003425726004ecd13dc1cb5 ksops.tar.gz" | sha256sum -c -
-          tar xz -f ksops.tar.gz
-          rm ksops.tar.gz
-
-          mkdir -p /custom-tools/.config/kustomize/plugin/viaduct.ai/v1/ksops
-          mv ksops /custom-tools/.config/kustomize/plugin/viaduct.ai/v1/ksops/ksops
-      volumeMounts:
+    podAnnotations:
+        reloader.stakater.com/auto: "true"
+    env:
+        - name: SOPS_AGE_KEY_FILE
+          value: /sops/age/keys.txt
+        - name: HELM_PLUGINS
+          value: /custom-tools/helm-plugins/
+        - name: HELM_SECRETS_SOPS_PATH
+          value: /custom-tools/sops
+        - name: HELM_SECRETS_BACKEND
+          value: sops
+        - name: XDG_CONFIG_HOME
+          value: /custom-tools/.config
+    volumes:
+        - name: sops-age
+          secret:
+              secretName: sops-age
+        - name: custom-tools
+          emptyDir: {}
+    volumeMounts:
+        - name: sops-age
+          mountPath: /sops/age
         - name: custom-tools
           mountPath: /custom-tools
-  resources:
-    requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
-      memory: 256Mi
+    initContainers:
+        - name: install-sops
+          image: alpine:3.23
+          command: [sh, -ec]
+          args:
+              - |
+                  set -euo pipefail
+                  cd /custom-tools
+                  mkdir -p /custom-tools/helm-plugins
+
+                  wget -qO sops https://github.com/getsops/sops/releases/download/v3.12.2/sops-v3.12.2.linux.arm64
+                  echo "f66de6f528dca946e910d74fa36a62a7714c11d0db16bd3c9bd8acf73b66704b sops" | sha256sum -c -
+                  chmod +x sops
+
+                  wget -qO helm-secrets.tar.gz https://github.com/jkroepke/helm-secrets/releases/download/v4.7.6/helm-secrets.tar.gz
+                  echo "7331a63edb22cc4c2b6aa33f276e69d412e82005605cd188e7e61d47fada1102 helm-secrets.tar.gz" | sha256sum -c -
+                  tar -C /custom-tools/helm-plugins -xzf helm-secrets.tar.gz
+                  rm helm-secrets.tar.gz
+
+                  wget -qO ksops.tar.gz https://github.com/viaduct-ai/kustomize-sops/releases/download/v4.5.1/ksops_4.5.1_Linux_arm64.tar.gz
+                  echo "c7bb562cc2d580a1decc6c77a35e4d35575fb01ca003425726004ecd13dc1cb5 ksops.tar.gz" | sha256sum -c -
+                  tar xz -f ksops.tar.gz
+                  rm ksops.tar.gz
+
+                  mkdir -p /custom-tools/.config/kustomize/plugin/viaduct.ai/v1/ksops
+                  mv ksops /custom-tools/.config/kustomize/plugin/viaduct.ai/v1/ksops/ksops
+          volumeMounts:
+              - name: custom-tools
+                mountPath: /custom-tools
+    resources:
+        requests:
+            cpu: 50m
+            memory: 128Mi
+        limits:
+            memory: 256Mi
 
 # if switching backends, delete the existing secret first:
 # kubectl delete secret argocd-redis -n argocd
 # then comment 'password' in argocd-secrets.enc.yml
 redis:
-  enabled: false
-  # resources:
-  #   requests:
-  #     cpu: 50m
-  #     memory: 64Mi
-  #   limits:
-  #     memory: 128Mi
+    enabled: false
+    # resources:
+    #   requests:
+    #     cpu: 50m
+    #     memory: 64Mi
+    #   limits:
+    #     memory: 128Mi
 
 externalRedis:
-  host: dragonfly.database.svc.cluster.local
-  port: 6379
+    host: dragonfly.database.svc.cluster.local
+    port: 6379

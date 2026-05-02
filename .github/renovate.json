@@ -1,158 +1,141 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended"
-  ],
-  "reviewersFromCodeOwners": true,
-  "assigneesFromCodeOwners": true,
-  "assignAutomerge": true,
-  "timezone": "Asia/Bangkok",
-  "schedule": [
-    "* 0-4 1 * *"
-  ],
-  "updateNotScheduled": false,
-  "argocd": {
-    "managerFilePatterns": [
-      "/infrastructure/kubernetes/app/.+\\.yml$/"
-    ]
-  },
-  "customManagers": [
-    {
-      "customType": "regex",
-      "description": "Update SOPS version in ArgoCD repo server",
-      "managerFilePatterns": [
-        "/infrastructure/kubernetes/bootstrap/argocd-values\\.yml$/"
-      ],
-      "matchStrings": [
-        "https://github\\.com/getsops/sops/releases/download/v(?<currentValue>[\\d.]+)/sops-v[\\d.]+\\.linux\\.arm64"
-      ],
-      "autoReplaceStringTemplate": "https://github.com/getsops/sops/releases/download/v{{{newValue}}}/sops-v{{{newValue}}}.linux.arm64",
-      "depNameTemplate": "getsops/sops",
-      "datasourceTemplate": "github-releases",
-      "extractVersionTemplate": "^v(?<version>.*)$"
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": ["config:recommended"],
+    "reviewersFromCodeOwners": true,
+    "assigneesFromCodeOwners": true,
+    "assignAutomerge": true,
+    "timezone": "Asia/Bangkok",
+    "schedule": ["* 0-4 1 * *"],
+    "updateNotScheduled": false,
+    "argocd": {
+        "managerFilePatterns": ["/infrastructure/kubernetes/app/.+\\.yml$/"]
     },
-    {
-      "customType": "regex",
-      "description": "Update helm-secrets version in ArgoCD repo server",
-      "managerFilePatterns": [
-        "/infrastructure/kubernetes/bootstrap/argocd-values\\.yml$/"
-      ],
-      "matchStrings": [
-        "https://github\\.com/jkroepke/helm-secrets/releases/download/v(?<currentValue>[\\d.]+)/helm-secrets\\.tar\\.gz"
-      ],
-      "depNameTemplate": "jkroepke/helm-secrets",
-      "datasourceTemplate": "github-releases",
-      "extractVersionTemplate": "^v(?<version>.*)$"
-    },
-    {
-      "customType": "regex",
-      "description": "Update kustomize-sops (ksops) version in ArgoCD repo server",
-      "managerFilePatterns": [
-        "/infrastructure/kubernetes/bootstrap/argocd-values\\.yml$/"
-      ],
-      "matchStrings": [
-        "https://github\\.com/viaduct-ai/kustomize-sops/releases/download/v(?<currentValue>[\\d.]+)/ksops_[\\d.]+_Linux_arm64\\.tar\\.gz"
-      ],
-      "autoReplaceStringTemplate": "https://github.com/viaduct-ai/kustomize-sops/releases/download/v{{{newValue}}}/ksops_{{{newValue}}}_Linux_arm64.tar.gz",
-      "depNameTemplate": "viaduct-ai/kustomize-sops",
-      "datasourceTemplate": "github-releases",
-      "extractVersionTemplate": "^v(?<version>.*)$"
-    },
-    {
-      "customType": "regex",
-      "description": "Update ArgoCD Helm chart version",
-      "managerFilePatterns": [
-        "/infrastructure/kubernetes/bootstrap/argocd-values\\.yml$/"
-      ],
-      "matchStrings": [
-        "# renovate: datasource=helm registryUrl=https://argoproj\\.github\\.io/argo-helm depName=argo-cd\\n# version: (?<currentValue>[^\\s]+)"
-      ],
-      "depNameTemplate": "argo-cd",
-      "datasourceTemplate": "helm",
-      "registryUrlTemplate": "https://argoproj.github.io/argo-helm"
-    },
-    {
-      "customType": "regex",
-      "description": "Update Docker image tags in ArgoCD values",
-      "managerFilePatterns": [
-        "/infrastructure/kubernetes/bootstrap/argocd-values\\.yml$/"
-      ],
-      "matchStrings": [
-        "image:\\s+(?<depName>[^:]+):(?<currentValue>[^\\s]+)"
-      ],
-      "datasourceTemplate": "docker"
-    },
-    {
-      "customType": "regex",
-      "description": "Update Docker image references in ArgoCD Application files",
-      "managerFilePatterns": [
-        "/infrastructure/kubernetes/app/.+\\.yml$/"
-      ],
-      "matchStrings": [
-        "# renovate: datasource=docker depName=(?<depName>[^\\n]+)\\n# version: (?<currentValue>[^\\s]+)(?<body>[\\s\\S]*?image:\\s+[^:\\s]+:)[^\\s]+",
-        "# renovate: datasource=docker depName=(?<depName>[^\\n]+)\\n# version: (?<currentValue>[^\\s]+)(?<body>[\\s\\S]*?tag:\\s+\\\")[^\\\"]+"
-      ],
-      "datasourceTemplate": "docker",
-      "autoReplaceStringTemplate": "# renovate: datasource=docker depName={{{depName}}}\n# version: {{{newValue}}}{{{body}}}{{{newValue}}}"
-    },
-    {
-      "customType": "regex",
-      "description": "Update SOPS version in README",
-      "managerFilePatterns": [
-        "/README\\.md$/"
-      ],
-      "matchStrings": [
-        "curl -LO https://github\\.com/getsops/sops/releases/download/v(?<currentValue>[\\d.]+)/sops-v[\\d.]+\\.darwin\\.arm64\\nsudo mv sops-v[\\d.]+\\.darwin\\.arm64 /usr/local/bin/sops"
-      ],
-      "autoReplaceStringTemplate": "curl -LO https://github.com/getsops/sops/releases/download/v{{{newValue}}}/sops-v{{{newValue}}}.darwin.arm64\nsudo mv sops-v{{{newValue}}}.darwin.arm64 /usr/local/bin/sops",
-      "depNameTemplate": "getsops/sops",
-      "datasourceTemplate": "github-releases",
-      "extractVersionTemplate": "^v(?<version>.*)$"
-    },
-    {
-      "customType": "regex",
-      "description": "Update helm-secrets version in kubernetes README",
-      "managerFilePatterns": [
-        "/infrastructure/kubernetes/README\\.md$/"
-      ],
-      "matchStrings": [
-        "helm plugin install https://github\\.com/jkroepke/helm-secrets/releases/download/v(?<currentValue>[\\d.]+)/secrets-[\\d.]+\\.tgz --verify=false\\n\\s+helm plugin install https://github\\.com/jkroepke/helm-secrets/releases/download/v[\\d.]+/secrets-getter-[\\d.]+\\.tgz --verify=false\\n\\s+helm plugin install https://github\\.com/jkroepke/helm-secrets/releases/download/v[\\d.]+/secrets-post-renderer-[\\d.]+\\.tgz --verify=false"
-      ],
-      "autoReplaceStringTemplate": "helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v{{{newValue}}}/secrets-{{{newValue}}}.tgz --verify=false\n    helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v{{{newValue}}}/secrets-getter-{{{newValue}}}.tgz --verify=false\n    helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v{{{newValue}}}/secrets-post-renderer-{{{newValue}}}.tgz --verify=false",
-      "depNameTemplate": "jkroepke/helm-secrets",
-      "datasourceTemplate": "github-releases",
-      "extractVersionTemplate": "^v(?<version>.*)$"
+    "customManagers": [
+        {
+            "customType": "regex",
+            "description": "Update SOPS version in ArgoCD repo server",
+            "managerFilePatterns": [
+                "/infrastructure/kubernetes/bootstrap/argocd-values\\.yml$/"
+            ],
+            "matchStrings": [
+                "https://github\\.com/getsops/sops/releases/download/v(?<currentValue>[\\d.]+)/sops-v[\\d.]+\\.linux\\.arm64"
+            ],
+            "autoReplaceStringTemplate": "https://github.com/getsops/sops/releases/download/v{{{newValue}}}/sops-v{{{newValue}}}.linux.arm64",
+            "depNameTemplate": "getsops/sops",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^v(?<version>.*)$"
+        },
+        {
+            "customType": "regex",
+            "description": "Update helm-secrets version in ArgoCD repo server",
+            "managerFilePatterns": [
+                "/infrastructure/kubernetes/bootstrap/argocd-values\\.yml$/"
+            ],
+            "matchStrings": [
+                "https://github\\.com/jkroepke/helm-secrets/releases/download/v(?<currentValue>[\\d.]+)/helm-secrets\\.tar\\.gz"
+            ],
+            "depNameTemplate": "jkroepke/helm-secrets",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^v(?<version>.*)$"
+        },
+        {
+            "customType": "regex",
+            "description": "Update kustomize-sops (ksops) version in ArgoCD repo server",
+            "managerFilePatterns": [
+                "/infrastructure/kubernetes/bootstrap/argocd-values\\.yml$/"
+            ],
+            "matchStrings": [
+                "https://github\\.com/viaduct-ai/kustomize-sops/releases/download/v(?<currentValue>[\\d.]+)/ksops_[\\d.]+_Linux_arm64\\.tar\\.gz"
+            ],
+            "autoReplaceStringTemplate": "https://github.com/viaduct-ai/kustomize-sops/releases/download/v{{{newValue}}}/ksops_{{{newValue}}}_Linux_arm64.tar.gz",
+            "depNameTemplate": "viaduct-ai/kustomize-sops",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^v(?<version>.*)$"
+        },
+        {
+            "customType": "regex",
+            "description": "Update ArgoCD Helm chart version",
+            "managerFilePatterns": [
+                "/infrastructure/kubernetes/bootstrap/argocd-values\\.yml$/"
+            ],
+            "matchStrings": [
+                "# renovate: datasource=helm registryUrl=https://argoproj\\.github\\.io/argo-helm depName=argo-cd\\n# version: (?<currentValue>[^\\s]+)"
+            ],
+            "depNameTemplate": "argo-cd",
+            "datasourceTemplate": "helm",
+            "registryUrlTemplate": "https://argoproj.github.io/argo-helm"
+        },
+        {
+            "customType": "regex",
+            "description": "Update Docker image tags in ArgoCD values",
+            "managerFilePatterns": [
+                "/infrastructure/kubernetes/bootstrap/argocd-values\\.yml$/"
+            ],
+            "matchStrings": [
+                "image:\\s+(?<depName>[^:]+):(?<currentValue>[^\\s]+)"
+            ],
+            "datasourceTemplate": "docker"
+        },
+        {
+            "customType": "regex",
+            "description": "Update Docker image references in ArgoCD Application files",
+            "managerFilePatterns": [
+                "/infrastructure/kubernetes/app/.+\\.yml$/"
+            ],
+            "matchStrings": [
+                "# renovate: datasource=docker depName=(?<depName>[^\\n]+)\\n# version: (?<currentValue>[^\\s]+)(?<body>[\\s\\S]*?image:\\s+[^:\\s]+:)[^\\s]+",
+                "# renovate: datasource=docker depName=(?<depName>[^\\n]+)\\n# version: (?<currentValue>[^\\s]+)(?<body>[\\s\\S]*?tag:\\s+\\\")[^\\\"]+"
+            ],
+            "datasourceTemplate": "docker",
+            "autoReplaceStringTemplate": "# renovate: datasource=docker depName={{{depName}}}\n# version: {{{newValue}}}{{{body}}}{{{newValue}}}"
+        },
+        {
+            "customType": "regex",
+            "description": "Update SOPS version in README",
+            "managerFilePatterns": ["/README\\.md$/"],
+            "matchStrings": [
+                "curl -LO https://github\\.com/getsops/sops/releases/download/v(?<currentValue>[\\d.]+)/sops-v[\\d.]+\\.darwin\\.arm64\\nsudo mv sops-v[\\d.]+\\.darwin\\.arm64 /usr/local/bin/sops"
+            ],
+            "autoReplaceStringTemplate": "curl -LO https://github.com/getsops/sops/releases/download/v{{{newValue}}}/sops-v{{{newValue}}}.darwin.arm64\nsudo mv sops-v{{{newValue}}}.darwin.arm64 /usr/local/bin/sops",
+            "depNameTemplate": "getsops/sops",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^v(?<version>.*)$"
+        },
+        {
+            "customType": "regex",
+            "description": "Update helm-secrets version in kubernetes README",
+            "managerFilePatterns": ["/infrastructure/kubernetes/README\\.md$/"],
+            "matchStrings": [
+                "helm plugin install https://github\\.com/jkroepke/helm-secrets/releases/download/v(?<currentValue>[\\d.]+)/secrets-[\\d.]+\\.tgz --verify=false\\n\\s+helm plugin install https://github\\.com/jkroepke/helm-secrets/releases/download/v[\\d.]+/secrets-getter-[\\d.]+\\.tgz --verify=false\\n\\s+helm plugin install https://github\\.com/jkroepke/helm-secrets/releases/download/v[\\d.]+/secrets-post-renderer-[\\d.]+\\.tgz --verify=false"
+            ],
+            "autoReplaceStringTemplate": "helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v{{{newValue}}}/secrets-{{{newValue}}}.tgz --verify=false\n    helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v{{{newValue}}}/secrets-getter-{{{newValue}}}.tgz --verify=false\n    helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v{{{newValue}}}/secrets-post-renderer-{{{newValue}}}.tgz --verify=false",
+            "depNameTemplate": "jkroepke/helm-secrets",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^v(?<version>.*)$"
+        }
+    ],
+    "packageRules": [
+        {
+            "description": "Group Grafana observability stack chart updates",
+            "matchPackageNames": ["loki", "tempo", "alloy"],
+            "groupName": "grafana-observability-stack"
+        },
+        {
+            "description": "Group cert-manager related chart updates",
+            "matchPackageNames": ["cert-manager", "trust-manager"],
+            "groupName": "cert-manager-stack"
+        },
+        {
+            "description": "Group ArgoCD repo server tool updates",
+            "matchPackageNames": [
+                "getsops/sops",
+                "jkroepke/helm-secrets",
+                "viaduct-ai/kustomize-sops"
+            ],
+            "groupName": "argocd-repo-server-tools"
+        }
+    ],
+    "gomod": {
+        "enabled": false
     }
-  ],
-  "packageRules": [
-    {
-      "description": "Group Grafana observability stack chart updates",
-      "matchPackageNames": [
-        "loki",
-        "tempo",
-        "alloy"
-      ],
-      "groupName": "grafana-observability-stack"
-    },
-    {
-      "description": "Group cert-manager related chart updates",
-      "matchPackageNames": [
-        "cert-manager",
-        "trust-manager"
-      ],
-      "groupName": "cert-manager-stack"
-    },
-    {
-      "description": "Group ArgoCD repo server tool updates",
-      "matchPackageNames": [
-        "getsops/sops",
-        "jkroepke/helm-secrets",
-        "viaduct-ai/kustomize-sops"
-      ],
-      "groupName": "argocd-repo-server-tools"
-    }
-  ],
-  "gomod": {
-    "enabled": false
-  }
 }

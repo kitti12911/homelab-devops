@@ -16,20 +16,20 @@ The Kubernetes cluster is managed by the Ansible `cluster` inventory group.
 
 ### Master
 
-| Host | IP | Board | RAM | Primary Storage | Storage Type | Network |
-| --- | --- | --- | --- | --- | --- | --- |
-| `alpha-actual` | `192.168.88.201` | Raspberry Pi 4 Model B | 4GB | 500GB USB SSD | `usb_ssd` | 1Gbps Ethernet |
+| Host           | IP               | Board                  | RAM | Primary Storage | Storage Type | Network        |
+| -------------- | ---------------- | ---------------------- | --- | --------------- | ------------ | -------------- |
+| `alpha-actual` | `192.168.88.201` | Raspberry Pi 4 Model B | 4GB | 500GB USB SSD   | `usb_ssd`    | 1Gbps Ethernet |
 
 ### Workers
 
-| Host | Role Group | IP | Board | RAM | Primary Storage | Storage Type | Network |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `bravo` | `computer` | `192.168.88.202` | Raspberry Pi 5 | 8GB | 128GB NVMe SSD | `nvme` | 1Gbps Ethernet |
-| `charlie` | `computer` | `192.168.88.203` | Raspberry Pi 5 | 8GB | 128GB NVMe SSD | `nvme` | 1Gbps Ethernet |
-| `delta` | `computer` | `192.168.88.204` | Raspberry Pi 5 | 8GB | 128GB NVMe SSD | `nvme` | 1Gbps Ethernet |
-| `echo` | `computer` | `192.168.88.206` | Raspberry Pi 5 | 8GB | 256GB NVMe SSD | `nvme` | 1Gbps Ethernet |
-| `kilo` | `object_storage` | `192.168.88.209` | Raspberry Pi 5 | 4GB | 128GB USB SSD | `usb_ssd` | 1Gbps Ethernet |
-| `november` | `database` | `192.168.88.205` | Raspberry Pi 5 | 4GB | 256GB NVMe SSD | `nvme` | 1Gbps Ethernet |
+| Host       | Role Group       | IP               | Board          | RAM | Primary Storage | Storage Type | Network        |
+| ---------- | ---------------- | ---------------- | -------------- | --- | --------------- | ------------ | -------------- |
+| `bravo`    | `computer`       | `192.168.88.202` | Raspberry Pi 5 | 8GB | 128GB NVMe SSD  | `nvme`       | 1Gbps Ethernet |
+| `charlie`  | `computer`       | `192.168.88.203` | Raspberry Pi 5 | 8GB | 128GB NVMe SSD  | `nvme`       | 1Gbps Ethernet |
+| `delta`    | `computer`       | `192.168.88.204` | Raspberry Pi 5 | 8GB | 128GB NVMe SSD  | `nvme`       | 1Gbps Ethernet |
+| `echo`     | `computer`       | `192.168.88.206` | Raspberry Pi 5 | 8GB | 256GB NVMe SSD  | `nvme`       | 1Gbps Ethernet |
+| `kilo`     | `object_storage` | `192.168.88.209` | Raspberry Pi 5 | 4GB | 128GB USB SSD   | `usb_ssd`    | 1Gbps Ethernet |
+| `november` | `database`       | `192.168.88.205` | Raspberry Pi 5 | 4GB | 256GB NVMe SSD  | `nvme`       | 1Gbps Ethernet |
 
 ### Cluster Totals
 
@@ -45,15 +45,15 @@ Node scheduling is configured by `playbooks/kubernetes/setup-master.yml` and `pl
 
 ### Node Labels And Taints
 
-| Host | Purpose | Labels | Taints |
-| --- | --- | --- | --- |
-| `alpha-actual` | Control plane | `node-role.kubernetes.io/control-plane=true` | `node-role.kubernetes.io/control-plane:NoSchedule` |
-| `bravo` | General worker | Kubernetes default worker labels | none |
-| `charlie` | General worker | Kubernetes default worker labels | none |
-| `delta` | General worker | Kubernetes default worker labels | none |
-| `echo` | General worker | Kubernetes default worker labels | none |
-| `kilo` | Object storage worker | `node-role.kubernetes.io/object-storage=true` | `dedicated=object-storage:NoSchedule` |
-| `november` | Database worker | `node-role.kubernetes.io/database=true` | `dedicated=database:NoSchedule` |
+| Host           | Purpose               | Labels                                        | Taints                                             |
+| -------------- | --------------------- | --------------------------------------------- | -------------------------------------------------- |
+| `alpha-actual` | Control plane         | `node-role.kubernetes.io/control-plane=true`  | `node-role.kubernetes.io/control-plane:NoSchedule` |
+| `bravo`        | General worker        | Kubernetes default worker labels              | none                                               |
+| `charlie`      | General worker        | Kubernetes default worker labels              | none                                               |
+| `delta`        | General worker        | Kubernetes default worker labels              | none                                               |
+| `echo`         | General worker        | Kubernetes default worker labels              | none                                               |
+| `kilo`         | Object storage worker | `node-role.kubernetes.io/object-storage=true` | `dedicated=object-storage:NoSchedule`              |
+| `november`     | Database worker       | `node-role.kubernetes.io/database=true`       | `dedicated=database:NoSchedule`                    |
 
 ### Scheduling Intent
 
@@ -64,19 +64,19 @@ Node scheduling is configured by `playbooks/kubernetes/setup-master.yml` and `pl
 
 ### Workload Placement
 
-| Workload | Placement |
-| --- | --- |
-| K3s server | `alpha-actual` |
-| General application workloads | untainted `computer` workers |
-| SeaweedFS | `kilo` through the object-storage node selector and toleration |
-| NATS JetStream storage | `kilo` through the object-storage node selector and toleration |
-| PostgreSQL | `november` through the database node selector and toleration |
-| Cert Manager | `alpha-actual` through the control-plane node selector and toleration |
-| Reloader | `alpha-actual` through the control-plane node selector and toleration |
-| Trust Manager | `alpha-actual` through the control-plane node selector and toleration |
-| Descheduler | `alpha-actual` through the control-plane node selector and toleration |
+| Workload                              | Placement                                                             |
+| ------------------------------------- | --------------------------------------------------------------------- |
+| K3s server                            | `alpha-actual`                                                        |
+| General application workloads         | untainted `computer` workers                                          |
+| SeaweedFS                             | `kilo` through the object-storage node selector and toleration        |
+| NATS JetStream storage                | `kilo` through the object-storage node selector and toleration        |
+| PostgreSQL                            | `november` through the database node selector and toleration          |
+| Cert Manager                          | `alpha-actual` through the control-plane node selector and toleration |
+| Reloader                              | `alpha-actual` through the control-plane node selector and toleration |
+| Trust Manager                         | `alpha-actual` through the control-plane node selector and toleration |
+| Descheduler                           | `alpha-actual` through the control-plane node selector and toleration |
 | System Upgrade Controller server plan | `alpha-actual` through the control-plane node selector and toleration |
-| System Upgrade Controller agent plan | dedicated worker nodes through a broad `dedicated` toleration |
+| System Upgrade Controller agent plan  | dedicated worker nodes through a broad `dedicated` toleration         |
 
 ### K3s Server Flags
 
@@ -108,16 +108,16 @@ Cluster nodes are prepared by `playbooks/kubernetes/initial-setup-node.yml`.
 
 Standalone nodes are part of the homelab inventory but are not Kubernetes cluster members.
 
-| Host | Role Group | IP | Board | RAM | Primary Storage | Secondary Storage | Storage Type | Network |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `mike` | `iot` | `192.168.88.200` | Raspberry Pi Zero 2 W | 0.5GB | 64GB MicroSD | - | `sd` | 1Gbps Ethernet via USB adapter |
-| `sierra` | `nas` | `192.168.88.207` | x86-64 | 8GB | SATA SSD (OS) | 2x 1.8TB HDD (NAS data) | `sata_ssd` | 1Gbps Ethernet |
+| Host     | Role Group | IP               | Board                 | RAM   | Primary Storage | Secondary Storage       | Storage Type | Network                        |
+| -------- | ---------- | ---------------- | --------------------- | ----- | --------------- | ----------------------- | ------------ | ------------------------------ |
+| `mike`   | `iot`      | `192.168.88.200` | Raspberry Pi Zero 2 W | 0.5GB | 64GB MicroSD    | -                       | `sd`         | 1Gbps Ethernet via USB adapter |
+| `sierra` | `nas`      | `192.168.88.207` | x86-64                | 8GB   | SATA SSD (OS)   | 2x 1.8TB HDD (NAS data) | `sata_ssd`   | 1Gbps Ethernet                 |
 
 ## Proxy Node
 
-| Host | Role Group | IP | Board | RAM | Primary Storage | Storage Type | Network |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `hotel` | `proxy` | `192.168.88.208` | Raspberry Pi 5 | 2GB | 64GB MicroSD | `sd` | 1Gbps Ethernet |
+| Host    | Role Group | IP               | Board          | RAM | Primary Storage | Storage Type | Network        |
+| ------- | ---------- | ---------------- | -------------- | --- | --------------- | ------------ | -------------- |
+| `hotel` | `proxy`    | `192.168.88.208` | Raspberry Pi 5 | 2GB | 64GB MicroSD    | `sd`         | 1Gbps Ethernet |
 
 ## Node Notes
 

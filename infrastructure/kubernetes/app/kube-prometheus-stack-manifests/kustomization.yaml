@@ -1,9 +1,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - grafana-httproute.yml
-  - prometheus-httproute.yml
-  - alertmanager-httproute.yml
-  - forwardauth-middleware.yml
+    - grafana-httproute.yml
+    - prometheus-httproute.yml
+    - alertmanager-httproute.yml
+    - forwardauth-middleware.yml
 generators:
-  - secret-generator.yml
+    - secret-generator.yml

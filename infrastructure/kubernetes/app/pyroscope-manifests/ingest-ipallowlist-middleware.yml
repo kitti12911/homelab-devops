@@ -1,11 +1,11 @@
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: pyroscope-ingest-lan-only
-  namespace: observability
+    name: pyroscope-ingest-lan-only
+    namespace: observability
 spec:
-  ipAllowList:
-    sourceRange:
-      - 10.0.0.0/8
-      - 172.16.0.0/12
-      - 192.168.88.0/24
+    ipAllowList:
+        sourceRange:
+            - 10.0.0.0/8
+            - 172.16.0.0/12
+            - 192.168.88.0/24
