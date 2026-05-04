@@ -16,6 +16,10 @@ infrastructure and configuration for the homelab. manages kubernetes cluster set
 - [sops](https://github.com/getsops/sops) + [age](https://github.com/FiloSottile/age) for secret encryption
 - [argocd cli](https://argo-cd.readthedocs.io/en/stable/cli_installation/) (optional, for repo management)
 
+Optional:
+
+- [prettier](https://prettier.io/) for Markdown, YAML, JSON, and JSONC formatting
+
 ## install tools
 
 ### kubectl
@@ -79,6 +83,14 @@ homelab-devops/
 1. set up ansible for node provisioning - see [ansible/README.md](ansible/README.md)
 2. bootstrap the kubernetes cluster - see [infrastructure/kubernetes/README.md](infrastructure/kubernetes/README.md)
 3. argocd handles the rest (syncs apps from this repo automatically)
+
+## available commands
+
+```bash
+make fmt
+make pretty
+make format
+```
 
 ## secret management
 

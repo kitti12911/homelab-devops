@@ -1,0 +1,5 @@
+CHANGELOG.md
+.codex/
+.cursor/
+gen/
+tmp/
