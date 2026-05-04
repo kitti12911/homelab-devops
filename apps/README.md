@@ -42,6 +42,8 @@ this document was written.
   `ed142fd0673e97e23eac54620cfb913e5ce36c25`
 - `gitleaks/gitleaks-action` v2.3.9:
   `ff98106e4c7b2bc287b24eaf42907196329070c7`
+- `sigstore/cosign-installer` v4.1.1:
+  `cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003`
 - `google/osv-scanner-action` v2.3.5:
   `c51854704019a247608d928f370c98740469d4b5`
 - `DavidAnson/markdownlint-cli2-action` v23.1.0:
@@ -348,6 +350,79 @@ Keep `gochecknoglobals` out of the default app profile. It is useful for strict
 library packages, but it is noisy for real services with config, metrics,
 registries, and generated code.
 
+## Container Publishing And Signing
+
+For services that publish container images, push immutable commit tags and sign
+the resolved image digest with cosign. Keep registry credentials and private
+signing keys in GitHub Actions secrets; never commit key material.
+
+Recommended secrets for the homelab Zot registry:
+
+- `ZOT_USERNAME`: registry username.
+- `ZOT_TOKEN`: registry access token.
+- `COSIGN_PRIVATE_KEY`: PEM contents of the cosign private key.
+
+Use repository secrets for normal app repositories. Use environment secrets only
+when the repository needs manual deployment approvals or different credentials
+per target environment.
+
+Add these steps after a successful Docker build and Trivy image scan:
+
+```yaml
+env:
+    REGISTRY: zot.kittiaccess.work
+
+jobs:
+    build:
+        name: Build, Push, And Sign
+        runs-on: ubuntu-latest
+        if: github.ref == 'refs/heads/main'
+        env:
+            IMAGE_REF: zot.kittiaccess.work/${{ github.repository }}
+        steps:
+            - name: Log in to Zot
+              env:
+                  ZOT_USERNAME: ${{ secrets.ZOT_USERNAME }}
+                  ZOT_TOKEN: ${{ secrets.ZOT_TOKEN }}
+              run: |
+                  echo "${ZOT_TOKEN}" \
+                      | docker login "${REGISTRY}" \
+                          --username "${ZOT_USERNAME}" \
+                          --password-stdin
+
+            - name: Push Docker image
+              run: |
+                  docker tag "${IMAGE_REF}:${GITHUB_SHA}" "${IMAGE_REF}:latest"
+                  docker push "${IMAGE_REF}:${GITHUB_SHA}"
+                  docker push "${IMAGE_REF}:latest"
+
+            - name: Resolve image digest
+              id: image
+              run: |
+                  digest="$(docker buildx imagetools inspect "${IMAGE_REF}:${GITHUB_SHA}" --format '{{.Manifest.Digest}}')"
+                  echo "digest=${digest}" >> "${GITHUB_OUTPUT}"
+
+            # sigstore/cosign-installer v4.1.1
+            - uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003
+
+            - name: Sign image digest
+              env:
+                  COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+              run: |
+                  key_file="$(mktemp)"
+                  trap 'rm -f "${key_file}"' EXIT
+                  printf '%s' "${COSIGN_PRIVATE_KEY}" > "${key_file}"
+                  chmod 600 "${key_file}"
+                  cosign sign --yes \
+                      --new-bundle-format=false \
+                      --use-signing-config=false \
+                      --key "${key_file}" \
+                      "${IMAGE_REF}@${{ steps.image.outputs.digest }}"
+```
+
+For passwordless cosign keys, do not set `COSIGN_PASSWORD`. For encrypted keys,
+store the password as a separate secret and pass it through the step environment.
+
 ## TypeScript Pipeline
 
 Prefer the package manager already used by the project. The example below uses
@@ -640,6 +715,9 @@ Then enable "Require review from Code Owners" in branch protection.
 | ------------------------- | ------------------------ | -------- |
 | `CODECOV_TOKEN`           | Codecov uploads          | Yes      |
 | `SOCKET_SECURITY_API_KEY` | Socket CLI/firewall only | Optional |
+| `ZOT_USERNAME`            | Zot registry login       | Services |
+| `ZOT_TOKEN`               | Zot registry login       | Services |
+| `COSIGN_PRIVATE_KEY`      | Container image signing  | Services |
 
 `GITHUB_TOKEN` is provided automatically by GitHub Actions.
 
@@ -664,6 +742,8 @@ golangci-lint run
 govulncheck ./...
 trivy fs --severity CRITICAL,HIGH --ignore-unfixed .
 markdownlint-cli2
+cosign sign --new-bundle-format=false --use-signing-config=false \
+    --key cosign.key zot.lan/<app>@sha256:<digest>
 ```
 
 TypeScript:
