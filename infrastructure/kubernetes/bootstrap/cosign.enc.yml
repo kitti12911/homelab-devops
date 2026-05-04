@@ -5,21 +5,21 @@ metadata:
     namespace: zot
 type: Opaque
 stringData:
-    api-key: zak_68737999c1854aebb9f7bebac06c8734
-    cosign.key: |-
-        -----BEGIN ENCRYPTED SIGSTORE PRIVATE KEY-----
-        eyJrZGYiOnsibmFtZSI6InNjcnlwdCIsInBhcmFtcyI6eyJOIjo2NTUzNiwiciI6
-        OCwicCI6MX0sInNhbHQiOiJOTnAzQWNOV2lXRlNKNXRoNlZNMDFNcldNek5YTWVD
-        U3BwSEdRaDVxNm9ZPSJ9LCJjaXBoZXIiOnsibmFtZSI6Im5hY2wvc2VjcmV0Ym94
-        Iiwibm9uY2UiOiJIWnFTZlJlaHBFaDRacHF0MzV5ZXFzbGlJcnd6SlZzcSJ9LCJj
-        aXBoZXJ0ZXh0IjoiUDdkcUVvVlFLUkJ5UWpJU1BIZjhXYkZrUmx1QWVvaGcvdEEz
-        OUw1UUFhdlBYZTY0OENmRS9vejdxRld1bTV2a1RiOW9MeG1OMkRLbXU2Z2d2M0JG
-        ODN1Tk5nR2J4clUrdjEzTnVoL3hjd2xhaUZsejR0eFlVNmtub0pkQnVFYjRMLytD
-        OVQ4bnlqbGw0eUg0SHlwVHkxcGRVV2JZTGhHNzgvYjVjN0NEbCs0aG1zQVdhVHB4
-        OXphMy8rT2tSUkcvQVlMeXBFb2xjN0RYNkE9PSJ9
-        -----END ENCRYPTED SIGSTORE PRIVATE KEY-----
-    cosign.pub: |-
-        -----BEGIN PUBLIC KEY-----
-        MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEIR03mPrUeMXW0Ca/naVbvFBs+WkB
-        0FoPTJDar1SG3/ombvuh8fF8Pq3dECRyywahh4S9DZt5ht3h5Ui43Qzs8A==
-        -----END PUBLIC KEY-----
+    api-key: ENC[AES256_GCM,data:ymCuJjMkpfjzzHYw8/2lBExcb36/qkuYCX87ywuAetLndP+W,iv:O8CfWsO0YbRq4RH8pLKg7rw59zpPqqiU6BdFChmu+Es=,tag:6BiaoMZHxalp3oG3ai+2hA==,type:str]
+    cosign.key: ENC[AES256_GCM,data:+KfNvcNPGasOklqhM50vrjBwwVzDHACkvPC3ODeaR8suadWExl/L39hixn2myo6HO4XGnht16aQzxm40VCVJUBO8u+mIzDZuktEpDM+rn3XTIMSz7v5Px6vvu8CIVrLuJCY/ZjsravMSAlfaXXufJp4/HN50MHG6UDYZT6L940yy8OKAtvhGZJKGGGXxx1mXdVPlP6LugTru46c3WVkWrlKH6TWAP119MZ5MxF/j9V/UcsLSFraNxH2aoar055bHpGUGwmGUwJZQMgmrGrjhCQO/+WueylXBNbiF+iU3ArZkNCOEzJH2VzPFHscVOQfoci2vF1oe9Erfc8LTyoHIr2Ap2HdrLq2h+OJKb4GHzyK0bcObT6myUZwZWqk0ndclhb2RWepGEEx4uJBQkNtxZeeiDmV2Lb2gSRMy608o/ZBWR+logvT3/GLHyn5BNAteK4nb7AUccoWCzEiBmiTAPwHI3vCO/MH0inRoIkGeRfkZ32LBo/N68LtgYMzS3zG1g2vMV3d8gMsEw3nrQNLqn8NDDOMpHdLaQ85NejqmjKP/IK25eDRqyUcMzs5BGWdDu6Y67YUmR0InpzxgA/HJhV+85AvCM4jq/0wF16QzbWb6KA/+8yCRnpwbHy4ZhWFMa67vSKqg8SnUIEUVrkrrUgPDDeeAvnWQJHBeV2Pwbdb8S4BTHkjguZMXOTWXNwDXBpsNRq11dQIvp1I5HBB4+Mttyt3+ZNW8FKs004NcXMPxOTIK2s3WdQ5BQoJ1lj0FpZQaxikY3seSTO+orvWYG0fKOtTK619pQoR9dkKtWr9xGKykqjn1PfSw8yYij0ibp14LQ44Sd3+47X2bJzbkx2XfS+6XSxTzUp/ScA==,iv:R1fdoTby+KXQ+iMIdPyWLo7IJStuwhC7Lg6i3TATwwk=,tag:HXhSLbKXIKHLDqkGdGJqyg==,type:str]
+    cosign.pub: ENC[AES256_GCM,data:Ans1dPGEvE8dBRX+CqlyDAwZz0kIhxDxf1jDuQ3Q1EFeCErK7N/fJZTomjnYlmBt4fKF6skt4LtOdm/qhnKa5YgI8RE5PsbTCGMa6wJ2ohNs5KrN5bcaGjA2kk+/0r8F2yl/ojK6gYTBcc7q/yVbodbleIQen9j5cEjAm/JtzsVAA6qOTFirOehDlwzKIZMJtCyU7P0RHdDVzYO3wDRWKQptlKG5EBQ/M5doHI769WqH,iv:HoheY/vB0e9OSp6mAvdOXHQDp+JVhPKQ+S9lVniY390=,tag:/7nCIMPMJ6Y5SoGbA7U7Ag==,type:str]
+sops:
+    age:
+        - recipient: age1s6q3qyvmyxrxuc05ge89e94wrfvx4p2vlylas000dgz35v8cw5aqqjj62y
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBkZmpFaDZZOGt1akp3VWF2
+            aEliZ3hhUVU0NzFGTHpraytEZXNyY0FqODJBCnlSdWlsdFdmS0pENzhrblRvWDEw
+            c2JVSnNsUHZBaUdPcC9ROHAvWGxYbUkKLS0tIEZCMFl2aHU2bkZxdEFCVU0wYXA5
+            MzlLKzlqOXAwSjczSkxMdjMwQTVPUEkKU5JtINXVuhCYqcjaj05uQ2vk+1W5u8om
+            1L8Z+p0CrT8/erMobrieCXkR1h3evJzsTBzhppjwIe7poQJ9Et4Ixg==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-05-04T17:51:08Z"
+    mac: ENC[AES256_GCM,data:HJP+bjqRFml813Ieq9EBs4a5u/WwEpI3tlksvPwU33h9nnv2IPeuiSS5mOalo7Lt+dX0d2KbqaaugFKDULqNl7LdjNtDa77oFC5FvGtN1fRgvOSJzf+JPoRvYlx/P34PiOKsSP7NGVL+A8jW3FLXdpkgD9D6nJB9Dq2m219Hma4=,iv:Baz5sCe/NlX1KEvM8VTbYrY2amKPv6vo7QtX5NTRCgo=,tag:REyGTGShd2XibR1UG0el9A==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.12.2
