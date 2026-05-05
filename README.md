@@ -86,11 +86,11 @@ homelab-devops/
 
 ## available commands
 
-```bash
-make fmt
-make pretty
-make format
-```
+| Command       | Description                                 |
+| ------------- | ------------------------------------------- |
+| `make fmt`    | Placeholder formatter for non-Go repository |
+| `make pretty` | Format Markdown, YAML, JSON, and JSONC      |
+| `make format` | Run repository formatting commands          |
 
 ## secret management
 
