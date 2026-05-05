@@ -39,11 +39,21 @@ this document was written.
 - `codecov/codecov-action` v6.0.0:
   `57e3a136b779b570ffcdbf80b3bdc90e7fab3de2`
 - `aquasecurity/trivy-action` v0.36.0:
-  `ed142fd0673e97e23eac54620cfb913e5ce36c25`
+  `a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8`
 - `gitleaks/gitleaks-action` v2.3.9:
   `ff98106e4c7b2bc287b24eaf42907196329070c7`
 - `sigstore/cosign-installer` v4.1.1:
   `cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003`
+- `docker/setup-buildx-action` v3.11.1:
+  `e468171a9de216ec08956ac3ada2f0791b6bd435`
+- `docker/build-push-action` v6.18.0:
+  `263435318d21b8e681c14492fe198d362a7d2c83`
+- `docker/login-action` v4.1.0:
+  `4907a6ddec9925e35a0a9e82d7399ccc52663121`
+- `bufbuild/buf-action` v1.4.0:
+  `fd21066df7214747548607aaa45548ba2b9bc1ff`
+- `googleapis/release-please-action` v5.0.0:
+  `45996ed1f6d02564a971a2fa1b5860e934307cf7`
 - `google/osv-scanner-action` v2.3.5:
   `c51854704019a247608d928f370c98740469d4b5`
 - `DavidAnson/markdownlint-cli2-action` v23.1.0:
@@ -350,6 +360,22 @@ Keep `gochecknoglobals` out of the default app profile. It is useful for strict
 library packages, but it is noisy for real services with config, metrics,
 registries, and generated code.
 
+## OpenAPI Compatibility
+
+For services that generate an OpenAPI document from code, keep generation behind
+a project-native Makefile target such as `make gen-openapi`. The target should
+write only the OpenAPI document to stdout so it can be redirected in CI.
+
+On pull requests, compare the generated OpenAPI document from the base branch
+against the generated document from the pull request revision. Use a pinned
+`oasdiff` CLI version, write both the changelog and breaking report to the
+GitHub step summary, and fail the job when `oasdiff breaking` reports breaking
+changes.
+
+Recommended tool pin:
+
+- `github.com/oasdiff/oasdiff` v1.14.0
+
 ## Container Publishing And Signing
 
 For services that publish container images, push immutable commit tags and sign
@@ -422,6 +448,11 @@ jobs:
 
 For passwordless cosign keys, do not set `COSIGN_PASSWORD`. For encrypted keys,
 store the password as a separate secret and pass it through the step environment.
+
+For multi-architecture images, sign the manifest-list digest and each
+architecture-specific manifest digest. Zot tracks signatures by digest, so
+signing only the manifest list can leave `amd64` and `arm64` tags appearing
+unsigned even when `latest` is signed.
 
 ## TypeScript Pipeline
 
