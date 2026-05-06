@@ -34,6 +34,10 @@ this document was written.
   `4a3601121dd01d1626a1e23e37211e3254c1c06c`
 - `actions/setup-node` v6.4.0:
   `48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e`
+- `actions/upload-artifact` v7.0.1:
+  `043fb46d1a93c77aae656e7c1c64a875d1fc6a0a`
+- `actions/download-artifact` v8.0.1:
+  `3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c`
 - `golangci/golangci-lint-action` v9.2.0:
   `1e7e51e771db61008b38414a730f564565cf7c20`
 - `codecov/codecov-action` v6.0.0:
