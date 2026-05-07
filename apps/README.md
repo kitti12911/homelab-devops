@@ -38,6 +38,8 @@ this document was written.
   `043fb46d1a93c77aae656e7c1c64a875d1fc6a0a`
 - `actions/download-artifact` v8.0.1:
   `3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c`
+- `actions/create-github-app-token` v2.1.4:
+  `67018539274d69449ef7c02e8e71183d1719ab42`
 - `golangci/golangci-lint-action` v9.2.0:
   `1e7e51e771db61008b38414a730f564565cf7c20`
 - `codecov/codecov-action` v6.0.0:
