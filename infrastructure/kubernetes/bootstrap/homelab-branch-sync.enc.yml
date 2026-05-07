@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: homelab-branch-sync
+    namespace: github
+type: Opaque
+stringData:
+    app_id: ENC[AES256_GCM,data:3T4CPqkJEQ==,iv:zHa+x8SIvsWzy41GzFmbFJOYw0k1PQx4fOQMdyK5cy8=,tag:dcZe0Ic2ueYCf5C0NlHZNg==,type:str]
+    homelab-branch-sync.2026-05-07.private-key.pem: ENC[AES256_GCM,data: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,iv:7xWoKUfdUqp6pOjb8J9zbmH9uaNiF+Q8UxheATx4SME=,tag:0irDgikApGLgOzC8BgLUpA==,type:str]
+sops:
+    age:
+        - recipient: age1s6q3qyvmyxrxuc05ge89e94wrfvx4p2vlylas000dgz35v8cw5aqqjj62y
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBRVUg2ajF6V2lQeEZrNkpp
+            a1FvWXJmczdHRFdwd0QyNGQzVUFFMG0wcVQ0CnorNFlFSklYa2lNNUNWa2huSHZ6
+            dmhZUU93ekFsZG5NcmFDTFBxS2NsL3MKLS0tIHk0U3BzVVJ5bk9hZUM0eW9HemRM
+            cmYwNktkekF5NXVGRkFaeU5hUVZhb2cKKojSNrSOZi2N5p/ZRq/OB5ZI+4eejRqm
+            QDsMF7PNlITcwcH5J4cptCcwatbGvoYbsv8ww0KaLBKmTgpqfThKnw==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-05-07T19:17:54Z"
+    mac: ENC[AES256_GCM,data:e9lfleVoUSJn/FlPsvjkC/qAWRuhXiJiz5ye0+vUUAciJHWESWOke8PJjDZTzdJEnZg1qT+1a0tJXEV/wUNIyW260Tt2tBxifwuE1XAC2ghkYBlU/OICAuSW+zdWqn/oEQZ1+bCJB0+zcAc4zfSGTSHXWTX57NwLT3xjdfKMzP8=,iv:mPpD7iqAcVTguKLr7uMtEnFrqX7LJGPk00z6cer+OBY=,tag:CcKRVI0gHq4bcATyINB6rw==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.12.2
