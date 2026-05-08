@@ -34,3 +34,4 @@ spec:
         - sonarqube.lan
         - pyroscope.lan
         - pyroscope-ingest.lan
+        - oas-sandbox.lan

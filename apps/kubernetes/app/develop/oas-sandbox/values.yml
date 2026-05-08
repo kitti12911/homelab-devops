@@ -22,7 +22,4 @@ httpRoute:
     parentRefs:
         - name: traefik
           namespace: default
-          group: gateway.networking.k8s.io
-          kind: Gateway
           sectionName: https
-    pathPrefix: /
