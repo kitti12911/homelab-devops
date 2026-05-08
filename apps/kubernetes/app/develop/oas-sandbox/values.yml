@@ -1,0 +1,28 @@
+image:
+    repository: zot.lan/kitti12911/oas-sandbox
+    tag: "v1.6.0-beta.1"
+    digest: "sha256:58478bb522b9f7575fcbe19713278dc68cc52ccc1c570807d712f2ae28cef4fc"
+    pullPolicy: IfNotPresent
+
+imagePullSecrets:
+    - name: zot-registry
+
+configSecret:
+    create: false
+    name: oas-sandbox-config
+
+config:
+    service:
+        port: 8080
+
+httpRoute:
+    enabled: true
+    hostnames:
+        - oas-sandbox.lan
+    parentRefs:
+        - name: traefik
+          namespace: default
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          sectionName: https
+    pathPrefix: /
