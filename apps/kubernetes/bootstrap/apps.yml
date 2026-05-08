@@ -6,7 +6,7 @@ metadata:
 spec:
     project: default
     source:
-        repoURL: git@github.com:kitti12911/homelab-devops.git
+        repoURL: https://github.com/kitti12911/homelab-devops.git
         targetRevision: main
         path: apps/kubernetes/app/develop
     destination:

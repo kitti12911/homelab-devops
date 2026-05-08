@@ -6,8 +6,8 @@ metadata:
 spec:
     description: Develop environment applications
     sourceRepos:
-        - git@github.com:kitti12911/homelab-devops.git
-        - git@github.com:kitti12911/helm-sandbox.git
+        - https://github.com/kitti12911/homelab-devops.git
+        - https://github.com/kitti12911/helm-sandbox.git
     destinations:
         - server: https://kubernetes.default.svc
           namespace: sandbox
