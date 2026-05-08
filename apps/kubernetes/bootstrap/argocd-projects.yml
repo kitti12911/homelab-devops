@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+    name: develop-apps
+    namespace: argocd
+spec:
+    description: Develop environment applications
+    sourceRepos:
+        - git@github.com:kitti12911/homelab-devops.git
+        - git@github.com:kitti12911/helm-sandbox.git
+    destinations:
+        - server: https://kubernetes.default.svc
+          namespace: sandbox
+    clusterResourceWhitelist:
+        - group: "*"
+          kind: "*"

@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+    name: grpc-sandbox
+    namespace: argocd
+spec:
+    project: develop-apps
+    sources:
+        - repoURL: git@github.com:kitti12911/helm-sandbox.git
+          targetRevision: main
+          path: charts/grpc-sandbox
+          helm:
+              releaseName: grpc-sandbox
+              valueFiles:
+                  - $values/apps/kubernetes/app/develop/grpc-sandbox/values.yml
+        - repoURL: git@github.com:kitti12911/homelab-devops.git
+          targetRevision: main
+          ref: values
+        - repoURL: git@github.com:kitti12911/homelab-devops.git
+          targetRevision: main
+          path: apps/kubernetes/app/develop/grpc-sandbox
+    destination:
+        server: https://kubernetes.default.svc
+        namespace: sandbox
+    syncPolicy:
+        syncOptions:
+            - CreateNamespace=true

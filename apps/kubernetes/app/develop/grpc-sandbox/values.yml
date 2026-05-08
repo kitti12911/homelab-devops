@@ -1,0 +1,16 @@
+image:
+    repository: zot.lan/kitti12911/grpc-sandbox
+    tag: "v1.7.0-beta.2"
+    digest: "sha256:4bd4f9059eec09064b4727034bd256327e563e9504c7fa77af78ed60cb2aac83"
+    pullPolicy: IfNotPresent
+
+imagePullSecrets:
+    - name: zot-registry
+
+configSecret:
+    create: false
+    name: grpc-sandbox-config
+
+config:
+    service:
+        port: 50051
