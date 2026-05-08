@@ -43,6 +43,7 @@ spec:
                               "externalUrl": "https://zot.lan",
                               "auth": {
                                 "apikey": true,
+                                "sessionKeysFile": "/etc/zot/session/session-keys.json",
                                 "openid": {
                                   "providers": {
                                     "oidc": {
@@ -109,6 +110,8 @@ spec:
                   externalSecrets:
                       - secretName: "zot-oidc-credentials"
                         mountPath: "/etc/zot/oidc"
+                      - secretName: "zot-session-keys"
+                        mountPath: "/etc/zot/session"
 
                   persistence: true
                   pvc:
