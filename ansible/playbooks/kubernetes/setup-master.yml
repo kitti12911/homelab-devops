@@ -9,12 +9,51 @@
           --disable-network-policy
           --write-kubeconfig-mode 644
           --node-taint node-role.kubernetes.io/control-plane:NoSchedule
+      k3s_config_dir: /etc/rancher/k3s/config.yaml.d
+      k3s_conntrack_config_path: "{{ k3s_config_dir }}/99-kube-proxy-conntrack.yaml"
+
+  handlers:
+      - name: Restart K3s server
+        ansible.builtin.systemd:
+            name: k3s
+            state: restarted
+        when: k3s_installed.stat.exists
 
   tasks:
       - name: Check if K3s is already installed
         ansible.builtin.stat:
             path: /usr/local/bin/k3s
         register: k3s_installed
+
+      - name: Check if Kubernetes sysctl tuning exists
+        ansible.builtin.stat:
+            path: /etc/sysctl.d/99-kubernetes-tuning.conf
+        register: k3s_sysctl_tuning
+
+      - name: Ensure K3s config drop-in directory exists
+        ansible.builtin.file:
+            path: "{{ k3s_config_dir }}"
+            state: directory
+            mode: "0755"
+
+      - name: Configure kube-proxy to preserve Ansible conntrack limit
+        ansible.builtin.copy:
+            dest: "{{ k3s_conntrack_config_path }}"
+            mode: "0644"
+            content: |
+                kube-proxy-arg:
+                    - conntrack-max-per-core=0
+        notify: Restart K3s server
+
+      - name: Restart K3s server before readiness check if config changed
+        ansible.builtin.meta: flush_handlers
+
+      - name: Reapply Kubernetes sysctl tuning after K3s restart
+        ansible.builtin.command: sysctl -p /etc/sysctl.d/99-kubernetes-tuning.conf
+        changed_when: false
+        when:
+            - k3s_installed.stat.exists
+            - k3s_sysctl_tuning.stat.exists
 
       - name: Install K3s server
         ansible.builtin.shell: |

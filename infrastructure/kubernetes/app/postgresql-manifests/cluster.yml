@@ -13,7 +13,7 @@ spec:
             effective_cache_size: "2560MB"
             work_mem: "32MB"
             maintenance_work_mem: "256MB"
-            max_connections: "100"
+            max_connections: "300"
 
     bootstrap:
         initdb:
