@@ -84,9 +84,9 @@ spec:
                                 }
 
                                 stage.match {
-                                  selector = "{namespace=\"kube-system\", pod=~\"snapshot-controller-.*\"} |~ \".*leaderelection.go:.*snapshot-controller-leader.*\""
+                                  selector = "{namespace=\"kube-system\", pod=~\"snapshot-controller-.*\"} |~ \".*leaderelection.go:.*and has not yet expired.*\""
                                   action   = "drop"
-                                  drop_counter_reason = "snapshot_controller_leader_election"
+                                  drop_counter_reason = "snapshot_controller_leader_election_lock_held"
                                 }
 
                                 stage.match {
