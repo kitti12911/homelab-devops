@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: zot-api-key
+type: Opaque
+stringData:
+    Macbook: ENC[AES256_GCM,data:dzPP0/HaQxqfwoRn2Ms6rRVhS9c6idpvZqQtmNRI73CV92Kv,iv:3G1V1i2eeLDnThNVp8o8rPWFbHsA/h6Bj1OnPUSHWsw=,tag:S512bYpXDgyVf4vyOKlbbA==,type:str]
+    GitHub: ENC[AES256_GCM,data:RUF/u9NSSGTfl7o53c6vVpgANshinold+neL9FoNE5ox99Z8,iv:Uxg4rYmTsF6fW4fw/5Ygg0r9Bwmje3ZYTdlnZNsr+Yo=,tag:Bl+pMwog/NR3y63lZ4AZsw==,type:str]
+    Cluster: ENC[AES256_GCM,data:wMhEjdg21yO+DSCkf+0b7VWvMn/hd7HlxsYEjifIpZpLVNPq,iv:GlSK4ywRHsIwQp3iU+GeCyEnjHmJ5Jwd9zs522k3KbU=,tag:/xXZ/+s+utQXEbKUd8h/gw==,type:str]
+sops:
+    age:
+        - recipient: age1s6q3qyvmyxrxuc05ge89e94wrfvx4p2vlylas000dgz35v8cw5aqqjj62y
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBuZEFRcFpoRGFuZVRjc3Ix
+            cnJWZkd3Rm5ldnE2VFFMYmxTbTZoTVJFZ2dZCjBtL00vU1hUd0ROYUVxNzIrbmhR
+            cUs3L0RmZmRkY01iQXEyaHZkUTdnWjAKLS0tIDlXN1AwQXRISEh6M3dyNy9zdXRH
+            eDk4akd3eHY2WWpXS2sySW41YVRNRVEKkBOFch8rEoVSYtvp4ZEu1X6wd284TMi5
+            swJOstBDymL6q99vYenpBWya2xQrh/QubvpoJu9jHQP4QjbvrWtoNQ==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-05-09T07:41:58Z"
+    mac: ENC[AES256_GCM,data:9pckTyjlwKXJ4F7hqWR4gOZZ9SYe4sQQUIqS5YiJHqUP/kzwHe94j5Xn+hMWJsiiA/+S5/BtegIN4RpXEZSFglX11GLD39YlssyQGjK5XEOVrF1GurrRF81lfCS6Xz0op8f9P1taTl55Pdlki1J36fgs+JT0fUhDOHojjVUPYTI=,iv:dFKGrR60tcSvVKi0V9y24BMsPu0pJuLh+TexiNbyalQ=,tag:/roJq1ccBpWHz6hhdMUXQA==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.12.2
