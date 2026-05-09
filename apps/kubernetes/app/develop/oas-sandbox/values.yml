@@ -9,16 +9,12 @@ replicaCount: 4
 imagePullSecrets:
     - name: zot-pull
 
-env:
-    - name: GOMEMLIMIT
-      value: 220MiB
-
 resources:
     requests:
         cpu: 50m
         memory: 64Mi
     limits:
-        memory: 256Mi
+        memory: 384Mi
 
 topologySpreadConstraints:
     - maxSkew: 1
