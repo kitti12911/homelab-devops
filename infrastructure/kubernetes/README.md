@@ -244,13 +244,13 @@ create these clients (capability config: `client authentication` on, `standard f
 
 ##### zot
 
-| field                           | value                               |
-| ------------------------------- | ----------------------------------- |
-| root url                        | `https://zot.lan`                   |
-| home url                        | `https://zot.lan`                   |
-| valid redirect uris             | `https://zot.lan/zot/auth/callback` |
-| valid post logout redirect uris | `https://zot.lan`                   |
-| web origins                     | `https://zot.lan`                   |
+| field                           | value                                      |
+| ------------------------------- | ------------------------------------------ |
+| root url                        | `https://zot.lan`                          |
+| home url                        | `https://zot.lan`                          |
+| valid redirect uris             | `https://zot.lan/zot/auth/callback/oidc`   |
+| valid post logout redirect uris | `https://zot.lan`                          |
+| web origins                     | `https://zot.lan`                          |
 
 ##### sonarqube (SAML)
 
