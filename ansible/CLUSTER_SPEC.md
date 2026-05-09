@@ -119,6 +119,9 @@ Standalone nodes are part of the homelab inventory but are not Kubernetes cluste
 | ------- | ---------- | ---------------- | -------------- | --- | --------------- | ------------ | -------------- |
 | `hotel` | `proxy`    | `192.168.88.208` | Raspberry Pi 5 | 2GB | 64GB MicroSD    | `sd`         | 1Gbps Ethernet |
 
+Proxy node setup is owned by `playbooks/infrastructure/setup-proxy.yml`,
+including Envoy installation and proxy-specific kernel tuning.
+
 ## Node Notes
 
 ### `mike`

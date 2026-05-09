@@ -57,6 +57,7 @@ static_resources:
           "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           stat_prefix: ingress_https
           cluster: cluster_traefik_https
+          idle_timeout: 300s
   - name: listener_otlp_grpc
     address:
       socket_address:
@@ -71,6 +72,7 @@ static_resources:
           "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           stat_prefix: ingress_otlp_grpc
           cluster: cluster_traefik_otlp_grpc
+          idle_timeout: 300s
   - name: listener_postgresql
     address:
       socket_address:
@@ -123,6 +125,13 @@ static_resources:
         keepalive_probes: 3
         keepalive_time: 60
         keepalive_interval: 15
+    circuit_breakers:
+      thresholds:
+      - priority: DEFAULT
+        max_connections: 20000
+        max_pending_requests: 20000
+        max_requests: 20000
+        max_retries: 3
     health_checks:
     - timeout: 5s
       interval: 15s
@@ -153,6 +162,13 @@ static_resources:
         keepalive_probes: 3
         keepalive_time: 60
         keepalive_interval: 15
+    circuit_breakers:
+      thresholds:
+      - priority: DEFAULT
+        max_connections: 20000
+        max_pending_requests: 20000
+        max_requests: 20000
+        max_retries: 3
     health_checks:
     - timeout: 5s
       interval: 15s
@@ -183,6 +199,13 @@ static_resources:
         keepalive_probes: 3
         keepalive_time: 60
         keepalive_interval: 15
+    circuit_breakers:
+      thresholds:
+      - priority: DEFAULT
+        max_connections: 20000
+        max_pending_requests: 20000
+        max_requests: 20000
+        max_retries: 3
     health_checks:
     - timeout: 5s
       interval: 15s
@@ -294,4 +317,3 @@ static_resources:
                 address: {{ hostvars[host]['ansible_host'] }}
                 port_value: {{ dragonfly_nodeport }}
 {% endfor %}
-

@@ -1,5 +1,5 @@
 - name: Initial node setup
-  hosts: cluster:proxy
+  hosts: cluster
   become: true
   strategy: free
   gather_facts: true
