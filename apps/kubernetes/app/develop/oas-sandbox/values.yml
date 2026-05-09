@@ -4,7 +4,7 @@ image:
     digest: "sha256:7d26eb837864a163732a17fed47a9870a8196f789bda59ca044b27cf8bfe2c87"
     pullPolicy: IfNotPresent
 
-replicaCount: 4
+replicaCount: 1
 
 imagePullSecrets:
     - name: zot-pull
@@ -14,7 +14,7 @@ resources:
         cpu: 50m
         memory: 64Mi
     limits:
-        memory: 384Mi
+        memory: 256Mi
 
 topologySpreadConstraints:
     - maxSkew: 1
