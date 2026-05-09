@@ -82,6 +82,18 @@ spec:
                                   expression  = ".*kube-probe/.*"
                                   drop_counter_reason = "kube_health_probe"
                                 }
+
+                                stage.match {
+                                  selector = "{namespace=\"kube-system\", pod=~\"snapshot-controller-.*\"} |~ \".*leaderelection.go:.*snapshot-controller-leader.*\""
+                                  action   = "drop"
+                                  drop_counter_reason = "snapshot_controller_leader_election"
+                                }
+
+                                stage.match {
+                                  selector = "{namespace=\"kube-system\", pod=~\"snapshot-controller-.*\"} |~ \".*reflector.go:.*\\\"Watch close\\\".*\""
+                                  action   = "drop"
+                                  drop_counter_reason = "snapshot_controller_watch_close"
+                                }
                               }
 
                               loki.source.kubernetes_events "default" {
