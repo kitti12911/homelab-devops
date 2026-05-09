@@ -7,6 +7,18 @@ image:
 imagePullSecrets:
     - name: zot-pull
 
+env:
+    - name: GOMEMLIMIT
+      value: 220MiB
+
+resources:
+    requests:
+        cpu: 50m
+        memory: 64Mi
+    limits:
+        cpu: 250m
+        memory: 256Mi
+
 configSecret:
     create: false
     name: grpc-sandbox-config
