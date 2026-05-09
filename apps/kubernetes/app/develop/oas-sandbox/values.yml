@@ -11,6 +11,22 @@ configSecret:
     create: false
     name: oas-sandbox-config
 
+probes:
+    readiness:
+        enabled: true
+        path: /health
+        initialDelaySeconds: 5
+        periodSeconds: 10
+        timeoutSeconds: 3
+        failureThreshold: 3
+    liveness:
+        enabled: true
+        path: /health
+        initialDelaySeconds: 15
+        periodSeconds: 20
+        timeoutSeconds: 3
+        failureThreshold: 3
+
 config:
     service:
         port: 8080
@@ -22,4 +38,6 @@ httpRoute:
     parentRefs:
         - name: traefik
           namespace: default
+          group: gateway.networking.k8s.io
+          kind: Gateway
           sectionName: https

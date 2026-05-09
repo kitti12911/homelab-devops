@@ -11,6 +11,20 @@ configSecret:
     create: false
     name: grpc-sandbox-config
 
+probes:
+    readiness:
+        enabled: true
+        initialDelaySeconds: 5
+        periodSeconds: 10
+        timeoutSeconds: 3
+        failureThreshold: 3
+    liveness:
+        enabled: true
+        initialDelaySeconds: 15
+        periodSeconds: 20
+        timeoutSeconds: 3
+        failureThreshold: 3
+
 config:
     service:
         port: 50051
