@@ -73,6 +73,19 @@
   gather_facts: false
 
   tasks:
+      - name: Remove computer label from all worker nodes (cleanup before reapply)
+        ansible.builtin.shell: |
+            /usr/local/bin/k3s kubectl label node {{ item }} node-role.kubernetes.io/computer- 2>/dev/null || true
+        loop: "{{ groups['worker'] }}"
+        ignore_errors: true
+        changed_when: false
+
+      - name: Label computer worker nodes
+        ansible.builtin.shell: |
+            /usr/local/bin/k3s kubectl label node {{ item }} node-role.kubernetes.io/computer=true --overwrite
+        loop: "{{ groups['computer'] }}"
+        when: groups['computer'] | length > 0
+
       - name: Label and taint database nodes
         ansible.builtin.shell: |
             /usr/local/bin/k3s kubectl label node {{ item }} node-role.kubernetes.io/database=true --overwrite

@@ -8,6 +8,8 @@ spec:
         providers:
           kubernetesGateway:
             enabled: true
+        nodeSelector:
+          node-role.kubernetes.io/computer: "true"
         ports:
           web:
             port: 8000

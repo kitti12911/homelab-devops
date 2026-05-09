@@ -48,10 +48,10 @@ Node scheduling is configured by `playbooks/kubernetes/setup-master.yml` and `pl
 | Host           | Purpose               | Labels                                        | Taints                                             |
 | -------------- | --------------------- | --------------------------------------------- | -------------------------------------------------- |
 | `alpha-actual` | Control plane         | `node-role.kubernetes.io/control-plane=true`  | `node-role.kubernetes.io/control-plane:NoSchedule` |
-| `bravo`        | General worker        | Kubernetes default worker labels              | none                                               |
-| `charlie`      | General worker        | Kubernetes default worker labels              | none                                               |
-| `delta`        | General worker        | Kubernetes default worker labels              | none                                               |
-| `echo`         | General worker        | Kubernetes default worker labels              | none                                               |
+| `bravo`        | General worker        | `node-role.kubernetes.io/computer=true`       | none                                               |
+| `charlie`      | General worker        | `node-role.kubernetes.io/computer=true`       | none                                               |
+| `delta`        | General worker        | `node-role.kubernetes.io/computer=true`       | none                                               |
+| `echo`         | General worker        | `node-role.kubernetes.io/computer=true`       | none                                               |
 | `kilo`         | Object storage worker | `node-role.kubernetes.io/object-storage=true` | `dedicated=object-storage:NoSchedule`              |
 | `november`     | Database worker       | `node-role.kubernetes.io/database=true`       | `dedicated=database:NoSchedule`                    |
 
