@@ -26,6 +26,25 @@
           --collector.systemd.unit-exclude={{ node_exporter_systemd_unit_exclude }}
       proxy_sysctl_config_path: /etc/sysctl.d/99-proxy-tuning.conf
 
+  handlers:
+      - name: Restart CPU Governor Performance
+        ansible.builtin.systemd:
+            name: cpu-governor-performance
+            state: restarted
+            daemon_reload: true
+
+      - name: Restart Envoy
+        ansible.builtin.systemd:
+            name: "{{ envoy_service_name }}"
+            state: restarted
+            daemon_reload: true
+
+      - name: Restart Node Exporter
+        ansible.builtin.systemd:
+            name: prometheus-node-exporter
+            state: restarted
+            daemon_reload: true
+
   tasks:
       - name: Set proxy hardware-derived tuning variables
         ansible.builtin.set_fact:
@@ -34,6 +53,31 @@
             proxy_sysctl_conntrack_buckets: "{{ '131072' if ansible_facts['memtotal_mb'] >= 7000 else '65536' if ansible_facts['memtotal_mb'] >= 3000 else '32768' }}"
             proxy_sysctl_dirty_ratio: "{{ {'nvme': '30', 'usb_ssd': '20', 'sata_ssd': '20', 'sd': '10'}[hw_storage_type] }}"
             proxy_sysctl_dirty_background_ratio: "{{ {'nvme': '15', 'usb_ssd': '10', 'sata_ssd': '10', 'sd': '5'}[hw_storage_type] }}"
+
+      - name: Deploy CPU governor performance service
+        ansible.builtin.copy:
+            dest: /etc/systemd/system/cpu-governor-performance.service
+            mode: "0644"
+            content: |
+                [Unit]
+                Description=Set CPU governor to performance
+                After=multi-user.target
+
+                [Service]
+                Type=oneshot
+                ExecStart=/bin/sh -c 'for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do [ -w "$f" ] && echo performance > "$f"; done'
+                RemainAfterExit=yes
+
+                [Install]
+                WantedBy=multi-user.target
+        notify: Restart CPU Governor Performance
+
+      - name: Enable CPU governor performance service
+        ansible.builtin.systemd:
+            name: cpu-governor-performance
+            enabled: true
+            state: started
+            daemon_reload: true
 
       - name: Create Envoy config directory
         ansible.builtin.file:
@@ -233,17 +277,4 @@
             name: prometheus-node-exporter
             state: started
             enabled: true
-            daemon_reload: true
-
-  handlers:
-      - name: Restart Envoy
-        ansible.builtin.systemd:
-            name: "{{ envoy_service_name }}"
-            state: restarted
-            daemon_reload: true
-
-      - name: Restart Node Exporter
-        ansible.builtin.systemd:
-            name: prometheus-node-exporter
-            state: restarted
             daemon_reload: true

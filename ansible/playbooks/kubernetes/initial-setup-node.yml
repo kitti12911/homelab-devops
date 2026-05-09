@@ -21,6 +21,12 @@
             name: systemd-journald
             state: restarted
 
+      - name: restart cpu governor performance
+        ansible.builtin.systemd:
+            name: cpu-governor-performance
+            state: restarted
+            daemon_reload: true
+
   tasks:
       # --- Tuning variables derived from host hardware ---
       # Memory tiers: >=7GB (8GB Pi), >=3GB (4GB Pi), <3GB (small Pi/proxy)
@@ -142,6 +148,33 @@
       - name: Set timezone to Asia/Bangkok
         community.general.timezone:
             name: Asia/Bangkok
+
+      - name: Deploy CPU governor performance service
+        ansible.builtin.copy:
+            dest: /etc/systemd/system/cpu-governor-performance.service
+            mode: "0644"
+            content: |
+                [Unit]
+                Description=Set CPU governor to performance
+                After=multi-user.target
+
+                [Service]
+                Type=oneshot
+                ExecStart=/bin/sh -c 'for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do [ -w "$f" ] && echo performance > "$f"; done'
+                RemainAfterExit=yes
+
+                [Install]
+                WantedBy=multi-user.target
+        notify: restart cpu governor performance
+        when: "'cluster' in group_names"
+
+      - name: Enable CPU governor performance service
+        ansible.builtin.systemd:
+            name: cpu-governor-performance
+            enabled: true
+            state: started
+            daemon_reload: true
+        when: "'cluster' in group_names"
 
       - name: Ensure persistent journal directory exists
         ansible.builtin.file:

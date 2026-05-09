@@ -100,6 +100,7 @@ Cluster nodes are prepared by `playbooks/kubernetes/initial-setup-node.yml`.
 - GPU memory and CMA are reduced for headless Raspberry Pi operation.
 - WiFi and Bluetooth are disabled on cluster nodes.
 - Memory cgroups are enabled for Kubernetes.
+- CPU governors are pinned to `performance` for lower latency jitter.
 - Kubernetes network modules `br_netfilter` and `overlay` are loaded.
 - Kernel, filesystem, conntrack, TCP, and VM sysctls are tuned per node memory and storage type.
 - Longhorn prerequisites are installed only on the `computer` worker group.
@@ -121,6 +122,8 @@ Standalone nodes are part of the homelab inventory but are not Kubernetes cluste
 
 Proxy node setup is owned by `playbooks/infrastructure/setup-proxy.yml`,
 including Envoy installation and proxy-specific kernel tuning.
+It also pins the CPU governor to `performance` for lower latency jitter on
+ingress and proxy traffic.
 
 ## Node Notes
 
