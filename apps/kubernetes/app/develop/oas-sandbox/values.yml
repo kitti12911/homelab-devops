@@ -9,12 +9,16 @@ replicaCount: 1
 imagePullSecrets:
     - name: zot-pull
 
+gomemlimit:
+    enabled: true
+    percentage: 90
+
 resources:
     requests:
         cpu: 50m
         memory: 64Mi
     limits:
-        memory: 512Mi
+        memory: 1024Mi
 
 topologySpreadConstraints:
     - maxSkew: 1
