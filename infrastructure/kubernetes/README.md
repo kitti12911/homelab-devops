@@ -46,7 +46,7 @@ sync apps in this order after argocd is running. each wave depends on the previo
 
 | wave | apps                                                                                                             | reason                                                                                             |
 | ---- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| 1    | cert-manager, cloudnative-pg, keycloak-operator, longhorn                                                        | operators and storage - no dependencies                                                            |
+| 1    | cert-manager, cloudnative-pg, keycloak-operator, snapshot-controller, longhorn                                   | operators and storage - no dependencies                                                            |
 | 2    | trust-manager, postgresql, dragonfly, nats, seaweedfs                                                            | trust-manager needs cert-manager; dbs need cnpg + longhorn                                         |
 | 3    | keycloak, kube-prometheus-stack                                                                                  | keycloak needs keycloak-operator + postgresql                                                      |
 | 4    | oauth2-proxy, zot, sonarqube, loki, tempo, pyroscope, alloy, reloader, system-upgrade-controller, trivy-operator | oauth2-proxy + zot need keycloak; sonarqube needs postgresql; observability stack needs prometheus |
