@@ -12,6 +12,9 @@ spec:
           kind: DaemonSet
         nodeSelector:
           node-role.kubernetes.io/computer: "true"
+        service:
+          spec:
+            externalTrafficPolicy: Local
         ports:
           web:
             port: 8000

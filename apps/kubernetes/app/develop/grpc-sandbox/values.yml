@@ -4,6 +4,8 @@ image:
     digest: "sha256:bf014c8532920677b644eb9311db08ef286f17530c154fd2b58275f7ddeae08f"
     pullPolicy: IfNotPresent
 
+replicaCount: 4
+
 imagePullSecrets:
     - name: zot-pull
 
@@ -17,6 +19,15 @@ resources:
         memory: 64Mi
     limits:
         memory: 256Mi
+
+topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+          matchLabels:
+              app.kubernetes.io/name: grpc-sandbox
+              app.kubernetes.io/instance: grpc-sandbox
 
 configSecret:
     create: false

@@ -4,6 +4,8 @@ image:
     digest: "sha256:e4a5dbf03bb2b1d760f39da93924cfc87698aaaab57f2ed72c04cb241cf79f17"
     pullPolicy: IfNotPresent
 
+replicaCount: 4
+
 imagePullSecrets:
     - name: zot-pull
 
@@ -17,6 +19,15 @@ resources:
         memory: 64Mi
     limits:
         memory: 256Mi
+
+topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+          matchLabels:
+              app.kubernetes.io/name: oas-sandbox
+              app.kubernetes.io/instance: oas-sandbox
 
 configSecret:
     create: false

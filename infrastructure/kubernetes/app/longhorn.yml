@@ -11,10 +11,14 @@ spec:
           targetRevision: "1.11.1"
           helm:
               valuesObject:
+                  global:
+                      nodeSelector:
+                          node-role.kubernetes.io/computer: "true"
                   preUpgradeChecker:
                       jobEnabled: false
                   defaultSettings:
                       defaultDataPath: "/var/lib/longhorn/"
+                      systemManagedComponentsNodeSelector: "node-role.kubernetes.io/computer:true"
                       storageMinimalAvailablePercentage: "5"
                       defaultReplicaCount: "2"
                       allowRecurringJobWhileVolumeDetached: false
