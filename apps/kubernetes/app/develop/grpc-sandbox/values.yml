@@ -5,7 +5,7 @@ image:
     pullPolicy: IfNotPresent
 
 imagePullSecrets:
-    - name: zot-registry
+    - name: zot-pull
 
 configSecret:
     create: false
