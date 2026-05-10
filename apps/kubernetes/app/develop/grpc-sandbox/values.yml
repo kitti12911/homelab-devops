@@ -4,7 +4,7 @@ image:
     digest: "sha256:43588fab2b6fd5d5932c2c8eb252579a4cea4f02013264871807613e2f74668b"
     pullPolicy: IfNotPresent
 
-replicaCount: 4
+replicaCount: 2
 
 imagePullSecrets:
     - name: zot-pull
