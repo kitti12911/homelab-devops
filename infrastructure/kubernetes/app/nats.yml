@@ -83,6 +83,7 @@ spec:
                             selector:
                                 app.kubernetes.io/name: nats
                                 app.kubernetes.io/instance: nats
+                                app.kubernetes.io/component: nats
                             ports:
                                 - name: nats
                                   port: 4222
