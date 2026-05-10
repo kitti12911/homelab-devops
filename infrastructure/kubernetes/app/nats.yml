@@ -24,8 +24,8 @@ spec:
                       merge:
                           authorization:
                               users:
-                                  - user: $NATS_USER
-                                    password: $NATS_PASSWORD
+                                  - user: << $NATS_USER >>
+                                    password: << $NATS_PASSWORD >>
 
                   container:
                       env:
