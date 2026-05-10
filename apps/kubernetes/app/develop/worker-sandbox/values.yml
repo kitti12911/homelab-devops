@@ -1,0 +1,34 @@
+image:
+    repository: zot.lan/kitti12911/worker-sandbox
+    tag: "v1.0.0-beta.1"
+    digest: "sha256:d62a7c11a83e091da40133f0dedeadd5c53fe772d6ee23e77247c422a6496e59"
+    pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+imagePullSecrets:
+    - name: zot-pull
+
+gomemlimit:
+    enabled: true
+    percentage: 90
+
+resources:
+    requests:
+        cpu: 25m
+        memory: 64Mi
+    limits:
+        memory: 256Mi
+
+topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+          matchLabels:
+              app.kubernetes.io/name: worker-sandbox
+              app.kubernetes.io/instance: worker-sandbox
+
+configSecret:
+    create: false
+    name: worker-sandbox-config
