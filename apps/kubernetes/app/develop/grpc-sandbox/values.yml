@@ -1,7 +1,7 @@
 image:
     repository: zot.lan/kitti12911/grpc-sandbox
-    tag: "v1.2.0-beta.3"
-    digest: "sha256:43588fab2b6fd5d5932c2c8eb252579a4cea4f02013264871807613e2f74668b"
+    tag: "v1.3.0-beta.1"
+    digest: "sha256:df24454ba0a405d3bd97fe26c4758bd1361ea085d9759377342a50533cd99603"
     pullPolicy: IfNotPresent
 
 replicaCount: 2
