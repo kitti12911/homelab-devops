@@ -6,6 +6,11 @@ image:
 
 replicaCount: 2
 
+autoscaling:
+    enabled: true
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+
 imagePullSecrets:
     - name: zot-pull
 
@@ -15,7 +20,7 @@ gomemlimit:
 
 resources:
     requests:
-        cpu: 50m
+        cpu: 100m
         memory: 64Mi
     limits:
         memory: 384Mi
