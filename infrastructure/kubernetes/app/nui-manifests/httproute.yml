@@ -23,6 +23,10 @@ spec:
                     group: traefik.io
                     kind: Middleware
                     name: oauth2-proxy-auth
+              - type: RequestHeaderModifier
+                requestHeaderModifier:
+                    remove:
+                        - Cookie
           backendRefs:
               - name: nui
                 port: 80
