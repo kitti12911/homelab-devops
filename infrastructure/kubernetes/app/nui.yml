@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+    name: nui
+    namespace: argocd
+spec:
+    project: database
+    source:
+        repoURL: git@github.com:kitti12911/homelab-devops.git
+        targetRevision: main
+        path: infrastructure/kubernetes/app/nui-manifests
+    destination:
+        server: https://kubernetes.default.svc
+        namespace: nui
+    syncPolicy:
+        managedNamespaceMetadata:
+            labels:
+                gateway-access: "true"
+        syncOptions:
+            - CreateNamespace=true

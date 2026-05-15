@@ -35,3 +35,4 @@ spec:
         - pyroscope.lan
         - pyroscope-ingest.lan
         - oas-sandbox.lan
+        - nui.lan

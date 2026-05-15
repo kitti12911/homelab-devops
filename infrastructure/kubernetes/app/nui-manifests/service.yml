@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: nui
+    namespace: nui
+    labels:
+        app: nui
+spec:
+    type: ClusterIP
+    selector:
+        app: nui
+    ports:
+        - name: http
+          port: 80
+          targetPort: http
+          protocol: TCP
