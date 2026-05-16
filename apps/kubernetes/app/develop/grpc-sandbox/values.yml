@@ -1,7 +1,7 @@
 image:
     repository: zot.lan/homelab/grpc-sandbox
-    tag: "v1.8.0-beta.1"
-    digest: "sha256:2873dd021a4eaccac202eecb0ec0b7d9bb7d9edb34e5fe8f8f9b93dcb385de80"
+    tag: "v1.8.0-beta.2"
+    digest: "sha256:323c729afe380460698783f32cd0475611643b4ae5e7b3947dbdf402289145a6"
     pullPolicy: IfNotPresent
 
 replicaCount: 2
