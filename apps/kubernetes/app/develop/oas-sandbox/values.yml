@@ -1,7 +1,7 @@
 image:
     repository: zot.lan/homelab/oas-sandbox
-    tag: "v1.10.0-beta.1"
-    digest: "sha256:32c4e1bb910689f373bdaad2708307a1233139910052077f96cdc9a9b805b7ca"
+    tag: "v1.11.0-beta.1"
+    digest: "sha256:2d407de4f7a573415d90a934c3754704f83899a020b5923b61619ca676eda614"
     pullPolicy: IfNotPresent
 
 replicaCount: 2
