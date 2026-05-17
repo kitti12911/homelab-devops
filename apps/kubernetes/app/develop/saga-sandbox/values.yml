@@ -1,0 +1,59 @@
+image:
+    repository: zot.lan/homelab/saga-sandbox
+    # tag/digest are overwritten by the saga-sandbox release pipeline
+    # (scripts/ci/update-helm-image-values.sh) on first publish.
+    tag: "v0.0.0"
+    digest: ""
+    pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+autoscaling:
+    enabled: false
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+
+imagePullSecrets:
+    - name: zot-pull
+
+gomemlimit:
+    enabled: true
+    percentage: 90
+
+resources:
+    requests:
+        cpu: 100m
+        memory: 64Mi
+    limits:
+        memory: 384Mi
+
+topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+          matchLabels:
+              app.kubernetes.io/name: saga-sandbox
+              app.kubernetes.io/instance: saga-sandbox
+
+configSecret:
+    create: false
+    name: saga-sandbox-config
+
+probes:
+    readiness:
+        enabled: true
+        initialDelaySeconds: 5
+        periodSeconds: 10
+        timeoutSeconds: 3
+        failureThreshold: 3
+    liveness:
+        enabled: true
+        initialDelaySeconds: 15
+        periodSeconds: 20
+        timeoutSeconds: 3
+        failureThreshold: 3
+
+config:
+    service:
+        port: 50051

@@ -1,0 +1,36 @@
+image:
+    repository: zot.lan/homelab/payment-sandbox
+    # tag/digest are overwritten by the payment-sandbox release pipeline
+    # (scripts/ci/update-helm-image-values.sh) on first publish.
+    tag: "v0.0.0"
+    digest: ""
+    pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+imagePullSecrets:
+    - name: zot-pull
+
+gomemlimit:
+    enabled: true
+    percentage: 90
+
+resources:
+    requests:
+        cpu: 25m
+        memory: 64Mi
+    limits:
+        memory: 256Mi
+
+topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+          matchLabels:
+              app.kubernetes.io/name: payment-sandbox
+              app.kubernetes.io/instance: payment-sandbox
+
+configSecret:
+    create: false
+    name: payment-sandbox-config
