@@ -4,5 +4,7 @@ resources:
     - cluster.yml
     - keycloak-database.yml
     - user-service-database.yml
+    - saga-service-database.yml
+    - payment-service-database.yml
 generators:
     - secret-generator.yml

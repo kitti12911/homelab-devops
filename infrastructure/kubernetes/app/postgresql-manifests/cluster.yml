@@ -62,6 +62,20 @@ spec:
               createrole: false
               passwordSecret:
                   name: postgresql-user-service-secret
+            - name: saga-service
+              login: true
+              superuser: false
+              createdb: false
+              createrole: false
+              passwordSecret:
+                  name: postgresql-saga-service-secret
+            - name: payment-service
+              login: true
+              superuser: false
+              createdb: false
+              createrole: false
+              passwordSecret:
+                  name: postgresql-payment-service-secret
         services:
             additional:
                 - selectorType: rw

@@ -1,0 +1,10 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+    name: payment-service-db
+    namespace: database
+spec:
+    name: payment_service
+    owner: payment-service
+    cluster:
+        name: postgresql

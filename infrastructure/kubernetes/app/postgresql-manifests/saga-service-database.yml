@@ -1,0 +1,10 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+    name: saga-service-db
+    namespace: database
+spec:
+    name: saga_service
+    owner: saga-service
+    cluster:
+        name: postgresql
