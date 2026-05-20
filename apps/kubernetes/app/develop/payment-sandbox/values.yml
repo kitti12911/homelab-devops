@@ -2,8 +2,8 @@ image:
     repository: zot.lan/homelab/payment-sandbox
     # tag/digest are overwritten by the payment-sandbox release pipeline
     # (scripts/ci/update-helm-image-values.sh) on first publish.
-    tag: "v1.0.0-beta.2"
-    digest: "sha256:57ca609c9aedc45523eca8c8eb5c94c574b94b193cf63ef2378b2983b5d1731e"
+    tag: "v1.0.1-beta.1"
+    digest: "sha256:59fecf9378df619df86fe68c380115951f9048d0778d4f9534b4553802859301"
     pullPolicy: IfNotPresent
 
 replicaCount: 1
