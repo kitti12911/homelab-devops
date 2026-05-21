@@ -76,6 +76,13 @@ spec:
               createrole: false
               passwordSecret:
                   name: postgresql-payment-service-secret
+            - name: mcp_reader
+              login: true
+              superuser: false
+              createdb: false
+              createrole: false
+              passwordSecret:
+                  name: postgresql-mcp-reader-secret
         services:
             additional:
                 - selectorType: rw
