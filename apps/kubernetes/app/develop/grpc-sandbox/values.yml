@@ -54,5 +54,5 @@ probes:
 
 config:
     database: 
-        database: user-service
+        database: user_service
 
