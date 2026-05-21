@@ -34,9 +34,9 @@ topologySpreadConstraints:
               app.kubernetes.io/name: grpc-sandbox
               app.kubernetes.io/instance: grpc-sandbox
 
-configSecret:
-    create: false
-    name: grpc-sandbox-config
+secretEnv:
+    enabled: true
+    name: grpc-sandbox-secrets
 
 probes:
     readiness:
