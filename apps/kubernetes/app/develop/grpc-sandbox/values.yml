@@ -53,5 +53,6 @@ probes:
         failureThreshold: 3
 
 config:
-    service:
-        port: 50051
+    database: 
+        database: user-service
+
