@@ -2,8 +2,8 @@ image:
     repository: zot.lan/homelab/saga-sandbox
     # tag/digest are overwritten by the saga-sandbox release pipeline
     # (scripts/ci/update-helm-image-values.sh) on first publish.
-    tag: "v1.1.0-beta.1"
-    digest: "sha256:e667612fa6893c5de51fc8f636b288b6eae1f4ac9dff0455b62eb89ddbbb334e"
+    tag: "v1.1.0-beta.2"
+    digest: "sha256:699f86a67ac1cf344c17924fd531190881e21e5f89208f0021203b48d3d70e62"
     pullPolicy: IfNotPresent
 
 replicaCount: 2
