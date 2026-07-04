@@ -1,7 +1,7 @@
 image:
-    repository: zot.lan/homelab/worker-sandbox
-    tag: "v1.6.0-beta.1"
-    digest: "sha256:ad2f5e6a01b7c8fb51c886d9e93e4625e574831787ebfa7ab8056a0a908717dc"
+    repository: ghcr.io/kitti12911/worker-sandbox
+    tag: "v1.6.0-beta.2"
+    digest: "sha256:4c31a1f1b09645e2c2a0d51f0d1a4ce56f06873ca9d69eb8af911199c1baa564"
     pullPolicy: IfNotPresent
 
 replicaCount: 1
