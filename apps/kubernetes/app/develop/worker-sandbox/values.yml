@@ -1,7 +1,7 @@
 image:
     repository: ghcr.io/kitti12911/worker-sandbox
-    tag: "v1.6.0-beta.2"
-    digest: "sha256:4c31a1f1b09645e2c2a0d51f0d1a4ce56f06873ca9d69eb8af911199c1baa564"
+    tag: "v1.6.0-beta.3"
+    digest: "sha256:ed3fad849648ea7650e7452a9a12b5b1f544472eaee1d1d1bdce2180ceba3159"
     pullPolicy: IfNotPresent
 
 replicaCount: 1
