@@ -2,8 +2,8 @@ image:
     repository: ghcr.io/kitti12911/saga-sandbox
     # tag/digest are overwritten by the saga-sandbox release pipeline
     # (scripts/ci/update-helm-image-values.sh) on first publish.
-    tag: "v1.1.0-beta.4"
-    digest: "sha256:a6ff6a06eb1729c51da6bf6eb1d9f48f0ebac362d3b4f30fcb4a9319fec79b31"
+    tag: "v1.1.0-beta.5"
+    digest: "sha256:3e7b7a3061530f3576246285d421e9cf859bb925b8905a8afe017904558e4356"
     pullPolicy: IfNotPresent
 
 replicaCount: 2
