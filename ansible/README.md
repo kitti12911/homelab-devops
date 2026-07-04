@@ -117,12 +117,12 @@ ansible all -m ping
 
 ### kubernetes
 
-| playbook                 | description                         |
-| ------------------------ | ----------------------------------- |
-| `initial-setup-node.yml` | prepare node for k3s                |
-| `setup-master.yml`       | install k3s master                  |
-| `setup-worker.yml`       | install k3s worker and join cluster |
-| `setup-zot-trust.yml`    | trust homelab CA for zot.lan pulls  |
+| playbook                       | description                                                 |
+| ------------------------------ | ----------------------------------------------------------- |
+| `initial-setup-node.yml`       | prepare node for k3s                                        |
+| `setup-master.yml`             | install k3s master                                          |
+| `setup-worker.yml`             | install k3s worker and join cluster                         |
+| `setup-zot-trust.yml.disabled` | trust homelab CA for zot.lan pulls (disabled — zot removed) |
 
 ### utility
 

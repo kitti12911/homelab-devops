@@ -6,9 +6,6 @@ image:
 
 replicaCount: 2
 
-imagePullSecrets:
-    - name: zot-pull
-
 gomemlimit:
     enabled: true
     percentage: 90

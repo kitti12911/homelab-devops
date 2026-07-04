@@ -11,9 +11,6 @@ autoscaling:
     maxReplicas: 4
     targetCPUUtilizationPercentage: 70
 
-imagePullSecrets:
-    - name: zot-pull
-
 gomemlimit:
     enabled: true
     percentage: 90
@@ -53,6 +50,5 @@ probes:
         failureThreshold: 3
 
 config:
-    database: 
+    database:
         database: user_service
-

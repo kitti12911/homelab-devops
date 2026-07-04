@@ -105,12 +105,9 @@ metadata:
 spec:
     description: Container and object storage registries
     sourceRepos:
-        - https://project-zot.github.io/helm-charts
         - https://seaweedfs.github.io/seaweedfs/helm
         - git@github.com:kitti12911/homelab-devops.git
     destinations:
-        - server: https://kubernetes.default.svc
-          namespace: zot
         - server: https://kubernetes.default.svc
           namespace: seaweedfs
     clusterResourceWhitelist:

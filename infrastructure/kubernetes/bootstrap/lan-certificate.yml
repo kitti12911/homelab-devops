@@ -17,7 +17,6 @@ spec:
     dnsNames:
         - longhorn.lan
         - keycloak.lan
-        - zot.lan
         - seaweedfs.lan
         - seaweedfs-admin.lan
         - s3.lan
