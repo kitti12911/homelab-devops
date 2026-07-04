@@ -2,8 +2,8 @@ image:
     repository: ghcr.io/kitti12911/payment-sandbox
     # tag/digest are overwritten by the payment-sandbox release pipeline
     # (scripts/ci/update-helm-image-values.sh) on first publish.
-    tag: "v1.1.0-beta.3"
-    digest: "sha256:86340cdc818550370bafa5b28f9f6ca54e319c4b63898f946e0035e4c2f3ea6b"
+    tag: "v1.1.0-beta.4"
+    digest: "sha256:f89c48930ee902b83afa93caa75684421cc16915af667efb8a46da8cbab0e2b5"
     pullPolicy: IfNotPresent
 
 replicaCount: 1
