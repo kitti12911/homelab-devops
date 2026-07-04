@@ -105,7 +105,7 @@ repoServer:
           mountPath: /custom-tools
     initContainers:
         - name: install-sops
-          image: alpine:3.23
+          image: alpine:3.24
           command: [sh, -ec]
           args:
               - |
