@@ -1,7 +1,7 @@
 image:
     repository: ghcr.io/kitti12911/grpc-sandbox
-    tag: "v1.12.0-beta.4"
-    digest: "sha256:df9310f92c67e2ada95ffb68dc63e0f7950855b40aae91433b48bb6a2cbfb9ba"
+    tag: "v2.0.0-beta.1"
+    digest: "sha256:df001202bba01f79f0d7f649b1c83208b432931ed34c591dc2c3d629d0248e99"
     pullPolicy: IfNotPresent
 
 replicaCount: 2
