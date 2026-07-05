@@ -1,7 +1,7 @@
 image:
     repository: ghcr.io/kitti12911/oas-sandbox
-    tag: "v2.0.0-beta.1"
-    digest: "sha256:f17e04e7c52b44fb467f53c8944af07c7aeb8be18be030095881b1b41accdc33"
+    tag: "v2.0.0-beta.2"
+    digest: "sha256:234a2021996d7684e893811197f1e912082b50082f3e1045940c35b1c9340e04"
     pullPolicy: IfNotPresent
 
 replicaCount: 2
