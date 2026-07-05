@@ -12,7 +12,11 @@ spec:
           helm:
               valuesObject:
                   schedule: "*/10 * * * *"
-                  successfulJobsHistoryLimit: 1
+                  # Keep no successful-run pods: a retained Completed pod still
+                  # emits kube_pod_container_resource_requests (64Mi here) to
+                  # kube-state-metrics, inflating cluster "requested resources"
+                  # dashboards every 10 min. Failures are still kept for debugging.
+                  successfulJobsHistoryLimit: 0
                   failedJobsHistoryLimit: 1
 
                   nodeSelector:
