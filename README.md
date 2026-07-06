@@ -46,8 +46,8 @@ curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4 | bash
 ### sops
 
 ```bash
-curl -LO https://github.com/getsops/sops/releases/download/v3.12.2/sops-v3.12.2.darwin.arm64
-sudo mv sops-v3.12.2.darwin.arm64 /usr/local/bin/sops
+curl -LO https://github.com/getsops/sops/releases/download/v3.13.2/sops-v3.13.2.darwin.arm64
+sudo mv sops-v3.13.2.darwin.arm64 /usr/local/bin/sops
 sudo chmod +x /usr/local/bin/sops
 ```
 
