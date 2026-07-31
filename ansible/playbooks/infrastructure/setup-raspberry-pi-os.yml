@@ -263,6 +263,18 @@
             group: "1000"
             mode: "0600"
 
+      # Raspberry Pi OS shipped /etc/sudoers.d/010_pi-nopasswd up to the 2025-12-04
+      # image; later images create the user from userconf.txt without it. Ansible
+      # runs become: true over key-only SSH, so grant it explicitly.
+      - name: Grant passwordless sudo for ansible
+        ansible.builtin.copy:
+            content: "{{ pi_username }} ALL=(ALL) NOPASSWD: ALL\n"
+            dest: "{{ mount_root }}/etc/sudoers.d/010_{{ pi_username }}-nopasswd"
+            owner: "0"
+            group: "0"
+            mode: "0440"
+            validate: /usr/sbin/visudo -cf %s
+
       - name: Unmount root partition
         ansible.posix.mount:
             path: "{{ mount_root }}"

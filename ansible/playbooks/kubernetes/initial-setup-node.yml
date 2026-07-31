@@ -1,5 +1,6 @@
 - name: Initial node setup
-  hosts: cluster
+  # Override for standalone nodes: -e target=zulu
+  hosts: "{{ target | default('cluster') }}"
   become: true
   strategy: free
   gather_facts: true
@@ -27,7 +28,28 @@
             state: restarted
             daemon_reload: true
 
+      # Recreates /dev/zram0 with the new size/algorithm. Safe on a freshly
+      # provisioned node; on a busy one this swapoffs whatever is paged out.
+      - name: restart zram swap
+        ansible.builtin.systemd:
+            name: "systemd-zram-setup@zram0.service"
+            state: restarted
+
   tasks:
+      # --- Node role ---
+      # Cluster membership implies both roles, so existing cluster behaviour is unchanged.
+      # Standalone hosts opt in explicitly via host_vars (see host_vars/zulu/vars.yml).
+      - name: Derive node role facts
+        ansible.builtin.set_fact:
+            node_is_k8s: "{{ k8s_node | default('cluster' in group_names) | bool }}"
+            node_runs_containers: "{{ container_host | default('cluster' in group_names) | bool }}"
+            node_is_rpi: "{{ hw_board | default('') is search('Raspberry Pi') }}"
+
+      # kubelet requires no swap at all. Everywhere else zram is a better use of the
+      # same memory than leaving it unused - compressed RAM beats a disk swapfile.
+      - name: Derive swap mode
+        ansible.builtin.set_fact:
+            node_swap_mode: "{{ 'none' if node_is_k8s else swap_mode | default('zram') }}"
       # --- Tuning variables derived from host hardware ---
       # Memory tiers: >=7GB (8GB Pi), >=3GB (4GB Pi), <3GB (small Pi/proxy)
       # Storage dirty ratios sourced from hw_storage_type in host_vars:
@@ -41,21 +63,23 @@
             sysctl_conntrack_buckets: "{{ '131072' if ansible_facts['memtotal_mb'] >= 7000 else '65536' if ansible_facts['memtotal_mb'] >= 3000 else '32768' }}"
             sysctl_dirty_ratio: "{{ {'nvme': '30', 'usb_ssd': '20', 'sata_ssd': '20', 'sd': '10'}[hw_storage_type] }}"
             sysctl_dirty_background_ratio: "{{ {'nvme': '15', 'usb_ssd': '10', 'sata_ssd': '10', 'sd': '5'}[hw_storage_type] }}"
+            # No swap: keep pages resident. zram: swapping is cheap (RAM-to-RAM), so lean on it.
+            sysctl_swappiness: "{{ '10' if node_swap_mode == 'none' else '150' }}"
 
       # --- Swap ---
+      # Disk swap is removed on every node: kubelet forbids it on cluster nodes, and
+      # elsewhere zram serves the same purpose without the write amplification.
       - name: Turn off dphys swap
         ansible.builtin.command:
             cmd: dphys-swapfile swapoff
         changed_when: false
         failed_when: false
-        when: "'cluster' in group_names"
 
       - name: Uninstall dphys swap file
         ansible.builtin.command:
             cmd: dphys-swapfile uninstall
         changed_when: false
         failed_when: false
-        when: "'cluster' in group_names"
 
       - name: Disable dphys-swapfile service
         ansible.builtin.systemd:
@@ -64,7 +88,6 @@
             masked: true
             state: stopped
         failed_when: false
-        when: "'cluster' in group_names"
 
       - name: Set swap size to 0 in dphys config
         ansible.builtin.lineinfile:
@@ -72,7 +95,12 @@
             regexp: "^CONF_SWAPSIZE="
             line: "CONF_SWAPSIZE=0"
         failed_when: false
-        when: "'cluster' in group_names"
+
+      - name: Remove swap entries from fstab
+        ansible.builtin.lineinfile:
+            path: /etc/fstab
+            regexp: '\sswap\s'
+            state: absent
 
       - name: Disable zram swap
         ansible.builtin.systemd:
@@ -84,57 +112,90 @@
         loop:
             - zramswap
             - "systemd-zram-setup@zram0"
-        when: "'cluster' in group_names"
+        when: node_swap_mode == 'none'
 
       - name: Disable all remaining swap
         ansible.builtin.command:
             cmd: swapoff -a
         changed_when: false
-        when: "'cluster' in group_names"
+        when: node_swap_mode == 'none'
 
-      - name: Remove swap entries from fstab
-        ansible.builtin.lineinfile:
-            path: /etc/fstab
-            regexp: '\sswap\s'
-            state: absent
-        when: "'cluster' in group_names"
+      - name: Configure zram swap
+        when: node_swap_mode == 'zram'
+        block:
+            # Raspberry Pi OS Trixie ships systemd-zram-generator and brings up
+            # /dev/zram0 at boot. zram-tools drives the same device and fails with
+            # EBUSY, so keep only the systemd path.
+            - name: Remove conflicting zram-tools package
+              ansible.builtin.apt:
+                  name: zram-tools
+                  state: absent
+                  purge: true
 
-      # --- GPU memory reclaim ---
+            - name: Ensure zram-generator drop-in directory exists
+              ansible.builtin.file:
+                  path: /etc/systemd/zram-generator.conf.d
+                  state: directory
+                  mode: "0755"
+
+            # Half of RAM, which zstd compresses to roughly 2-3x that in practice.
+            # Drop-in rather than /etc/systemd/zram-generator.conf so the shipped
+            # defaults stay visible.
+            - name: Configure zram device
+              ansible.builtin.copy:
+                  dest: /etc/systemd/zram-generator.conf.d/99-homelab.conf
+                  mode: "0644"
+                  content: |
+                      [zram0]
+                      zram-size = ram / 2
+                      compression-algorithm = zstd
+                      swap-priority = 100
+              notify: restart zram swap
+
+            # Unit is static (generator-owned), so it can be started but not enabled.
+            - name: Ensure zram swap is active
+              ansible.builtin.systemd:
+                  name: "systemd-zram-setup@zram0.service"
+                  state: started
+
+      # --- GPU memory reclaim (headless Raspberry Pi) ---
       - name: Set minimum GPU memory for headless operation
         ansible.builtin.lineinfile:
             path: /boot/firmware/config.txt
             regexp: "^gpu_mem="
             line: "gpu_mem=16"
-        when: "'cluster' in group_names"
+        when: node_is_rpi
 
       - name: Remove custom CMA reservation
         ansible.builtin.replace:
             path: "{{ cmdline_path }}"
             regexp: '\s*cma=\S+'
             replace: ""
-        when: "'cluster' in group_names"
+        when: node_is_rpi
 
       # --- Disable unused wireless hardware ---
       - name: Disable WiFi
         ansible.builtin.lineinfile:
             path: /boot/firmware/config.txt
             line: "dtoverlay=disable-wifi"
-        when: "'cluster' in group_names"
+        when: node_is_rpi
 
       - name: Disable Bluetooth
         ansible.builtin.lineinfile:
             path: /boot/firmware/config.txt
             line: "dtoverlay=disable-bt"
-        when: "'cluster' in group_names"
+        when: node_is_rpi
 
-      # --- Cgroups ---
+      # --- Cgroups (needed by any container runtime, not just kubelet) ---
       - name: Check if cgroups already enabled
         ansible.builtin.command:
             cmd: grep -q 'cgroup_memory=1' {{ cmdline_path }}
         register: cgroups_check
         failed_when: false
         changed_when: false
-        when: "'cluster' in group_names"
+        when:
+            - node_runs_containers
+            - node_is_rpi
 
       - name: Enable cgroups in cmdline.txt
         ansible.builtin.replace:
@@ -142,7 +203,8 @@
             regexp: "^(.+)$"
             replace: '\1 cgroup_memory=1 cgroup_enable=memory'
         when:
-            - "'cluster' in group_names"
+            - node_runs_containers
+            - node_is_rpi
             - cgroups_check.rc != 0
 
       - name: Set timezone to Asia/Bangkok
@@ -166,7 +228,6 @@
                 [Install]
                 WantedBy=multi-user.target
         notify: restart cpu governor performance
-        when: "'cluster' in group_names"
 
       - name: Enable CPU governor performance service
         ansible.builtin.systemd:
@@ -174,21 +235,18 @@
             enabled: true
             state: started
             daemon_reload: true
-        when: "'cluster' in group_names"
 
       - name: Ensure persistent journal directory exists
         ansible.builtin.file:
             path: /var/log/journal
             state: directory
             mode: "2755"
-        when: "'cluster' in group_names"
 
       - name: Ensure journald configuration directory exists
         ansible.builtin.file:
             path: /etc/systemd/journald.conf.d
             state: directory
             mode: "0755"
-        when: "'cluster' in group_names"
 
       - name: Enable persistent journald storage with 500MiB retention
         ansible.builtin.copy:
@@ -199,7 +257,6 @@
                 Storage=persistent
                 SystemMaxUse=500M
         notify: restart systemd-journald
-        when: "'cluster' in group_names"
 
       - name: Install storage health diagnostic utilities
         ansible.builtin.apt:
@@ -208,7 +265,6 @@
                 - nvme-cli
             state: present
             update_cache: true
-        when: "'cluster' in group_names"
 
       - name: Set hostname
         ansible.builtin.copy:
@@ -242,14 +298,14 @@
             name: nf_conntrack
             state: present
 
-      - name: Load kernel modules required by Kubernetes networking
+      - name: Load kernel modules required by container networking
         ansible.builtin.modprobe:
             name: "{{ item }}"
             state: present
         loop:
             - br_netfilter
             - overlay
-        when: "'cluster' in group_names"
+        when: node_runs_containers
 
       - name: Ensure nf_conntrack loads at boot
         ansible.builtin.lineinfile:
@@ -258,7 +314,7 @@
             create: true
             mode: "0644"
 
-      - name: Ensure Kubernetes networking modules load at boot
+      - name: Ensure container networking modules load at boot
         ansible.builtin.lineinfile:
             path: /etc/modules
             line: "{{ item }}"
@@ -267,7 +323,7 @@
         loop:
             - br_netfilter
             - overlay
-        when: "'cluster' in group_names"
+        when: node_runs_containers
 
       - name: Tune kernel parameters
         ansible.posix.sysctl:
@@ -350,8 +406,8 @@
             - { key: net.ipv4.icmp_echo_ignore_broadcasts, value: "1" }
 
             # --- VM / memory ---
-            # Lower swappiness - Pi has limited RAM, prefer keeping app pages in memory
-            - { key: vm.swappiness, value: "10" }
+            # Scaled to swap mode: 10 when swap is off, 150 when backed by zram
+            - { key: vm.swappiness, value: "{{ sysctl_swappiness }}" }
             # Don't panic on OOM, let the OOM killer do its job (killed pod < crashed node)
             - { key: vm.panic_on_oom, value: "0" }
             # Allow overcommit - Kubernetes memory requests/limits rely on this behavior
@@ -372,7 +428,7 @@
             # Prevent non-root pods from reading kernel ring buffer via dmesg
             - { key: kernel.dmesg_restrict, value: "1" }
 
-      - name: Tune Kubernetes networking parameters
+      - name: Tune container networking parameters
         ansible.posix.sysctl:
             name: "{{ item.key }}"
             value: "{{ item.value }}"
@@ -381,14 +437,16 @@
             state: present
             reload: true
         loop:
-            # Required by kubeadm preflight - must load br_netfilter before these take effect
+            # Required by kubeadm preflight, and by Docker/Podman bridge networking.
+            # br_netfilter must be loaded before these take effect.
             - { key: net.ipv4.ip_forward, value: "1" }
             - { key: net.bridge.bridge-nf-call-iptables, value: "1" }
             - { key: net.bridge.bridge-nf-call-ip6tables, value: "1" }
-        when: "'cluster' in group_names"
+        when: node_runs_containers
 
 - name: Longhorn prerequisites (worker computer nodes)
-  hosts: computer
+  # Intersected with the target so a standalone run does not reach into the cluster
+  hosts: "{{ target | default('cluster') }}:&computer"
   become: true
   strategy: free
   gather_facts: false

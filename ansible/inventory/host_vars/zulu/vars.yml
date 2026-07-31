@@ -4,8 +4,15 @@ hw_storage_primary: "500GB NVMe SSD (Samsung 980 PRO)"
 hw_storage_type: "nvme"
 hw_network: "1Gbps Ethernet"
 # 980 PRO is a PCIe 4.0 drive; Pi 5 tops out at Gen 3 x1 (dtparam=pciex1_gen=3)
+
+# --- Node role (consumed by playbooks/kubernetes/initial-setup-node.yml) ---
+k8s_node: false # not a cluster member: keeps swap enabled, skips kubelet prereqs
+container_host: true # Docker/Podman: cgroups, br_netfilter/overlay, ip_forward
+swap_mode: zram # compressed RAM swap instead of a disk swapfile
+
 hw_note: |
     Standalone playground node — not part of the k8s cluster.
 
-    Image it with:
+    Provision with:
       ansible-playbook playbooks/infrastructure/setup-raspberry-pi-os.yml -e target=zulu
+      ansible-playbook playbooks/kubernetes/initial-setup-node.yml -e target=zulu
