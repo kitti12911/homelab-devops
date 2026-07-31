@@ -19,3 +19,5 @@
 .cursor/
 pgbench-results-local/
 pgbench-results/
+
+/ansible/inventory/pi_resale

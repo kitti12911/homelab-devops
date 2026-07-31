@@ -1,0 +1,11 @@
+hw_board: "Raspberry Pi 5"
+hw_ram_gb: 8
+hw_storage_primary: "500GB NVMe SSD (Samsung 980 PRO)"
+hw_storage_type: "nvme"
+hw_network: "1Gbps Ethernet"
+# 980 PRO is a PCIe 4.0 drive; Pi 5 tops out at Gen 3 x1 (dtparam=pciex1_gen=3)
+hw_note: |
+    Standalone playground node — not part of the k8s cluster.
+
+    Image it with:
+      ansible-playbook playbooks/infrastructure/setup-raspberry-pi-os.yml -e target=zulu
