@@ -1,0 +1,603 @@
+- name: NAS data disks and SMB shares (x86 Ubuntu)
+  # sierra only. Layered on top of setup-nas.yml, which handles the OS underneath
+  # (zram, readahead, spin-down, smartd, network tuning) but never touches the data
+  # disks. This playbook is the service layer: mount them, then export over SMB.
+  #
+  # Disks are mounted only when their UUID is listed in nas_active_disks or
+  # nas_backup_disks. Nothing is mounted on a guess - an unlisted filesystem is
+  # reported with the commands needed to inspect it by hand, and left alone.
+  #
+  # UUID is the right key here: it belongs to the filesystem, is assigned randomly
+  # at mkfs time, and survives reboots, USB port changes and enclosure swaps, none
+  # of which is true of sdX. The one way two disks end up sharing a UUID is a
+  # block-level clone (dd, Clonezilla); rsync never copies it. That case is asserted
+  # against below rather than silently mounting whichever disk enumerated first.
+  #
+  # The data disks are attached over USB, not SATA, which drives two choices here:
+  # nofail everywhere, so a missing disk cannot hang boot, and no ZFS, because
+  # USB-SATA bridges misreport write barriers and would void the integrity
+  # guarantees that are the only reason to run it.
+  hosts: "{{ target | default('nas') }}"
+  become: true
+  gather_facts: true
+
+  vars:
+      # Only genuinely internal values belong here. Everything a host may want to
+      # override is defaulted in the first task instead - play vars outrank inventory
+      # host_vars, so anything named here would silently shadow
+      # inventory/host_vars/<host>/vars.yml rather than be overridden by it.
+      #
+      # Field order emitted by the discovery script below.
+      nas_disk_fields: [uuid, fstype, label, size, dev, model, serial]
+
+  handlers:
+      - name: restart samba
+        ansible.builtin.systemd:
+            name: smbd
+            state: restarted
+
+      - name: restart avahi
+        ansible.builtin.systemd:
+            name: avahi-daemon
+            state: restarted
+
+  tasks:
+      # Same guard as setup-nas.yml: this writes Debian paths and assumes x86.
+      - name: Assert this is a Debian-family x86 host
+        ansible.builtin.assert:
+            that:
+                - ansible_facts['os_family'] == 'Debian'
+                - ansible_facts['architecture'] == 'x86_64'
+            fail_msg: >-
+                {{ inventory_hostname }} is {{ ansible_facts['distribution'] }}
+                on {{ ansible_facts['architecture'] }}; this playbook targets x86 Ubuntu.
+
+      # Defaults live here rather than in play vars so that inventory host_vars can
+      # override them: play vars sit ABOVE inventory host_vars in Ansible's
+      # precedence order, so a default declared up there wins over the host file and
+      # silently ignores it. set_fact sits above both, and `| default(...)` only
+      # fills in what the inventory did not already set.
+      - name: Apply defaults for anything not set in inventory
+        ansible.builtin.set_fact:
+            # Disks to mount, keyed by filesystem UUID. Each entry takes a uuid and
+            # an optional name (defaults to the role), plus optional ro/auto/share to
+            # override the role defaults.
+            nas_active_disks: "{{ nas_active_disks | default([], true) }}"
+            nas_backup_disks: "{{ nas_backup_disks | default([], true) }}"
+
+            # Cleanup mode. While true, every listed disk is mounted read-write and
+            # shared so old data can be cleared out over SMB. Set false once that is
+            # done and the backup disk reverts to its role defaults - read-only,
+            # noauto, unshared - so it stays spun down between syncs instead of being
+            # woken by anything that walks the filesystem.
+            nas_cleanup: "{{ nas_cleanup | default(true) | bool }}"
+
+            # Off because clients reach this host by its static IP, so there is
+            # nothing to discover. On installs avahi and publishes an _smb._tcp
+            # record, which is what makes <host>.local resolve and puts the box in
+            # the Finder sidebar.
+            nas_enable_mdns: "{{ nas_enable_mdns | default(false) | bool }}"
+
+            # Recursively chown mounted data to nas_samba_user. Off by default
+            # because it rewrites ownership metadata across the whole tree. Turn it
+            # on only if the "owners" line in the final report shows numeric UIDs -
+            # those are stranded OpenMediaVault accounts that do not exist on this
+            # install, and they block deletes over SMB whatever Samba is told.
+            nas_chown_data: "{{ nas_chown_data | default(false) | bool }}"
+
+            nas_share_root: "{{ nas_share_root | default('/srv/nas', true) }}"
+            nas_test_mount: "{{ nas_test_mount | default('/mnt/test', true) }}"
+            nas_samba_user: "{{ nas_samba_user | default(ansible_user | default('kitti'), true) }}"
+            nas_workgroup: "{{ nas_workgroup | default('WORKGROUP', true) }}"
+
+            # Filesystems worth mounting. Anything else is reported and skipped
+            # rather than guessed at.
+            nas_supported_fstypes: "{{ nas_supported_fstypes | default(['ext4', 'ext3', 'ext2', 'xfs', 'btrfs', 'ntfs', 'ntfs3', 'exfat', 'vfat'], true) }}"
+
+            # A full 2TB find takes minutes; the newest file in the first few levels
+            # is already enough to separate a live share from a long-idle mirror.
+            nas_report_maxdepth: "{{ nas_report_maxdepth | default(4, true) | int }}"
+
+      - name: Report the effective disk configuration
+        ansible.builtin.debug:
+            msg: >-
+                {{ nas_active_disks | length }} active,
+                {{ nas_backup_disks | length }} backup configured;
+                cleanup={{ nas_cleanup }}, mdns={{ nas_enable_mdns }},
+                chown={{ nas_chown_data }}
+
+      # --- What is actually attached -----------------------------------------
+      # Inspection only: no mounts, no package installs, nothing written. Runs even
+      # when both lists are empty, because its output is what fills them in.
+      - name: Discover non-OS filesystems
+        ansible.builtin.shell:
+            cmd: |
+                set -o pipefail
+
+                # Every node in the ancestry of a system mount, not just the disk at
+                # the bottom. Ubuntu's installer puts root on LVM, and the logical
+                # volume itself reports TYPE="lvm" with FSTYPE="ext4" and a UUID - it
+                # looks exactly like a data partition unless it is named here.
+                # Resolving its parent disk does not work either: /dev/<dm-name> is
+                # not a real path, so the lookup returns nothing.
+                os_devs=""
+                os_disks=""
+                for mp in / /boot /boot/efi; do
+                    src=$(findmnt -no SOURCE "$mp" 2>/dev/null | head -1)
+                    [ -n "$src" ] || continue
+                    while read -r n t; do
+                        os_devs="$os_devs $n"
+                        [ "$t" = "disk" ] && os_disks="$os_disks $n"
+                    done < <(lsblk -nso NAME,TYPE "$src" 2>/dev/null)
+                done
+
+                # -P quotes every field, so an empty LABEL cannot shift the columns
+                # the way whitespace-separated output would.
+                lsblk -Pno NAME,TYPE,FSTYPE,UUID,LABEL,SIZE,MOUNTPOINT | while read -r row; do
+                    eval "$row"
+
+                    case "$TYPE" in part | lvm | crypt) ;; *) continue ;; esac
+                    [ -n "$FSTYPE" ] || continue
+                    [ -n "$UUID" ] || continue
+                    case "$FSTYPE" in swap | LVM2_member | crypto_LUKS | linux_raid_member) continue ;; esac
+
+                    case " $os_devs " in *" $NAME "*) continue ;; esac
+
+                    # Mounted somewhere already, and not by a previous run of this
+                    # playbook - something else owns it, so leave it alone.
+                    case "$MOUNTPOINT" in
+                        "") ;;
+                        {{ nas_share_root }}/*) ;;
+                        *) continue ;;
+                    esac
+
+                    disk=$(lsblk -nso NAME,TYPE "/dev/$NAME" 2>/dev/null | awk '$2=="disk"{print $1}' | head -1)
+                    # An unresolvable parent means this is not a plain partition on a
+                    # physical disk; skipping is the safe reading.
+                    [ -n "$disk" ] || continue
+                    case " $os_disks " in *" $disk "*) continue ;; esac
+
+                    model=$(lsblk -dno MODEL "/dev/$disk" 2>/dev/null | xargs)
+                    serial=$(lsblk -dno SERIAL "/dev/$disk" 2>/dev/null | xargs)
+
+                    printf '%s|%s|%s|%s|%s|%s|%s\n' \
+                        "$UUID" "$FSTYPE" "${LABEL:-none}" "$SIZE" "$NAME" \
+                        "${model:-unknown}" "${serial:-none}"
+                done
+            executable: /bin/bash
+        register: nas_scan
+        changed_when: false
+
+      - name: Build the attached disk list
+        ansible.builtin.set_fact:
+            nas_present: "{{ nas_present | default([]) + [dict(nas_disk_fields | zip(item.split('|')))] }}"
+        loop: "{{ nas_scan.stdout_lines }}"
+        when: item is search('\|')
+        loop_control:
+            label: "{{ item.split('|') | first }}"
+
+      - name: Default the attached disk list when nothing was found
+        ansible.builtin.set_fact:
+            nas_present: "{{ nas_present | default([]) }}"
+
+      # Two filesystems cannot legitimately share a UUID. If they do, one disk is a
+      # block-level clone of the other and mounting by UUID would pick whichever
+      # enumerated first - so stop rather than write to an arbitrary one.
+      - name: Assert discovered UUIDs are unique
+        ansible.builtin.assert:
+            that: nas_present | map(attribute='uuid') | list | unique | length == nas_present | length
+            fail_msg: >-
+                Two attached filesystems report the same UUID, which means one is a
+                block-level clone of the other. Mounting by UUID is ambiguous until
+                that is resolved - give one a fresh UUID with
+                `sudo tune2fs -U random /dev/<dev>` (unmounted), then re-run.
+
+      # --- Merge the configured lists ----------------------------------------
+      - name: Build the configured disk list
+        ansible.builtin.set_fact:
+            nas_configured: >-
+                {{ (nas_active_disks | map('combine', {'role': 'active'}) | list)
+                   + (nas_backup_disks | map('combine', {'role': 'backup'}) | list) }}
+
+      - name: Validate the configured entries
+        ansible.builtin.assert:
+            that:
+                - item.uuid is defined and item.uuid | length > 0
+                - item.name | default(item.role) is match('^[a-z0-9_-]+$')
+            fail_msg: >-
+                Each entry needs a uuid, and its name must work as both a directory and
+                an SMB share (lowercase, no spaces). Got: {{ item }}
+        loop: "{{ nas_configured }}"
+        loop_control:
+            label: "{{ item.uuid | default('<no uuid>') }}"
+
+      - name: Assert no disk is listed as both active and backup
+        ansible.builtin.assert:
+            that: nas_configured | map(attribute='uuid') | list | unique | length == nas_configured | length
+            fail_msg: >-
+                The same UUID appears more than once across nas_active_disks and
+                nas_backup_disks. A disk has exactly one role.
+
+      # Resolve each configured entry against what is attached, and apply the role
+      # defaults. Cleanup mode overrides them: everything mounted, writable, shared.
+      - name: Resolve roles against attached disks
+        ansible.builtin.set_fact:
+            nas_disks: >-
+                {{ nas_disks | default([]) + [item | combine({
+                     'name': item.name | default(item.role),
+                     'ro': false if nas_cleanup else (item.ro | default(item.role == 'backup')),
+                     'auto': true if nas_cleanup else (item.auto | default(item.role == 'active')),
+                     'share': true if nas_cleanup else (item.share | default(item.role == 'active')),
+                     'attached': item.uuid in (nas_present | map(attribute='uuid') | list),
+                     'fstype': (nas_present | selectattr('uuid', 'eq', item.uuid) | map(attribute='fstype') | first) | default('ext4'),
+                     'dev': (nas_present | selectattr('uuid', 'eq', item.uuid) | map(attribute='dev') | first) | default('absent'),
+                     'model': (nas_present | selectattr('uuid', 'eq', item.uuid) | map(attribute='model') | first) | default('unknown'),
+                     'serial': (nas_present | selectattr('uuid', 'eq', item.uuid) | map(attribute='serial') | first) | default('unknown'),
+                     'size': (nas_present | selectattr('uuid', 'eq', item.uuid) | map(attribute='size') | first) | default('unknown')
+                   })] }}
+        loop: "{{ nas_configured }}"
+        loop_control:
+            label: "{{ item.name | default(item.role) }}"
+
+      - name: Default the resolved disk list
+        ansible.builtin.set_fact:
+            nas_disks: "{{ nas_disks | default([]) }}"
+
+      - name: Assert share names are unique
+        ansible.builtin.assert:
+            that: nas_disks | map(attribute='name') | list | unique | length == nas_disks | length
+            fail_msg: >-
+                Two entries resolved to the same share name. Give each a distinct
+                `name` - the role is only used as the default.
+
+      - name: Warn about configured disks that are not attached
+        ansible.builtin.debug:
+            msg: >-
+                {{ item.name }} ({{ item.uuid }}) is listed but not attached. Its fstab
+                entry is written with nofail, so it mounts when plugged in.
+        loop: "{{ nas_disks | rejectattr('attached') | list }}"
+        loop_control:
+            label: "{{ item.name }}"
+
+      # --- Unlisted disks: report, do not touch -------------------------------
+      - name: Identify attached disks that are not configured
+        ansible.builtin.set_fact:
+            nas_unlisted: "{{ nas_present | rejectattr('uuid', 'in', nas_configured | map(attribute='uuid') | list) | list }}"
+
+      - name: Explain how to identify an unlisted disk
+        ansible.builtin.debug:
+            msg:
+                - "UNLISTED: /dev/{{ item.dev }} - {{ item.model }} [{{ item.serial }}] {{ item.size }} {{ item.fstype }}, label {{ item.label }}"
+                - "Not mounted, not shared. Inspect it by hand:"
+                - "    sudo mkdir -p {{ nas_test_mount }}"
+                - "    sudo mount -o ro /dev/{{ item.dev }} {{ nas_test_mount }}"
+                - "    ls -la {{ nas_test_mount }}"
+                - "    df -h {{ nas_test_mount }}"
+                - "    # newest file decides it: recent means this was the live share,"
+                - "    # stale by up to a week means it was the rsync mirror"
+                - "    sudo find {{ nas_test_mount }} -xdev -maxdepth {{ nas_report_maxdepth }} -type f -printf '%TY-%Tm-%Td %TH:%TM  %P\\n' | sort -r | head"
+                - "    sudo umount {{ nas_test_mount }}"
+                - ""
+                - "Then add it to inventory/host_vars/sierra/vars.yml under whichever fits:"
+                - "    nas_active_disks:      # or nas_backup_disks"
+                - "        - uuid: {{ item.uuid }}"
+                - "          name: active     # or backup"
+                - ""
+        loop: "{{ nas_unlisted }}"
+        loop_control:
+            label: "/dev/{{ item.dev }}"
+
+      - name: Stop when nothing is configured to mount
+        when: nas_disks | length == 0
+        block:
+            - name: Report that no disk is configured
+              ansible.builtin.debug:
+                  msg:
+                      - "nas_active_disks and nas_backup_disks are both empty, so nothing was mounted"
+                      - "and no packages were installed. Fill them in using the UUIDs above, then re-run."
+                      - ""
+                      - "To list UUIDs again at any time:  lsblk -f    (or: sudo blkid)"
+
+            - name: End the play
+              ansible.builtin.meta: end_play
+
+      # --- Mount --------------------------------------------------------------
+      # ntfs-3g and exfatprogs are only used if a disk turns out not to be ext4;
+      # avahi-daemon is skipped entirely unless mDNS is wanted.
+      - name: Install file sharing and filesystem packages
+        ansible.builtin.apt:
+            name: >-
+                {{ ['samba', 'acl', 'ntfs-3g', 'exfatprogs']
+                   + (['avahi-daemon'] if nas_enable_mdns else []) }}
+            state: present
+            update_cache: true
+
+      - name: Assert every configured filesystem is supported
+        ansible.builtin.assert:
+            that: item.fstype in nas_supported_fstypes
+            fail_msg: >-
+                {{ item.name }} is {{ item.fstype }}, which is not in
+                nas_supported_fstypes. Add it there if mounting it is intended.
+        loop: "{{ nas_disks | selectattr('attached') | list }}"
+        loop_control:
+            label: "{{ item.name }} ({{ item.fstype }})"
+
+      - name: Resolve the share owner
+        ansible.builtin.getent:
+            database: passwd
+            key: "{{ nas_samba_user }}"
+
+      - name: Create mount points
+        ansible.builtin.file:
+            path: "{{ nas_share_root }}/{{ item.name }}"
+            state: directory
+            mode: "0755"
+        loop: "{{ nas_disks }}"
+        loop_control:
+            label: "{{ item.name }}"
+
+      # nofail plus a short device-timeout is the whole reason boot cannot block:
+      # systemd gives up on a disk that is unplugged or slow to enumerate instead of
+      # dropping to an emergency shell, which would need a keyboard on the box.
+      #
+      # state is `present` rather than `mounted` for a disk that is either not
+      # attached or deliberately noauto - the fstab entry is still written, so it is
+      # ready the moment something mounts it.
+      #
+      # ntfs/exfat/vfat carry no POSIX ownership, so the mount has to assign it;
+      # ext4 and friends already have it on disk and must not be overridden.
+      - name: Mount data disks
+        ansible.posix.mount:
+            path: "{{ nas_share_root }}/{{ item.name }}"
+            src: "UUID={{ item.uuid }}"
+            fstype: "{{ item.fstype }}"
+            opts: >-
+                {{ 'ro' if item.ro else 'rw' }},noatime,nofail,x-systemd.device-timeout=15s{{
+                  ',noauto' if not item.auto else '' }}{{
+                  ',uid=' ~ getent_passwd[nas_samba_user][1] ~ ',gid=' ~ getent_passwd[nas_samba_user][2] ~ ',umask=022'
+                  if item.fstype in ['ntfs', 'ntfs3', 'exfat', 'vfat'] else '' }}
+            state: "{{ 'mounted' if (item.attached and item.auto) else 'present' }}"
+        loop: "{{ nas_disks }}"
+        loop_control:
+            label: "{{ item.name }} ({{ item.fstype }}, {{ 'ro' if item.ro else 'rw' }})"
+
+      # Opt-in, and only meaningful on filesystems that store ownership at all.
+      - name: Take ownership of the data
+        ansible.builtin.file:
+            path: "{{ nas_share_root }}/{{ item.name }}"
+            owner: "{{ nas_samba_user }}"
+            group: "{{ nas_samba_user }}"
+            recurse: true
+        loop: "{{ nas_disks | selectattr('attached') | selectattr('auto') | rejectattr('ro') | rejectattr('fstype', 'in', ['ntfs', 'ntfs3', 'exfat', 'vfat']) | list }}"
+        loop_control:
+            label: "{{ item.name }}"
+        when: nas_chown_data
+
+      # --- Samba --------------------------------------------------------------
+      # Ubuntu ships a monolithic smb.conf with no conf.d include, so this file is
+      # managed wholesale rather than patched. Keep one copy of whatever was there
+      # before - the OMV-era config is the only surviving record of the old layout.
+      - name: Check for an unmanaged smb.conf
+        ansible.builtin.stat:
+            path: /etc/samba/smb.conf.orig
+        register: smb_conf_backup
+
+      - name: Preserve the original smb.conf once
+        ansible.builtin.copy:
+            src: /etc/samba/smb.conf
+            dest: /etc/samba/smb.conf.orig
+            remote_src: true
+            mode: "0644"
+            force: false
+        when: not smb_conf_backup.stat.exists
+        failed_when: false # a fresh install may not have one yet
+
+      # vfs_fruit is what makes macOS behave: without it Finder browses slowly,
+      # resource forks land as visible ._ files, and Time Machine refuses the share
+      # outright. catia and streams_xattr must stay in this order - fruit layers on
+      # top of streams_xattr and breaks if listed first.
+      - name: Write Samba configuration
+        ansible.builtin.copy:
+            dest: /etc/samba/smb.conf
+            mode: "0644"
+            validate: "testparm -s %s"
+            content: |
+                # Managed by ansible: playbooks/infrastructure/setup-nas-shares.yml
+                # Local edits are overwritten on the next run.
+                [global]
+                    workgroup = {{ nas_workgroup }}
+                    server string = {{ inventory_hostname }} NAS
+                    server role = standalone server
+
+                    # SMB1 is already off in modern Samba; this also rules out SMB2,
+                    # which neither macOS nor Windows 11 has reason to fall back to.
+                    server min protocol = SMB3
+                    server smb encrypt = desired
+
+                    # Windows 11 refuses guest auth outright, so every client
+                    # authenticates as a real user.
+                    map to guest = never
+                    security = user
+
+                {% if nas_enable_mdns %}
+                    # Register over mDNS so macOS reaches {{ inventory_hostname }}.local
+                    # without anyone typing an IP.
+                    multicast dns register = yes
+
+                {% endif %}
+
+                    # Only 2 cores: let the kernel move bulk data rather than copying
+                    # every buffer through userspace.
+                    use sendfile = yes
+                    aio read size = 1
+                    aio write size = 1
+
+                    logging = file
+                    log file = /var/log/samba/log.%m
+                    max log size = 1000
+
+                    # --- macOS interoperability ---
+                    vfs objects = catia fruit streams_xattr
+                    fruit:metadata = stream
+                    fruit:model = MacSamba
+                    fruit:posix_rename = yes
+                    fruit:veto_appledouble = no
+                    fruit:wipe_intentionally_left_blank_rfork = yes
+                    fruit:delete_empty_adfiles = yes
+                    # Without this macOS maps permissions through NFS ACEs, which ext4
+                    # cannot represent - it surfaces as spurious permission errors.
+                    fruit:nfs_aces = no
+                {# attached matters: a share over an unmounted mount point would serve
+                   the bare directory on the OS SSD, and anything written there would be
+                   silently hidden the moment the real disk mounts over it. #}
+                {% for disk in nas_disks if disk.share and disk.auto and disk.attached %}
+
+                [{{ disk.name }}]
+                    # {{ disk.role }} - {{ disk.model }} [{{ disk.serial }}] {{ disk.size }} {{ disk.fstype }} on /dev/{{ disk.dev }}
+                    path = {{ nas_share_root }}/{{ disk.name }}
+                    comment = {{ disk.role }} - {{ disk.model }} {{ disk.size }}{{ ' (read-only)' if disk.ro else '' }}
+                    valid users = {{ nas_samba_user }}
+                    browseable = yes
+                {% if disk.ro %}
+                    read only = yes
+                {% else %}
+                    read only = no
+                    create mask = 0644
+                    directory mask = 0755
+                    # Single-user NAS: everything written lands owned by the same
+                    # account, so a cleanup session cannot leave a mixed tree behind.
+                    force user = {{ nas_samba_user }}
+                    force group = {{ nas_samba_user }}
+                {% endif %}
+                {% endfor %}
+        notify: restart samba
+
+      - name: Enable Samba
+        ansible.builtin.systemd:
+            name: smbd
+            enabled: true
+            state: started
+
+      # nmbd is NetBIOS name resolution. Windows 11 dropped it and macOS uses mDNS,
+      # so it only adds broadcast noise to the LAN.
+      - name: Disable NetBIOS name service
+        ansible.builtin.systemd:
+            name: nmbd
+            enabled: false
+            state: stopped
+        failed_when: false
+
+      # mDNS is opt-in. Clients here connect by IP, which needs no discovery at all,
+      # and a NAS reached by a static address gains nothing from broadcasting itself
+      # on the LAN. Turn nas_enable_mdns on to get sierra.local resolution and a
+      # Finder sidebar entry instead.
+      - name: Configure mDNS advertisement
+        when: nas_enable_mdns
+        block:
+            - name: Enable avahi
+              ansible.builtin.systemd:
+                  name: avahi-daemon
+                  enabled: true
+                  state: started
+
+            # Samba's own mDNS registration advertises the host but not the SMB
+            # service, and it is the service record that produces a Finder sidebar
+            # entry rather than merely making the name resolve.
+            - name: Advertise SMB over mDNS
+              ansible.builtin.copy:
+                  dest: /etc/avahi/services/smb.service
+                  mode: "0644"
+                  content: |
+                      <?xml version="1.0" standalone='no'?>
+                      <!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+                      <!-- Managed by ansible: playbooks/infrastructure/setup-nas-shares.yml -->
+                      <service-group>
+                        <name replace-wildcards="yes">%h</name>
+                        <service>
+                          <type>_smb._tcp</type>
+                          <port>445</port>
+                        </service>
+                        <service>
+                          <type>_device-info._tcp</type>
+                          <port>0</port>
+                          <txt-record>model=RackMac</txt-record>
+                        </service>
+                      </service-group>
+              notify: restart avahi
+
+      # Left behind by an earlier run with mDNS enabled, or by another package.
+      - name: Remove the mDNS service record when disabled
+        ansible.builtin.file:
+            path: /etc/avahi/services/smb.service
+            state: absent
+        when: not nas_enable_mdns
+
+      # --- Access -------------------------------------------------------------
+      # Samba keeps its own password database, separate from the Unix one. The
+      # password is deliberately not stored in this repo or in the vault; setting it
+      # is a one-time interactive step on the host.
+      - name: Check whether the Samba user exists
+        ansible.builtin.shell:
+            cmd: "pdbedit -L | cut -d: -f1 | grep -qx '{{ nas_samba_user }}'"
+        register: samba_user_exists
+        changed_when: false
+        failed_when: false
+
+      - name: Report the missing Samba password
+        ansible.builtin.debug:
+            msg:
+                - "No Samba password set for '{{ nas_samba_user }}' - every login will be rejected."
+                - "Run this once on {{ inventory_hostname }}, then connect:"
+                - "    sudo smbpasswd -a {{ nas_samba_user }}"
+        when: samba_user_exists.rc != 0
+
+      # Only touched when ufw is actually managing the firewall; on a host with ufw
+      # inactive these rules would imply a protection that is not switched on.
+      - name: Check firewall status
+        ansible.builtin.command: ufw status
+        register: ufw_status
+        changed_when: false
+        failed_when: false
+
+      - name: Allow SMB and mDNS from the LAN
+        community.general.ufw:
+            rule: allow
+            port: "{{ item.port }}"
+            proto: "{{ item.proto }}"
+            src: "{{ ansible_default_ipv4.network }}/{{ ansible_default_ipv4.netmask }}"
+        loop: >-
+            {{ [{'port': '445', 'proto': 'tcp'}]
+               + ([{'port': '5353', 'proto': 'udp'}] if nas_enable_mdns else []) }}
+        when: "'Status: active' in ufw_status.stdout"
+
+      # --- Report -------------------------------------------------------------
+      - name: Collect resulting state
+        ansible.builtin.shell:
+            cmd: |
+                set -o pipefail
+                {% for disk in nas_disks | selectattr('attached') | selectattr('auto') %}
+                mnt="{{ nas_share_root }}/{{ disk.name }}"
+                echo "[{{ disk.name }}] {{ disk.role }} - {{ disk.model }} [{{ disk.serial }}] {{ disk.size }} /dev/{{ disk.dev }}{{ ' (read-only)' if disk.ro else '' }}"
+                echo "    uuid:   {{ disk.uuid }}"
+                echo "    usage:  $(df -h --output=used,avail,pcent "$mnt" 2>/dev/null | tail -1 | xargs)"
+                echo "    newest: $(find "$mnt" -xdev -maxdepth {{ nas_report_maxdepth }} -type f -printf '%TY-%Tm-%Td %TH:%TM  %P\n' 2>/dev/null | sort -r | head -1)"
+                echo "    owners: $(find "$mnt" -xdev -maxdepth 1 -mindepth 1 -printf '%u:%g\n' 2>/dev/null | sort -u | tr '\n' ' ')"
+                echo ""
+                {% endfor %}
+                echo "shares:  $(testparm -s 2>/dev/null | grep '^\[' | grep -v global | tr -d '[]' | tr '\n' ' ')"
+                echo "smbd:    $(systemctl is-active smbd)"
+                {% if nas_enable_mdns %}
+                echo "avahi:   $(systemctl is-active avahi-daemon)"
+                {% endif %}
+                echo "connect: smb://{{ ansible_default_ipv4.address }}"
+                echo "power:"
+                for d in $(lsblk -dno NAME,TRAN,ROTA | awk '$2=="usb" && $3==1 {print $1}'); do
+                    echo "    /dev/$d: $(hdparm -C /dev/$d 2>/dev/null | awk -F': ' '/drive state/ {print $2}')"
+                done
+            executable: /bin/bash
+        register: nas_report
+        changed_when: false
+
+      - name: Report resulting state
+        ansible.builtin.debug:
+            msg: "{{ nas_report.stdout_lines }}"

@@ -11,12 +11,40 @@ hw_network: "1Gbps Ethernet"
 k8s_node: false # not a cluster member
 container_host: false # no container runtime; excluded from setup-podman.yml
 
+# --- NAS data disks ---
+# Both data disks are USB-attached, not SATA, and carry ext4 filesystems written by
+# an earlier OpenMediaVault install. They are deliberately left as ext4: USB-SATA
+# bridges misreport write barriers, so ZFS would claim integrity guarantees it could
+# not actually keep.
+#
+# setup-nas-shares.yml mounts only what is listed here, keyed by filesystem UUID -
+# stable across reboots, USB port changes and enclosure swaps, unlike sdX. Nothing
+# is mounted on a guess: an attached disk that is absent from both lists is reported
+# with the commands to inspect it by hand, and otherwise left alone.
+#
+# Roles identified 2026-08-01 after the disks had sat idle for over a year. Both are
+# 1.8TB ext4; sdb1/sdc1 are not recorded here on purpose, since USB enumeration order
+# is not stable and the UUID is what the mount actually keys on.
+nas_active_disks:
+    - uuid: 05b4cf97-5f3c-4ff4-ad51-27b44acc32b5 # label RuntimeDrive
+      name: active
+
+nas_backup_disks:
+    - uuid: 1c1d3039-ab5c-4363-a8f4-774beb243808 # unlabelled
+      name: backup
+
+# While true every listed disk is mounted read-write and shared, so old data can be
+# cleared out over SMB from the Mac. Set false once that is done and the backup disk
+# reverts to read-only, noauto and unshared, so it stays spun down between syncs.
+nas_cleanup: true
+
 hw_note: |
     Standalone NAS — the only x86 host, so it does not share the Raspberry Pi
     playbooks (config.txt / cmdline.txt / Pi overlays do not apply).
 
     Provision with:
-      ansible-playbook playbooks/infrastructure/setup-nas.yml
+      ansible-playbook playbooks/infrastructure/setup-nas.yml        # OS tuning
+      ansible-playbook playbooks/infrastructure/setup-nas-shares.yml # mounts + SMB
 
     Tuned for throughput and page-cache retention rather than latency; zram is a
     safety valve at ram/4 with lz4, since compression competes for only 2 cores.
