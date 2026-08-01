@@ -1,0 +1,300 @@
+- name: NAS host setup (x86 Ubuntu)
+  # sierra only. Deliberately separate from initial-setup-node.yml: that playbook is
+  # Raspberry Pi OS shaped (config.txt, cmdline.txt, Pi-specific overlays) and tuned
+  # for kubelet latency. A NAS wants the opposite trade-offs - throughput and cache
+  # retention over per-request latency.
+  hosts: "{{ target | default('nas') }}"
+  become: true
+  gather_facts: true
+
+  vars:
+      # 2 cores, so compression runs on a tight CPU budget. lz4 costs a few percent
+      # ratio versus zstd and gives it back in latency under concurrent I/O, which
+      # matters more on a file server than squeezing the last MB.
+      nas_zram_size: "ram / 4" # 2GB of 8GB - a safety valve, not a memory extender
+      nas_zram_algorithm: lz4
+      # Readahead for spinning disks serving large sequential files over the network.
+      nas_hdd_readahead_kb: 1024
+      nas_hdd_scheduler: mq-deadline
+
+  handlers:
+      - name: restart sshd
+        ansible.builtin.systemd:
+            name: ssh # Ubuntu names the unit ssh, not sshd as on Raspberry Pi OS
+            state: restarted
+
+      - name: restart systemd-journald
+        ansible.builtin.systemd:
+            name: systemd-journald
+            state: restarted
+
+      - name: restart zram swap
+        ansible.builtin.systemd:
+            name: "systemd-zram-setup@zram0.service"
+            state: restarted
+
+      - name: reload udev rules
+        ansible.builtin.command:
+            cmd: udevadm control --reload-rules
+        changed_when: true
+
+  tasks:
+      # This playbook writes Debian/Ubuntu paths and assumes x86 power management.
+      # Fail early rather than half-applying to something unexpected.
+      - name: Assert this is a Debian-family x86 host
+        ansible.builtin.assert:
+            that:
+                - ansible_facts['os_family'] == 'Debian'
+                - ansible_facts['architecture'] == 'x86_64'
+            fail_msg: >-
+                {{ inventory_hostname }} is {{ ansible_facts['distribution'] }}
+                on {{ ansible_facts['architecture'] }}; this playbook targets x86 Ubuntu.
+
+      # --- Swap ---
+      # Unlike Raspberry Pi OS, Ubuntu does not ship systemd-zram-generator, so it has
+      # to be installed before any config is written - otherwise the file lands and
+      # nothing ever reads it.
+      - name: Install zram generator
+        ansible.builtin.apt:
+            name: systemd-zram-generator
+            state: present
+            update_cache: true
+
+      - name: Remove conflicting zram-tools package
+        ansible.builtin.apt:
+            name: zram-tools
+            state: absent
+            purge: true
+
+      # Raspberry Pi OS loads zram for us; Ubuntu does not. Without the module there
+      # is no /sys/block/zram0 at all, and the generator fails with a bare ENOENT
+      # against comp_algorithm rather than saying the device is missing.
+      - name: Load zram kernel module
+        community.general.modprobe:
+            name: zram
+            state: present
+            persistent: present
+
+      - name: Read compression algorithms this kernel supports
+        ansible.builtin.slurp:
+            src: /sys/block/zram0/comp_algorithm
+        register: zram_algorithms
+
+      # Ubuntu builds several algorithms as separate crypto modules, so the set here
+      # is not guaranteed. Fail with the actual list rather than the same ENOENT.
+      - name: Assert the configured algorithm is available
+        ansible.builtin.assert:
+            that:
+                - nas_zram_algorithm in (zram_algorithms.content | b64decode | replace('[', '') | replace(']', '')).split()
+            fail_msg: >-
+                {{ nas_zram_algorithm }} is not supported by this kernel's zram.
+                Available: {{ zram_algorithms.content | b64decode | trim }}.
+                Set nas_zram_algorithm to one of those.
+
+      - name: Ensure zram-generator drop-in directory exists
+        ansible.builtin.file:
+            path: /etc/systemd/zram-generator.conf.d
+            state: directory
+            mode: "0755"
+
+      - name: Configure zram device
+        ansible.builtin.copy:
+            dest: /etc/systemd/zram-generator.conf.d/99-homelab.conf
+            mode: "0644"
+            content: |
+                [zram0]
+                zram-size = {{ nas_zram_size }}
+                compression-algorithm = {{ nas_zram_algorithm }}
+                swap-priority = 100
+        notify: restart zram swap
+
+      - name: Ensure zram swap is active
+        ansible.builtin.systemd:
+            name: "systemd-zram-setup@zram0.service"
+            state: started
+
+      # Ubuntu's installer usually creates /swap.img. Leaving it alongside zram means
+      # the kernel can still page out to disk once zram fills; lower priority already
+      # handles ordering, so it stays as a last-resort tier rather than being removed.
+      - name: Check for an installer-created disk swapfile
+        ansible.builtin.stat:
+            path: /swap.img
+        register: disk_swapfile
+
+      - name: Lower disk swap priority below zram
+        ansible.builtin.lineinfile:
+            path: /etc/fstab
+            regexp: '^/swap\.img\s'
+            line: "/swap.img\tnone\tswap\tsw,pri=10\t0\t0"
+        when: disk_swapfile.stat.exists
+
+      # --- Storage: spinning disks ---
+      # Applies only to rotational devices, so the SATA SSD holding the OS keeps the
+      # kernel defaults (none/mq-deadline is already right for it).
+      - name: Tune rotational disks for sequential throughput
+        ansible.builtin.copy:
+            dest: /etc/udev/rules.d/60-hdd-tuning.rules
+            mode: "0644"
+            content: |
+                # NAS data disks: larger readahead and a deeper queue for streaming reads.
+                # mq-deadline over bfq - bfq's fairness logic costs CPU this box does not have.
+                ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="{{ nas_hdd_scheduler }}"
+                ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/rotational}=="1", ATTR{queue/read_ahead_kb}="{{ nas_hdd_readahead_kb }}"
+                ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/rotational}=="1", ATTR{queue/nr_requests}="256"
+        notify: reload udev rules
+
+      # --- Disk health ---
+      # Two 2TB drives holding the only copy of something is exactly where you want
+      # to hear about reallocated sectors before the array notices.
+      - name: Install SMART monitoring
+        ansible.builtin.apt:
+            name:
+                - smartmontools
+                - hdparm
+            state: present
+
+      - name: Enable smartd
+        ansible.builtin.systemd:
+            name: smartd
+            enabled: true
+            state: started
+        failed_when: false
+
+      # --- Network tuning ---
+      - name: Enable BBR congestion control module
+        community.general.modprobe:
+            name: tcp_bbr
+            state: present
+            persistent: present
+
+      - name: Tune kernel parameters for a network-heavy file server
+        ansible.posix.sysctl:
+            name: "{{ item.key }}"
+            value: "{{ item.value }}"
+            sysctl_file: /etc/sysctl.d/99-nas-tuning.conf
+            sysctl_set: true
+            state: present
+            reload: true
+        loop:
+            # --- Network: throughput over latency ---
+            # 16MB socket ceilings. A 1Gbps link does not need this much, but SMB/NFS
+            # with many concurrent clients benefits from the headroom for autotuning.
+            - { key: net.core.rmem_max, value: "16777216" }
+            - { key: net.core.wmem_max, value: "16777216" }
+            - { key: net.ipv4.tcp_rmem, value: "4096 131072 16777216" }
+            - { key: net.ipv4.tcp_wmem, value: "4096 131072 16777216" }
+            # BBR + fq: noticeably better sustained throughput than cubic on a link
+            # shared between bulk transfers and interactive traffic.
+            - { key: net.core.default_qdisc, value: "fq" }
+            - { key: net.ipv4.tcp_congestion_control, value: "bbr" }
+            # Only 2 cores, so the per-CPU ingress queue is the bottleneck under load
+            - { key: net.core.netdev_max_backlog, value: "16384" }
+            - { key: net.core.somaxconn, value: "4096" }
+            - { key: net.ipv4.tcp_max_syn_backlog, value: "8192" }
+            # Many idle client mounts: detect dead peers without waiting two hours
+            - { key: net.ipv4.tcp_keepalive_time, value: "300" }
+            - { key: net.ipv4.tcp_keepalive_intvl, value: "30" }
+            - { key: net.ipv4.tcp_keepalive_probes, value: "5" }
+            - { key: net.ipv4.tcp_slow_start_after_idle, value: "0" }
+
+            # --- Network: hardening ---
+            - { key: net.ipv4.tcp_syncookies, value: "1" }
+            - { key: net.ipv4.conf.all.accept_redirects, value: "0" }
+            - { key: net.ipv4.conf.all.accept_source_route, value: "0" }
+            - { key: net.ipv4.icmp_echo_ignore_broadcasts, value: "1" }
+
+            # --- Memory: keep the file cache, page out idle daemons ---
+            # A NAS earns its speed from page cache, so reclaim anonymous memory first.
+            # 100 rather than the 150 used on the Pis: zram here is a safety valve, not
+            # a way to stretch RAM, and compression competes for only 2 cores.
+            - { key: vm.swappiness, value: "100" }
+            # Below 100 the kernel holds on to dentry/inode cache longer - worth real
+            # throughput when walking directory trees with many files.
+            - { key: vm.vfs_cache_pressure, value: "50" }
+            # Spinning disks absorb writes slowly. Flushing early keeps a large write
+            # burst from stalling reads for seconds at a time.
+            - { key: vm.dirty_ratio, value: "10" }
+            - { key: vm.dirty_background_ratio, value: "5" }
+            - { key: vm.dirty_expire_centisecs, value: "1500" }
+            - { key: vm.min_free_kbytes, value: "131072" }
+
+            # --- Files ---
+            # File servers exhaust default fd limits faster than anything else here
+            - { key: fs.file-max, value: "1048576" }
+            - { key: fs.inotify.max_user_watches, value: "524288" }
+            - { key: fs.inotify.max_user_instances, value: "1024" }
+
+      # --- Stability ---
+      # Security patches applied unattended, but never an automatic reboot: a NAS
+      # rebooting unannounced mid-transfer is worse than a delayed kernel patch.
+      - name: Install unattended-upgrades
+        ansible.builtin.apt:
+            name: unattended-upgrades
+            state: present
+
+      # Ubuntu's shipped 50unattended-upgrades is already security-only (including the
+      # ESM origins on an LTS), and APT config lists append rather than replace - so
+      # redefining Allowed-Origins here would duplicate entries, not narrow them.
+      # Only the behaviour that actually differs from the default is set.
+      - name: Enable unattended security upgrades without auto-reboot
+        ansible.builtin.copy:
+            dest: /etc/apt/apt.conf.d/52-homelab-unattended
+            mode: "0644"
+            content: |
+                Unattended-Upgrade::Automatic-Reboot "false";
+                Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+                APT::Periodic::Update-Package-Lists "1";
+                APT::Periodic::Unattended-Upgrade "1";
+
+      - name: Ensure journald configuration directory exists
+        ansible.builtin.file:
+            path: /etc/systemd/journald.conf.d
+            state: directory
+            mode: "0755"
+
+      - name: Cap journal retention
+        ansible.builtin.copy:
+            dest: /etc/systemd/journald.conf.d/99-persistent.conf
+            mode: "0644"
+            content: |
+                [Journal]
+                Storage=persistent
+                SystemMaxUse=500M
+                RuntimeMaxUse=64M
+        notify: restart systemd-journald
+
+      - name: Set timezone to Asia/Bangkok
+        community.general.timezone:
+            name: Asia/Bangkok
+
+      # --- SSH hardening (matches initial-setup-node.yml) ---
+      - name: Disable SSH password authentication
+        ansible.builtin.lineinfile:
+            path: /etc/ssh/sshd_config
+            regexp: "^#?PasswordAuthentication"
+            line: "PasswordAuthentication no"
+        notify: restart sshd
+
+      - name: Disable SSH challenge-response authentication
+        ansible.builtin.lineinfile:
+            path: /etc/ssh/sshd_config
+            regexp: "^#?KbdInteractiveAuthentication"
+            line: "KbdInteractiveAuthentication no"
+        notify: restart sshd
+
+      # --- Verification ---
+      - name: Collect resulting configuration
+        ansible.builtin.shell: |
+            set -o pipefail
+            echo "swap: $(swapon --show=NAME,SIZE,PRIO --noheadings | tr '\n' ' ')"
+            echo "congestion: $(sysctl -n net.ipv4.tcp_congestion_control)"
+            echo "qdisc: $(sysctl -n net.core.default_qdisc)"
+            echo "swappiness: $(sysctl -n vm.swappiness)"
+        args:
+            executable: /bin/bash
+        register: nas_state
+        changed_when: false
+
+      - name: Report resulting configuration
+        ansible.builtin.debug:
+            msg: "{{ nas_state.stdout_lines }}"

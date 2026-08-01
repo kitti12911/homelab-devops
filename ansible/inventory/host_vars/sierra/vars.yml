@@ -1,6 +1,22 @@
 hw_board: "x86-64"
+hw_os: "Ubuntu"
+hw_cpu_cores: 2
 hw_ram_gb: 8
 hw_storage_primary: "SATA SSD (OS)"
 hw_storage_type: "sata_ssd"
 hw_storage_secondary: "2x 1.8TB HDD (NAS data)"
 hw_network: "1Gbps Ethernet"
+
+# --- Node role ---
+k8s_node: false # not a cluster member
+container_host: false # no container runtime; excluded from setup-podman.yml
+
+hw_note: |
+    Standalone NAS — the only x86 host, so it does not share the Raspberry Pi
+    playbooks (config.txt / cmdline.txt / Pi overlays do not apply).
+
+    Provision with:
+      ansible-playbook playbooks/infrastructure/setup-nas.yml
+
+    Tuned for throughput and page-cache retention rather than latency; zram is a
+    safety valve at ram/4 with lz4, since compression competes for only 2 cores.
