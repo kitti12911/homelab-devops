@@ -78,12 +78,23 @@
             # the Finder sidebar.
             nas_enable_mdns: "{{ nas_enable_mdns | default(false) | bool }}"
 
-            # Recursively chown mounted data to nas_samba_user. Off by default
-            # because it rewrites ownership metadata across the whole tree. Turn it
-            # on only if the "owners" line in the final report shows numeric UIDs -
-            # those are stranded OpenMediaVault accounts that do not exist on this
-            # install, and they block deletes over SMB whatever Samba is told.
-            nas_chown_data: "{{ nas_chown_data | default(false) | bool }}"
+            # Every account that may reach the shares belongs to this group, and the
+            # data is group-owned by it. Access is then granted by adding a user to
+            # the group rather than by editing smb.conf per person, which is what
+            # makes a newly created account work immediately.
+            nas_share_group: "{{ nas_share_group | default('nasusers', true) }}"
+
+            # Additional accounts beyond nas_samba_user that should reach the shares.
+            # Their Samba passwords are still set by hand with `nas-samba-user add`;
+            # this only guarantees group membership.
+            nas_share_users: "{{ nas_share_users | default([], true) }}"
+
+            # Re-group the mounted data so the share group can read and write it, and
+            # set the setgid bit on directories so anything created later inherits
+            # the group. Owner is deliberately left alone - the OpenMediaVault UIDs
+            # on this data are meaningless now, but rewriting them is not needed to
+            # grant access, and not rewriting them keeps the operation reversible.
+            nas_fix_permissions: "{{ nas_fix_permissions | default(true) | bool }}"
 
             nas_share_root: "{{ nas_share_root | default('/srv/nas', true) }}"
             nas_test_mount: "{{ nas_test_mount | default('/mnt/test', true) }}"
@@ -104,7 +115,7 @@
                 {{ nas_active_disks | length }} active,
                 {{ nas_backup_disks | length }} backup configured;
                 cleanup={{ nas_cleanup }}, mdns={{ nas_enable_mdns }},
-                chown={{ nas_chown_data }}
+                group={{ nas_share_group }}, fix_perms={{ nas_fix_permissions }}
 
       # --- What is actually attached -----------------------------------------
       # Inspection only: no mounts, no package installs, nothing written. Runs even
@@ -361,17 +372,81 @@
         loop_control:
             label: "{{ item.name }} ({{ item.fstype }}, {{ 'ro' if item.ro else 'rw' }})"
 
-      # Opt-in, and only meaningful on filesystems that store ownership at all.
-      - name: Take ownership of the data
-        ansible.builtin.file:
-            path: "{{ nas_share_root }}/{{ item.name }}"
-            owner: "{{ nas_samba_user }}"
-            group: "{{ nas_samba_user }}"
-            recurse: true
+      # --- Shared access ------------------------------------------------------
+      # One group owns the data and gates the shares. Granting someone access is
+      # then `usermod -aG` rather than an smb.conf edit, so an account created with
+      # nas-samba-user works the moment it exists.
+      - name: Create the share group
+        ansible.builtin.group:
+            name: "{{ nas_share_group }}"
+            state: present
+
+      - name: Add share accounts to the group
+        ansible.builtin.user:
+            name: "{{ item }}"
+            groups: "{{ nas_share_group }}"
+            append: true
+        loop: "{{ [nas_samba_user] + nas_share_users | default([]) }}"
+        loop_control:
+            label: "{{ item }}"
+
+      # Checks before touching anything, because a recursive pass over 2TB is slow
+      # enough to matter on a re-run: `find -print -quit` stops at the first file
+      # that is out of place, so a converged tree costs one stat.
+      #
+      # Three mechanisms, because none of them is sufficient alone:
+      #
+      #   chgrp + g+rwX   fixes what is already on disk. Capital X adds execute to
+      #                   directories only, never to plain files that lacked it.
+      #   setgid on dirs  makes new entries inherit the group rather than the
+      #                   creator's primary group.
+      #   default ACLs    setgid propagates the group but NOT the permission bits -
+      #                   a file created on the host still lands 0644 from the
+      #                   umask, group-readable but not group-writable, and the next
+      #                   person is locked out of editing it. Samba overrides this
+      #                   per-share with force create mode, but anything written
+      #                   outside Samba (the rsync job, a shell) would not be
+      #                   covered. A default ACL applies regardless of umask.
+      #
+      # Owner is left alone on purpose: irrelevant to access once the group is
+      # right, and preserving it keeps a record of the original OpenMediaVault UIDs.
+      - name: Grant the share group access to the data
+        ansible.builtin.shell:
+            cmd: |
+                set -o pipefail
+                mnt="{{ nas_share_root }}/{{ item.name }}"
+                grp="{{ nas_share_group }}"
+                mountpoint -q "$mnt" || { echo "not mounted, skipped"; exit 0; }
+
+                needs=""
+                if command -v getfacl >/dev/null; then
+                    getfacl -p "$mnt" 2>/dev/null | grep -q "^default:group:$grp:" || needs="acl"
+                fi
+                [ -n "$needs" ] || needs=$(find "$mnt" -xdev \( -not -group "$grp" \
+                    -o \( -type d -not -perm -2070 \) \
+                    -o \( -type f -not -perm -060 \) \) -print -quit 2>/dev/null)
+                [ -n "$needs" ] || { echo "already converged"; exit 0; }
+
+                chgrp -R "$grp" "$mnt"
+                chmod -R g+rwX "$mnt"
+                find "$mnt" -xdev -type d -exec chmod g+s {} +
+
+                if command -v setfacl >/dev/null; then
+                    setfacl -R -m "g:$grp:rwX" "$mnt"
+                    # Only directories can carry a default ACL, so -R alone errors
+                    # on every regular file it walks.
+                    find "$mnt" -xdev -type d -exec setfacl -d -m "g:$grp:rwX" {} +
+                else
+                    echo "note: acl package missing, default ACLs skipped"
+                fi
+                echo "applied"
+            executable: /bin/bash
         loop: "{{ nas_disks | selectattr('attached') | selectattr('auto') | rejectattr('ro') | rejectattr('fstype', 'in', ['ntfs', 'ntfs3', 'exfat', 'vfat']) | list }}"
         loop_control:
             label: "{{ item.name }}"
-        when: nas_chown_data
+        register: nas_perms
+        changed_when: "'applied' in nas_perms.stdout"
+        when: nas_fix_permissions
 
       # --- Samba --------------------------------------------------------------
       # Ubuntu ships a monolithic smb.conf with no conf.d include, so this file is
@@ -456,18 +531,25 @@
                     # {{ disk.role }} - {{ disk.model }} [{{ disk.serial }}] {{ disk.size }} {{ disk.fstype }} on /dev/{{ disk.dev }}
                     path = {{ nas_share_root }}/{{ disk.name }}
                     comment = {{ disk.role }} - {{ disk.model }} {{ disk.size }}{{ ' (read-only)' if disk.ro else '' }}
-                    valid users = {{ nas_samba_user }}
+                    # Group, not a user list: adding someone to {{ nas_share_group }}
+                    # grants access without touching this file.
+                    valid users = @{{ nas_share_group }}
                     browseable = yes
                 {% if disk.ro %}
                     read only = yes
                 {% else %}
                     read only = no
-                    create mask = 0644
-                    directory mask = 0755
-                    # Single-user NAS: everything written lands owned by the same
-                    # account, so a cleanup session cannot leave a mixed tree behind.
-                    force user = {{ nas_samba_user }}
-                    force group = {{ nas_samba_user }}
+                    # Family share: everyone in the group gets full access to
+                    # everything, including each other's files. 2xxx sets setgid so
+                    # new directories keep the group, matching what the permission
+                    # fix applies on disk.
+                    create mask = 0664
+                    force create mode = 0660
+                    directory mask = 2775
+                    force directory mode = 2770
+                    # force group, not force user - access is settled by the group,
+                    # so identity is worth preserving to see who wrote what.
+                    force group = {{ nas_share_group }}
                 {% endif %}
                 {% endfor %}
         notify: restart samba
@@ -536,6 +618,18 @@
       # Samba keeps its own password database, separate from the Unix one. The
       # password is deliberately not stored in this repo or in the vault; setting it
       # is a one-time interactive step on the host.
+      # Setting the password needs a TTY, so it cannot happen from here. Ship the
+      # helper instead: it creates the Unix account if missing, sets and enables the
+      # Samba entry, and warns when the account is absent from `valid users` - a
+      # state that looks exactly like a wrong password from the client side.
+      - name: Install the Samba account helper
+        ansible.builtin.copy:
+            src: "{{ playbook_dir }}/../../../scripts/nas-samba-user.sh"
+            dest: /usr/local/sbin/nas-samba-user
+            owner: root
+            group: root
+            mode: "0750"
+
       - name: Check whether the Samba user exists
         ansible.builtin.shell:
             cmd: "pdbedit -L | cut -d: -f1 | grep -qx '{{ nas_samba_user }}'"
@@ -547,8 +641,13 @@
         ansible.builtin.debug:
             msg:
                 - "No Samba password set for '{{ nas_samba_user }}' - every login will be rejected."
-                - "Run this once on {{ inventory_hostname }}, then connect:"
-                - "    sudo smbpasswd -a {{ nas_samba_user }}"
+                - "Samba has its own password database; an SSH key grants nothing over SMB."
+                - ""
+                - "Run this once on {{ inventory_hostname }}:"
+                - "    sudo nas-samba-user add {{ nas_samba_user }}"
+                - ""
+                - "or from your Mac:"
+                - "    ssh -t {{ inventory_hostname }} 'sudo nas-samba-user add {{ nas_samba_user }}'"
         when: samba_user_exists.rc != 0
 
       # Only touched when ufw is actually managing the firewall; on a host with ufw
