@@ -16,6 +16,12 @@
       # Readahead for spinning disks serving large sequential files over the network.
       nas_hdd_readahead_kb: 1024
       nas_hdd_scheduler: mq-deadline
+      # Idle timeout before a rotational disk spins down, in hdparm -S units of 5
+      # seconds: 240 = 20 minutes, which is the highest this encoding reaches.
+      # Set to 0 to keep the disks spinning permanently.
+      # Not persistent in the drive itself - it resets on every power cycle, which is
+      # why this is a udev rule on "add" rather than a one-off command.
+      nas_hdd_spindown: 240
 
   handlers:
       - name: restart sshd
@@ -33,9 +39,12 @@
             name: "systemd-zram-setup@zram0.service"
             state: restarted
 
+      # Trigger as well as reload, so the queue attributes apply now rather than at
+      # the next reboot. "change" is enough for ATTR{} assignments; the spin-down
+      # RUN+= fires on "add" only and is applied separately by an explicit task.
       - name: reload udev rules
-        ansible.builtin.command:
-            cmd: udevadm control --reload-rules
+        ansible.builtin.shell:
+            cmd: udevadm control --reload-rules && udevadm trigger --subsystem-match=block --action=change
         changed_when: true
 
   tasks:
@@ -129,6 +138,15 @@
         when: disk_swapfile.stat.exists
 
       # --- Storage: spinning disks ---
+      # hdparm is needed by the udev rule below, so install it before writing rules
+      # that reference it. smartmontools comes along as the disk-health half.
+      - name: Install disk utilities
+        ansible.builtin.apt:
+            name:
+                - smartmontools
+                - hdparm
+            state: present
+
       # Applies only to rotational devices, so the SATA SSD holding the OS keeps the
       # kernel defaults (none/mq-deadline is already right for it).
       - name: Tune rotational disks for sequential throughput
@@ -141,18 +159,33 @@
                 ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="{{ nas_hdd_scheduler }}"
                 ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/rotational}=="1", ATTR{queue/read_ahead_kb}="{{ nas_hdd_readahead_kb }}"
                 ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/rotational}=="1", ATTR{queue/nr_requests}="256"
+                {% if nas_hdd_spindown | int > 0 %}
+                # Spin-down timer. Applied on "add" so a freshly connected or
+                # power-cycled disk picks it up without re-running the playbook.
+                ACTION=="add", KERNEL=="sd[a-z]", ATTR{queue/rotational}=="1", RUN+="/usr/sbin/hdparm -S {{ nas_hdd_spindown }} /dev/%k"
+                {% endif %}
         notify: reload udev rules
+
+      # The udev RUN+= above only fires on "add", so disks already attached when the
+      # playbook runs need the timer set directly. Reboots and re-plugs are covered
+      # by the rule.
+      - name: Apply spin-down timer to already-attached disks
+        ansible.builtin.shell: |
+            set -o pipefail
+            for dev in /sys/block/sd*; do
+                [ "$(cat "$dev/queue/rotational")" = "1" ] || continue
+                /usr/sbin/hdparm -S {{ nas_hdd_spindown }} "/dev/$(basename "$dev")"
+            done
+        args:
+            executable: /bin/bash
+        register: spindown_applied
+        changed_when: false # setting the same timer twice is a no-op
+        when: nas_hdd_spindown | int > 0
 
       # --- Disk health ---
       # Two 2TB drives holding the only copy of something is exactly where you want
-      # to hear about reallocated sectors before the array notices.
-      - name: Install SMART monitoring
-        ansible.builtin.apt:
-            name:
-                - smartmontools
-                - hdparm
-            state: present
-
+      # to hear about reallocated sectors before the array notices. smartd polls with
+      # -n standby by default, so it will not wake a disk that has spun down.
       - name: Enable smartd
         ansible.builtin.systemd:
             name: smartd
