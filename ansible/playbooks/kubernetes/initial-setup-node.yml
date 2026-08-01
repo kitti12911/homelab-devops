@@ -22,9 +22,9 @@
             name: systemd-journald
             state: restarted
 
-      - name: restart cpu governor performance
+      - name: restart cpu governor
         ansible.builtin.systemd:
-            name: cpu-governor-performance
+            name: cpu-governor
             state: restarted
             daemon_reload: true
 
@@ -44,6 +44,13 @@
             node_is_k8s: "{{ k8s_node | default('cluster' in group_names) | bool }}"
             node_runs_containers: "{{ container_host | default('cluster' in group_names) | bool }}"
             node_is_rpi: "{{ hw_board | default('') is search('Raspberry Pi') }}"
+            # Boards where every MB counts (Pi Zero 2 W and friends). Defaults from
+            # measured RAM so a new small node is covered without extra host_vars.
+            node_low_memory: "{{ low_memory | default(ansible_facts['memtotal_mb'] < 1024) | bool }}"
+            # Cluster nodes stay pinned at max clock for predictable kubelet latency.
+            # Standalone nodes are mostly idle, so ondemand saves heat and power - it
+            # matters most on a Zero 2 W, which throttles under sustained load.
+            node_cpu_governor: "{{ cpu_governor | default('performance' if k8s_node | default('cluster' in group_names) | bool else 'ondemand') }}"
 
       # kubelet requires no swap at all. Everywhere else zram is a better use of the
       # same memory than leaving it unused - compressed RAM beats a disk swapfile.
@@ -211,27 +218,41 @@
         community.general.timezone:
             name: Asia/Bangkok
 
-      - name: Deploy CPU governor performance service
+      # Superseded by the governor-agnostic cpu-governor.service below. Removed rather
+      # than left masked so a node that ran the old playbook converges cleanly.
+      - name: Remove superseded cpu-governor-performance service
+        ansible.builtin.systemd:
+            name: cpu-governor-performance
+            enabled: false
+            state: stopped
+        failed_when: false
+
+      - name: Delete superseded cpu-governor-performance unit file
+        ansible.builtin.file:
+            path: /etc/systemd/system/cpu-governor-performance.service
+            state: absent
+
+      - name: Deploy CPU governor service
         ansible.builtin.copy:
-            dest: /etc/systemd/system/cpu-governor-performance.service
+            dest: /etc/systemd/system/cpu-governor.service
             mode: "0644"
             content: |
                 [Unit]
-                Description=Set CPU governor to performance
+                Description=Set CPU governor to {{ node_cpu_governor }}
                 After=multi-user.target
 
                 [Service]
                 Type=oneshot
-                ExecStart=/bin/sh -c 'for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do [ -w "$f" ] && echo performance > "$f"; done'
+                ExecStart=/bin/sh -c 'for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do [ -w "$f" ] && echo {{ node_cpu_governor }} > "$f"; done'
                 RemainAfterExit=yes
 
                 [Install]
                 WantedBy=multi-user.target
-        notify: restart cpu governor performance
+        notify: restart cpu governor
 
-      - name: Enable CPU governor performance service
+      - name: Enable CPU governor service
         ansible.builtin.systemd:
-            name: cpu-governor-performance
+            name: cpu-governor
             enabled: true
             state: started
             daemon_reload: true
@@ -248,15 +269,61 @@
             state: directory
             mode: "0755"
 
-      - name: Enable persistent journald storage with 500MiB retention
+      # Storage=persistent rather than volatile on purpose: volatile keeps the journal
+      # in /run, which is RAM. RuntimeMaxUse caps the pre-mount buffer that still is.
+      - name: Enable persistent journald storage with size-capped retention
         ansible.builtin.copy:
             dest: /etc/systemd/journald.conf.d/99-persistent.conf
             mode: "0644"
             content: |
                 [Journal]
                 Storage=persistent
-                SystemMaxUse=500M
+                SystemMaxUse={{ '64M' if node_low_memory else '500M' }}
+                RuntimeMaxUse={{ '8M' if node_low_memory else '64M' }}
         notify: restart systemd-journald
+
+      # --- /tmp sizing (small-RAM boards) ---
+      # Keep /tmp on tmpfs - enough tooling assumes it is fast and disposable that
+      # moving it to disk causes more trouble than it saves. The default is 50% of
+      # RAM, which is far too generous at 512MB, so cap it hard instead. tmpfs pages
+      # are swappable, so anything cold ends up compressed in zram rather than
+      # occupying RAM outright.
+      - name: Ensure tmp.mount is not masked
+        ansible.builtin.systemd:
+            name: tmp.mount
+            masked: false
+        failed_when: false
+        when: node_low_memory
+
+      # state: present rather than mounted - remounting /tmp under running processes
+      # hides their open files. Applied on the next reboot, which these nodes need
+      # anyway for the cmdline.txt changes above.
+      - name: Cap /tmp tmpfs size
+        ansible.posix.mount:
+            path: /tmp
+            src: tmpfs
+            fstype: tmpfs
+            opts: "defaults,noatime,nosuid,nodev,size=64m"
+            state: present
+        when: node_low_memory
+
+      # --- Idle service trim (small-RAM boards) ---
+      # Every node here is headless and wired, so none of these ever do anything;
+      # on a 512MB board their idle RSS is worth reclaiming.
+      - name: Disable unused idle services
+        ansible.builtin.systemd:
+            name: "{{ item }}"
+            enabled: false
+            masked: true
+            state: stopped
+        failed_when: false
+        loop:
+            - bluetooth
+            - hciuart
+            - triggerhappy
+            - avahi-daemon
+            - ModemManager
+        when: node_low_memory
 
       - name: Install storage health diagnostic utilities
         ansible.builtin.apt:

@@ -16,3 +16,4 @@ hw_note: |
     Provision with:
       ansible-playbook playbooks/infrastructure/setup-raspberry-pi-os.yml -e target=zulu
       ansible-playbook playbooks/kubernetes/initial-setup-node.yml -e target=zulu
+      ansible-playbook playbooks/infrastructure/setup-podman.yml -e target=zulu

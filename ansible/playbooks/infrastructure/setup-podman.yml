@@ -1,0 +1,253 @@
+- name: Podman container host setup
+  # Defaults to the standalone groups that declare container_host in host_vars
+  # (playground: zulu, iot: mike). Deliberately excludes nas: sierra.
+  # Single host: -e target=mike
+  hosts: "{{ target | default('playground:iot') }}"
+  become: true
+  strategy: free
+  gather_facts: true
+  gather_subset:
+      - hardware # ansible_facts['memtotal_mb']
+      - min
+
+  vars:
+      podman_user: "{{ ansible_user }}"
+      # Rootless Podman needs a private UID/GID range to map container users into.
+      # 100000-165535 is the Debian adduser convention; one 65536 block per user.
+      podman_subid_start: 100000
+      podman_subid_count: 65536
+
+  handlers:
+      - name: restart user session
+        ansible.builtin.systemd:
+            name: "user@{{ podman_uid.stdout }}.service"
+            state: restarted
+            daemon_reload: true
+
+  tasks:
+      # Safety net for a broadened target: container_host is the same flag
+      # initial-setup-node.yml uses to enable the cgroup memory controller, so a host
+      # without it was never prepared for a container runtime in the first place.
+      - name: Skip hosts not declared as container hosts
+        ansible.builtin.meta: end_host
+        when: not (container_host | default(false) | bool)
+
+      - name: Derive host facts
+        ansible.builtin.set_fact:
+            node_low_memory: "{{ low_memory | default(ansible_facts['memtotal_mb'] < 1024) | bool }}"
+
+      # --- Cgroups ---
+      # Debian Trixie boots the unified (v2) hierarchy already, but Raspberry Pi OS
+      # ships with the memory controller OFF. Without it Podman starts fine and then
+      # silently ignores --memory. initial-setup-node.yml adds the cmdline flags when
+      # container_host is true; this asserts the node actually rebooted since.
+      - name: Check cgroup v2 unified hierarchy is mounted
+        ansible.builtin.stat:
+            path: /sys/fs/cgroup/cgroup.controllers
+        register: cgroup_v2
+
+      - name: Fail if cgroup v2 is not active
+        ansible.builtin.fail:
+            msg: >-
+                {{ inventory_hostname }} is not on the cgroup v2 unified hierarchy.
+                Remove systemd.unified_cgroup_hierarchy=0 from /boot/firmware/cmdline.txt and reboot.
+        when: not cgroup_v2.stat.exists
+
+      - name: Read available cgroup controllers
+        ansible.builtin.slurp:
+            src: /sys/fs/cgroup/cgroup.controllers
+        register: cgroup_controllers
+
+      - name: Fail if the memory controller is missing
+        ansible.builtin.fail:
+            msg: >-
+                Memory cgroup controller not available on {{ inventory_hostname }}.
+                Run initial-setup-node.yml (adds cgroup_memory=1 cgroup_enable=memory
+                to cmdline.txt) and reboot, otherwise podman --memory is a no-op.
+        when: "'memory' not in (cgroup_controllers.content | b64decode).split()"
+
+      # --- Packages ---
+      # passt/pasta is the rootless network backend; uidmap provides newuidmap(1);
+      # dbus-user-session is required for linger'd user units to reach systemd.
+      - name: Install Podman and rootless dependencies
+        ansible.builtin.apt:
+            name:
+                - podman
+                - crun
+                - uidmap
+                - passt
+                - fuse-overlayfs
+                - dbus-user-session
+            state: present
+            update_cache: true
+
+      # Docker's daemon is the thing we are avoiding; leaving it installed but idle
+      # still costs ~80-110MB on this board. Fail loudly rather than removing it.
+      - name: Check Docker is not also running
+        ansible.builtin.systemd:
+            name: docker
+        register: docker_unit
+        failed_when: false
+
+      - name: Warn if Docker is still active
+        ansible.builtin.debug:
+            msg: >-
+                dockerd is active on {{ inventory_hostname }} and holds ~80-110MB idle.
+                Disable it with: systemctl disable --now docker docker.socket containerd
+        when: docker_unit.status.ActiveState | default('inactive') == 'active'
+
+      # --- Rootless identity ---
+      - name: Get UID of {{ podman_user }}
+        ansible.builtin.command:
+            cmd: id -u {{ podman_user }}
+        register: podman_uid
+        changed_when: false
+
+      # userconf.txt-provisioned users are created without subuid/subgid ranges, so
+      # rootless podman fails with "no subuid ranges found". usermod is idempotent.
+      - name: Ensure subuid/subgid ranges exist
+        ansible.builtin.command:
+            cmd: >-
+                usermod
+                --add-subuids {{ podman_subid_start }}-{{ podman_subid_start + podman_subid_count - 1 }}
+                --add-subgids {{ podman_subid_start }}-{{ podman_subid_start + podman_subid_count - 1 }}
+                {{ podman_user }}
+        register: subid_result
+        changed_when: subid_result.rc == 0
+        failed_when:
+            - subid_result.rc != 0
+            - "'already' not in subid_result.stderr"
+
+      # Without linger the user manager is torn down at logout, taking every container
+      # with it and never starting them at boot. This is the rootless equivalent of
+      # "enable the service".
+      - name: Enable linger so user units survive logout and start at boot
+        ansible.builtin.command:
+            cmd: loginctl enable-linger {{ podman_user }}
+            creates: "/var/lib/systemd/linger/{{ podman_user }}"
+
+      # systemd delegates memory and pids to user slices by default on v2, but not cpu.
+      # Without this --cpus/--cpu-shares are silently ignored for rootless containers.
+      - name: Ensure user slice delegation drop-in directory exists
+        ansible.builtin.file:
+            path: /etc/systemd/system/user@.service.d
+            state: directory
+            mode: "0755"
+
+      - name: Delegate cpu, memory and pids controllers to user slices
+        ansible.builtin.copy:
+            dest: /etc/systemd/system/user@.service.d/99-delegate.conf
+            mode: "0644"
+            content: |
+                [Service]
+                Delegate=cpu cpuset io memory pids
+        notify: restart user session
+
+      # --- Podman configuration ---
+      - name: Ensure containers.conf drop-in directory exists
+        ansible.builtin.file:
+            path: /etc/containers/containers.conf.d
+            state: directory
+            mode: "0755"
+
+      - name: Configure Podman for a low-memory host
+        ansible.builtin.copy:
+            dest: /etc/containers/containers.conf.d/99-homelab.conf
+            mode: "0644"
+            content: |
+                [containers]
+                # Cap per-container logs so a chatty container cannot fill the journal
+                log_driver = "journald"
+                log_size_max = {{ 10485760 if node_low_memory else 52428800 }}
+                # A runaway fork bomb on 512MB takes the whole board down
+                pids_limit = {{ 512 if node_low_memory else 2048 }}
+
+                [engine]
+                # crun over runc: C rather than Go, roughly a tenth the per-container
+                # memory and startup cost. Debian's default, pinned so it stays that way.
+                runtime = "crun"
+
+                [network]
+                # pasta is lighter than slirp4netns and the Podman 5 rootless default
+                default_rootless_network_cmd = "pasta"
+
+      - name: Ensure registries.conf drop-in directory exists
+        ansible.builtin.file:
+            path: /etc/containers/registries.conf.d
+            state: directory
+            mode: "0755"
+
+      # Debian ships no default registry, so "podman run nginx" errors out with a
+      # short-name resolution failure unless this is set.
+      - name: Set default image registry
+        ansible.builtin.copy:
+            dest: /etc/containers/registries.conf.d/99-homelab.conf
+            mode: "0644"
+            content: |
+                unqualified-search-registries = ["docker.io"]
+
+      # --- Housekeeping ---
+      # Auto-update pulls new image tags unattended, which is not something a
+      # playground node should do on its own. Explicitly off.
+      - name: Disable unattended image auto-update
+        ansible.builtin.systemd:
+            name: podman-auto-update.timer
+            enabled: false
+            state: stopped
+        failed_when: false
+
+      # Stopped containers, dangling images and build cache accumulate on a 64GB SD
+      # card. Runs as {{ podman_user }}, not root: rootless storage lives under
+      # ~/.local/share/containers, which a root-run prune would never touch.
+      # Deliberately no --all (would drop images for stopped-but-wanted containers)
+      # and no --volumes (would delete container data).
+      - name: Deploy container prune timer
+        ansible.builtin.copy:
+            dest: "/etc/systemd/system/{{ item.name }}"
+            mode: "0644"
+            content: "{{ item.content }}"
+        loop:
+            - name: podman-prune.service
+              content: |
+                  [Unit]
+                  Description=Prune stopped containers and dangling images
+
+                  [Service]
+                  Type=oneshot
+                  User={{ podman_user }}
+                  Environment=XDG_RUNTIME_DIR=/run/user/{{ podman_uid.stdout }}
+                  ExecStart=/usr/bin/podman system prune --force
+            - name: podman-prune.timer
+              content: |
+                  [Unit]
+                  Description=Weekly Podman prune
+
+                  [Timer]
+                  OnCalendar=weekly
+                  Persistent=true
+
+                  [Install]
+                  WantedBy=timers.target
+        loop_control:
+            label: "{{ item.name }}"
+
+      - name: Enable container prune timer
+        ansible.builtin.systemd:
+            name: podman-prune.timer
+            enabled: true
+            state: started
+            daemon_reload: true
+
+      # --- Verification ---
+      - name: Verify rootless Podman works
+        ansible.builtin.command:
+            cmd: podman info --format '{{ "{{" }}.Host.CgroupsVersion{{ "}}" }} {{ "{{" }}.Host.CgroupManager{{ "}}" }} {{ "{{" }}.Host.OCIRuntime.Name{{ "}}" }}'
+        become: true
+        become_user: "{{ podman_user }}"
+        become_flags: "-i"
+        register: podman_check
+        changed_when: false
+
+      - name: Report Podman configuration
+        ansible.builtin.debug:
+            msg: "{{ inventory_hostname }}: cgroups/manager/runtime = {{ podman_check.stdout }}"

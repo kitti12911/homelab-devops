@@ -4,7 +4,22 @@ hw_storage_primary: "64GB MicroSD"
 hw_storage_type: "sd"
 # USB Ethernet adapter used instead of onboard WiFi for reliability
 hw_network: "1Gbps Ethernet via USB adapter"
+
+# --- Node role (consumed by playbooks/kubernetes/initial-setup-node.yml) ---
+k8s_node: false # not a cluster member: keeps swap enabled, skips kubelet prereqs
+container_host: true # Podman: cgroup memory controller, br_netfilter/overlay, ip_forward
+swap_mode: zram # 512MB board: compressed RAM swap is the single biggest win
+low_memory: true # trims idle services and journal retention (see initial-setup-node.yml)
+
 hw_note: |
+    Standalone IoT node — 512MB RAM, runs rootless Podman only.
+
+    Provision with:
+      ansible-playbook playbooks/kubernetes/initial-setup-node.yml -e target=mike
+      ansible-playbook playbooks/infrastructure/setup-podman.yml -e target=mike
+
+    Hardware quirks (one-time, manual):
+
     sudo rpi-eeprom-config --edit
     # add this to eeprom
     USB_MSD_QUIRKS=0bda:9201:u
