@@ -394,6 +394,13 @@
         loop: "{{ nas_disks }}"
         loop_control:
             label: "{{ item.name }} ({{ item.fstype }}, {{ 'ro' if item.ro else 'rw' }})"
+        # systemd's fstab-generator builds a .mount unit per entry, and nothing
+        # tells it the file changed. Without a reload, mount(8) prints "your fstab
+        # has been modified, but systemd still uses the old version" on every
+        # subsequent mount - which for the backup disk means once a week, in the
+        # journal, forever. The generator re-runs at boot anyway, so this only
+        # closes the window between an ansible run and the next reboot.
+        notify: reload systemd
 
       # --- Shared access ------------------------------------------------------
       # One group owns the data and gates the shares. Granting someone access is
