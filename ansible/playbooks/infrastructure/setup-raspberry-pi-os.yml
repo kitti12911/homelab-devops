@@ -263,6 +263,17 @@
             group: "1000"
             mode: "0600"
 
+      # userconf.txt firstboot user creation doesn't copy /etc/skel, so the
+      # colored prompt Raspberry Pi OS ships in skel never reaches the home dir.
+      - name: Copy default .bashrc from skel
+        ansible.builtin.copy:
+            src: "{{ mount_root }}/etc/skel/.bashrc"
+            dest: "{{ mount_root }}/home/{{ pi_username }}/.bashrc"
+            remote_src: true
+            owner: "1000"
+            group: "1000"
+            mode: "0644"
+
       # Raspberry Pi OS shipped /etc/sudoers.d/010_pi-nopasswd up to the 2025-12-04
       # image; later images create the user from userconf.txt without it. Ansible
       # runs become: true over key-only SSH, so grant it explicitly.
