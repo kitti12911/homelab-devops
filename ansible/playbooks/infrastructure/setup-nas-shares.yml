@@ -41,6 +41,10 @@
             name: avahi-daemon
             state: restarted
 
+      - name: reload systemd
+        ansible.builtin.systemd:
+            daemon_reload: true
+
   tasks:
       # Same guard as setup-nas.yml: this writes Debian paths and assumes x86.
       - name: Assert this is a Debian-family x86 host
@@ -95,6 +99,25 @@
             # on this data are meaningless now, but rewriting them is not needed to
             # grant access, and not rewriting them keeps the operation reversible.
             nas_fix_permissions: "{{ nas_fix_permissions | default(true) | bool }}"
+
+            # Folders under the active disk mirrored onto the backup disk each
+            # week, as paths relative to the active mount point. Empty is the
+            # default and installs no timer at all - a backup job is only ever
+            # created for folders that were named on purpose.
+            nas_backup_paths: "{{ nas_backup_paths | default([], true) }}"
+
+            # macOS writes these into every share it touches and none of them is
+            # worth a byte on the backup disk. lost+found is per-filesystem and
+            # means nothing once copied elsewhere.
+            nas_backup_excludes: "{{ nas_backup_excludes | default(['.DS_Store', '._*', '.Spotlight-V100', '.Trashes', '.TemporaryItems', '.fseventsd', '.DocumentRevisions-V100', '.apdisk', 'lost+found'], true) }}"
+
+            # Sunday 03:00 Asia/Bangkok. Persistent=true on the timer means a run
+            # missed because the box was off fires shortly after the next boot.
+            nas_backup_schedule: "{{ nas_backup_schedule | default('Sun *-*-* 03:00:00', true) }}"
+
+            # An additive backup can only grow, so it stops before filling the
+            # disk rather than failing mid-transfer with ENOSPC.
+            nas_backup_min_free_gb: "{{ nas_backup_min_free_gb | default(10, true) | int }}"
 
             nas_share_root: "{{ nas_share_root | default('/srv/nas', true) }}"
             nas_test_mount: "{{ nas_test_mount | default('/mnt/test', true) }}"
@@ -318,7 +341,7 @@
       - name: Install file sharing and filesystem packages
         ansible.builtin.apt:
             name: >-
-                {{ ['samba', 'acl', 'ntfs-3g', 'exfatprogs']
+                {{ ['samba', 'acl', 'ntfs-3g', 'exfatprogs', 'rsync']
                    + (['avahi-daemon'] if nas_enable_mdns else []) }}
             state: present
             update_cache: true
@@ -669,6 +692,240 @@
                + ([{'port': '5353', 'proto': 'udp'}] if nas_enable_mdns else []) }}
         when: "'Status: active' in ufw_status.stdout"
 
+      # --- Weekly backup ------------------------------------------------------
+      # Mirrors selected folders from the active disk onto the backup disk once a
+      # week. Deliberately additive: no --delete anywhere, so a file removed over
+      # SMB is still on the backup disk afterwards. The trade is drift - a rename
+      # leaves both copies and the disk only grows - which `nas-backup status`
+      # surfaces rather than hides.
+      #
+      # Installed only when nas_backup_paths names something. Backing up "the
+      # whole disk" is not offered on purpose: the point of listing folders is
+      # that the working set is a fraction of 1.8TB, and a blanket mirror with no
+      # --delete would fill the backup disk with things nobody chose to keep.
+      - name: Resolve the backup source and destination
+        ansible.builtin.set_fact:
+            nas_backup_source: "{{ (nas_disks | selectattr('role', 'eq', 'active') | map(attribute='name') | first) | default('', true) }}"
+            nas_backup_dest: "{{ (nas_disks | selectattr('role', 'eq', 'backup') | map(attribute='name') | first) | default('', true) }}"
+
+      - name: Configure the weekly backup
+        when: nas_backup_paths | length > 0
+        block:
+            - name: Assert both a source and a destination disk exist
+              ansible.builtin.assert:
+                  that:
+                      - nas_backup_source | length > 0
+                      - nas_backup_dest | length > 0
+                  fail_msg: >-
+                      nas_backup_paths is set, but the sync needs one disk in
+                      nas_active_disks (source) and one in nas_backup_disks
+                      (destination). Found active={{ nas_backup_source | default('none') }},
+                      backup={{ nas_backup_dest | default('none') }}.
+
+            # An absolute path or one containing .. would escape the active mount
+            # and sync something off the OS SSD instead.
+            - name: Validate the configured backup paths
+              ansible.builtin.assert:
+                  that:
+                      - item is string
+                      - item | length > 0
+                      - not item.startswith('/')
+                      - "'..' not in item"
+                  fail_msg: >-
+                      nas_backup_paths entries are folder paths relative to
+                      {{ nas_share_root }}/{{ nas_backup_source }} - no leading slash,
+                      no '..'. Got: {{ item }}
+              loop: "{{ nas_backup_paths }}"
+
+            # Naming a folder in nas_backup_paths is unambiguous about wanting it,
+            # so it is created here rather than left for someone to make over SMB.
+            # It lands with the share group and the setgid bit already set, which
+            # is what lets everyone in the group write to it immediately - a folder
+            # created by hand from a Mac inherits those from the parent anyway, but
+            # a first run against a share root that predates the permission fix
+            # would not.
+            #
+            # Guarded on the disk actually being mounted, and this guard is the
+            # whole point of the task: with the active disk absent,
+            # {{ nas_share_root }}/{{ nas_backup_source }} is a bare directory on
+            # the OS SSD. Creating the folder there would put it out of reach the
+            # moment the real disk mounts over the top, and the weekly job would
+            # then back up an empty tree from the wrong filesystem.
+            - name: Determine whether the active disk is mounted
+              ansible.builtin.set_fact:
+                  nas_backup_source_live: >-
+                      {{ nas_disks | selectattr('role', 'eq', 'active')
+                         | selectattr('attached') | selectattr('auto')
+                         | list | length > 0 }}
+
+            - name: Create the configured folders on the active disk
+              ansible.builtin.file:
+                  path: "{{ nas_share_root }}/{{ nas_backup_source }}/{{ item }}"
+                  state: directory
+                  group: "{{ nas_share_group }}"
+                  mode: "2775"
+              loop: "{{ nas_backup_paths }}"
+              when: nas_backup_source_live | bool
+
+            - name: Warn that backup folders could not be created
+              ansible.builtin.debug:
+                  msg: >-
+                      The active disk ({{ nas_backup_source }}) is not mounted, so
+                      {{ nas_backup_paths | join(', ') }} was not created - doing so
+                      would write to the OS SSD underneath the mount point. The timer
+                      is still installed; plug the disk in and re-run, or every backup
+                      exits non-zero reporting the folder missing.
+              when: not (nas_backup_source_live | bool)
+
+            - name: Install the backup script
+              ansible.builtin.copy:
+                  src: "{{ playbook_dir }}/../../../scripts/nas-backup.sh"
+                  dest: /usr/local/sbin/nas-backup
+                  owner: root
+                  group: root
+                  mode: "0750"
+
+            # Kept out of the unit file so that changing the folder list is a
+            # config rewrite rather than a systemd change, and so `nas-backup`
+            # run by hand behaves identically to the timer.
+            - name: Write the backup configuration
+              ansible.builtin.copy:
+                  dest: /etc/nas-backup.conf
+                  owner: root
+                  group: root
+                  mode: "0644"
+                  content: |
+                      # Managed by ansible: playbooks/infrastructure/setup-nas-shares.yml
+                      # Local edits are overwritten on the next run.
+                      # Sourced by /usr/local/sbin/nas-backup.
+                      NAS_BACKUP_SRC="{{ nas_share_root }}/{{ nas_backup_source }}"
+                      NAS_BACKUP_DST="{{ nas_share_root }}/{{ nas_backup_dest }}"
+                      NAS_BACKUP_GROUP="{{ nas_share_group }}"
+                      NAS_BACKUP_MIN_FREE_GB={{ nas_backup_min_free_gb }}
+
+                      NAS_BACKUP_PATHS=(
+                      {% for p in nas_backup_paths %}
+                          {{ p | to_json }}
+                      {% endfor %}
+                      )
+
+                      NAS_BACKUP_EXCLUDES=(
+                      {% for e in nas_backup_excludes %}
+                          {{ e | to_json }}
+                      {% endfor %}
+                      )
+
+            - name: Deploy the backup timer units
+              ansible.builtin.copy:
+                  dest: "/etc/systemd/system/{{ item.name }}"
+                  mode: "0644"
+                  content: "{{ item.content }}"
+              loop:
+                  - name: nas-backup.service
+                    content: |
+                        # Managed by ansible: playbooks/infrastructure/setup-nas-shares.yml
+                        [Unit]
+                        Description=Weekly rsync of selected NAS folders to the backup disk
+                        # The source has to be mounted; the destination deliberately is
+                        # not listed, because it is noauto and the script mounts it
+                        # itself for the duration of the run.
+                        RequiresMountsFor={{ nas_share_root }}/{{ nas_backup_source }}
+
+                        [Service]
+                        Type=oneshot
+                        ExecStart=/usr/local/sbin/nas-backup run
+                        # A first sync of a large folder over USB runs for hours; the
+                        # 90s default for oneshot would kill it partway through.
+                        TimeoutStartSec=infinity
+                        # Two cores shared with smbd: the backup yields CPU to whatever
+                        # a client is doing rather than competing with it. No
+                        # IOSchedulingClass - the data disks run mq-deadline (set by
+                        # setup-nas.yml), which ignores ionice classes entirely; only
+                        # BFQ and the old CFQ honour them, so setting one here would
+                        # imply throttling that is not actually in effect.
+                        Nice=10
+                        # No sandboxing here on purpose - the script mounts and unmounts
+                        # the backup disk, which ProtectSystem/PrivateMounts would either
+                        # block outright or confine to a namespace nothing else can see.
+                        #
+                        # No [Install] section either: this service exists to be
+                        # triggered by nas-backup.timer. Making it enable-able invites
+                        # `systemctl enable nas-backup.service`, which would run a full
+                        # backup on every boot.
+
+                  - name: nas-backup.timer
+                    content: |
+                        # Managed by ansible: playbooks/infrastructure/setup-nas-shares.yml
+                        [Unit]
+                        Description=Weekly NAS backup
+
+                        [Timer]
+                        OnCalendar={{ nas_backup_schedule }}
+                        # Catches up after downtime: a run missed because the box was
+                        # off fires shortly after the next boot instead of waiting a
+                        # full week.
+                        Persistent=true
+
+                        [Install]
+                        WantedBy=timers.target
+              loop_control:
+                  label: "{{ item.name }}"
+              notify: reload systemd
+
+            - name: Flush handlers so the units are loaded before enabling
+              ansible.builtin.meta: flush_handlers
+
+            # The timer is enabled, the service is not: the service is what the
+            # timer triggers, and enabling it too would run a full backup on every
+            # boot.
+            - name: Enable the backup timer
+              ansible.builtin.systemd:
+                  name: nas-backup.timer
+                  enabled: true
+                  state: started
+
+      - name: Remove the weekly backup when no paths are configured
+        when: nas_backup_paths | length == 0
+        block:
+            - name: Check whether a backup timer is installed
+              ansible.builtin.stat:
+                  path: /etc/systemd/system/nas-backup.timer
+              register: nas_backup_timer
+
+            - name: Stop and disable the backup timer
+              ansible.builtin.systemd:
+                  name: nas-backup.timer
+                  enabled: false
+                  state: stopped
+              when: nas_backup_timer.stat.exists
+              failed_when: false
+
+            - name: Remove the backup units and configuration
+              ansible.builtin.file:
+                  path: "{{ item }}"
+                  state: absent
+              loop:
+                  - /etc/systemd/system/nas-backup.timer
+                  - /etc/systemd/system/nas-backup.service
+                  - /etc/nas-backup.conf
+                  - /usr/local/sbin/nas-backup
+              notify: reload systemd
+
+            - name: Explain how to enable the weekly backup
+              ansible.builtin.debug:
+                  msg:
+                      - "No weekly backup installed - nas_backup_paths is empty."
+                      - ""
+                      - "Add the folders worth mirroring from the active disk to the backup"
+                      - "disk in inventory/host_vars/{{ inventory_hostname }}/vars.yml:"
+                      - ""
+                      - "    nas_backup_paths:"
+                      - "        - Documents"
+                      - "        - Photos"
+                      - ""
+                      - "Paths are relative to {{ nas_share_root }}/{{ nas_backup_source | default('<active>') }},"
+                      - "and the sync never deletes - anything removed on the share is kept."
+
       # --- Report -------------------------------------------------------------
       - name: Collect resulting state
         ansible.builtin.shell:
@@ -687,6 +944,19 @@
                 echo "smbd:    $(systemctl is-active smbd)"
                 {% if nas_enable_mdns %}
                 echo "avahi:   $(systemctl is-active avahi-daemon)"
+                {% endif %}
+                {% if nas_backup_paths | length > 0 %}
+                echo "backup:  {{ nas_backup_paths | join(', ') }} -> {{ nas_backup_dest }} ({{ nas_backup_schedule }}, additive)"
+                echo "    next: $(systemctl show nas-backup.timer -p NextElapseUSecRealtime --value 2>/dev/null)"
+                # ExecMainStatus is 0 on a service that has never run, so the timer's
+                # trigger time is what separates "succeeded" from "never fired".
+                triggered=$(systemctl show nas-backup.timer -p LastTriggerUSec --value 2>/dev/null)
+                if [ -n "$triggered" ] && [ "$triggered" != "n/a" ]; then
+                    echo "    last: $triggered ($(systemctl show nas-backup.service -p Result --value 2>/dev/null))"
+                else
+                    echo "    last: never run - starts at the next scheduled time, or force one now with"
+                    echo "          sudo systemctl start nas-backup.service   (sudo nas-backup dry-run to preview)"
+                fi
                 {% endif %}
                 echo "connect: smb://{{ ansible_default_ipv4.address }}"
                 echo "power:"

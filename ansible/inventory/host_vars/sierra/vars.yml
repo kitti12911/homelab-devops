@@ -36,7 +36,25 @@ nas_backup_disks:
 # While true every listed disk is mounted read-write and shared, so old data can be
 # cleared out over SMB from the Mac. Set false once that is done and the backup disk
 # reverts to read-only, noauto and unshared, so it stays spun down between syncs.
-nas_cleanup: true
+nas_cleanup: false
+
+# --- Weekly backup ---
+# Folders under the active disk mirrored onto the backup disk every Sunday at 03:00
+# by nas-backup.timer. Paths are relative to /srv/nas/active.
+#
+# The sync is additive: rsync runs without --delete, so removing a file over SMB
+# leaves it on the backup disk and an accidental delete stays recoverable. The cost
+# is drift - a rename leaves both the old and the new copy, and the disk only ever
+# grows - so `sudo nas-backup status` prints active-vs-backup sizes per folder, and
+# reclaiming space means deleting from the backup disk by hand.
+#
+# Each folder named here is created on the active disk by setup-nas-shares.yml if it
+# does not exist yet, with the share group and setgid bit already set, so it appears
+# on the SMB share ready to drop files into. Creation is skipped when the active disk
+# is unmounted, since that would write to the OS SSD under the mount point.
+nas_backup_paths:
+    - Document
+    - Media
 
 hw_note: |
     Standalone NAS — the only x86 host, so it does not share the Raspberry Pi
