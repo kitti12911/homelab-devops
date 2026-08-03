@@ -110,9 +110,9 @@ helm install prometheus-operator-crds prometheus-community/prometheus-operator-c
 4. install helm-secrets plugin
 
     ```bash
-    helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v4.7.6/secrets-4.7.6.tgz --verify=false
-    helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v4.7.6/secrets-getter-4.7.6.tgz --verify=false
-    helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v4.7.6/secrets-post-renderer-4.7.6.tgz --verify=false
+    helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v4.7.7/secrets-4.7.7.tgz --verify=false
+    helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v4.7.7/secrets-getter-4.7.7.tgz --verify=false
+    helm plugin install https://github.com/jkroepke/helm-secrets/releases/download/v4.7.7/secrets-post-renderer-4.7.7.tgz --verify=false
     ```
 
 ### 4. argocd
