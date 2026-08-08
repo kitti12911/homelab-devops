@@ -26,8 +26,8 @@
       mount_root: "{{ mount_base }}/root"
 
       # User configuration
-      pi_username: "kitti"
-      pi_password: "{{ vault_pi_password }}"
+      pi_username: "pi"
+      pi_password: "raspberrypi"
       ssh_public_keys:
           - "~/.ssh/id_ed25519.pub"
           - "~/.ssh/id_ed25519_ansible.pub"
@@ -285,6 +285,19 @@
             group: "0"
             mode: "0440"
             validate: /usr/sbin/visudo -cf %s
+
+      # sshd_config ships `Include /etc/ssh/sshd_config.d/*.conf` first, so a
+      # drop-in wins over the defaults further down the main file.
+      - name: Allow SSH password authentication
+        ansible.builtin.copy:
+            content: |
+                PasswordAuthentication yes
+                KbdInteractiveAuthentication yes
+                PermitRootLogin no
+            dest: "{{ mount_root }}/etc/ssh/sshd_config.d/010_password-auth.conf"
+            owner: "0"
+            group: "0"
+            mode: "0644"
 
       - name: Unmount root partition
         ansible.posix.mount:
